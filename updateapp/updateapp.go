@@ -7,16 +7,18 @@ import (
 )
 
 // Start ...
-func Start() int {
+func Start() bool {
 
 	if !appargs.Init() {
-		return 1;
+		return false
 	}
 
-	fmt.Println(appargs.SourceDir)
-	return 0
+	UploadToFTP()
+
+	fmt.Println("Done!")
+	return true
 }
 
 func initializeSourceAndOutputPaths() {
-	
+
 }

@@ -2,7 +2,6 @@ package appargs
 
 import (
 	"flag"
-	"fmt"
 	"os"
 )
 
@@ -13,6 +12,8 @@ var (
 	OutputDir string
 	// OutputFile ...
 	OutputFile string
+	// FTPUrl ...
+	FTPUrl string
 	// CheckExtension ...
 	CheckExtension string
 	// ImportantFiles ...
@@ -45,6 +46,7 @@ func Init() bool {
 	flag.StringVar(&SourceDir, "sourceDir", "", "Source dirrectory path.")
 	flag.StringVar(&OutputDir, "outputDir", "", "Output dirrectory path.")
 	flag.StringVar(&OutputFile, "outputFile", "update.crc", "Output crc file name. Default value: 'update.crc'.")
+	flag.StringVar(&FTPUrl, "ftpUrl", "", "Upload files to FTP. Specify ftp url, example: ftp://login:password@ftp.myserver.com:9090/path.")
 	flag.StringVar(&CheckExtension, "checkExtension", "exe,dll,bin", "Comma separated file extension for important file. Default value: 'exe,dll,bin'.")
 	flag.StringVar(&ImportantFiles, "importantFiles", "", "Comma separated file list for mark as important file.")
 	flag.StringVar(&TorrentConfig, "torrentConfig", "", "Torrent config file.")
@@ -60,26 +62,10 @@ func Init() bool {
 
 	flag.Parse()
 
-	fmt.Println(flag.NArg())
 	if len(os.Args) == 1 {
 		flag.Usage()
 		return false
 	}
 
 	return true
-	/*fmt.Println(sourceDir)
-	fmt.Println(outputDir)
-	fmt.Println(outputFile)
-	fmt.Println(checkExtension)
-	fmt.Println(importantFiles)
-	fmt.Println(torrentConfig)
-	fmt.Println(registryConfig)
-	fmt.Println(ignoreFiles)
-	fmt.Println(noArchive)
-	fmt.Println(ignoreHidden)
-	fmt.Println(threads)
-	fmt.Println(fingerprintMd5)
-	fmt.Println(versionFilePath)
-	fmt.Println(versionFilePath1)
-	fmt.Println(versionFilePath2)*/
 }

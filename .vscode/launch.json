@@ -11,7 +11,7 @@
             "mode": "auto",
             "program": "${fileDirname}",
             "env": {},
-            "args": ["-sourceDir=lllll"]
+            "args": ["-sourceDir=D:\\Temp\\test", "-outputDir=D:\\Temp\\test", "-ftpUrl=ftp://ftptmp:Bpbo4p5oij6fg@fs1.gamenet.ru:21/tmp/test"]
         }
     ]
 }
