@@ -14,6 +14,18 @@ var (
 	OutputFile string
 	// FTPUrl ...
 	FTPUrl string
+	// AWSRegion ...
+	AWSRegion string
+	// AWSCredentials ...
+	AWSCredentials string
+	// AWSProfile ...
+	AWSProfile string
+	// AWSID ...
+	AWSID string
+	// AWSKey ...
+	AWSKey string
+	// S3BucketName ...
+	S3BucketName string
 	// CheckExtension ...
 	CheckExtension string
 	// ImportantFiles ...
@@ -47,6 +59,12 @@ func Init() bool {
 	flag.StringVar(&OutputDir, "outputDir", "", "Output dirrectory path.")
 	flag.StringVar(&OutputFile, "outputFile", "update.crc", "Output crc file name. Default value: 'update.crc'.")
 	flag.StringVar(&FTPUrl, "ftpUrl", "", "Upload files to FTP. Specify ftp url, example: ftp://login:password@ftp.myserver.com:9090/path.")
+	flag.StringVar(&AWSRegion, "awsRegion", "", "AWS region name.")
+	flag.StringVar(&AWSCredentials, "awsCredentials", "", "Path to AWS credentials file.")
+	flag.StringVar(&AWSProfile, "awsProfile", "", "AWS profile name.")
+	flag.StringVar(&AWSID, "awsId", "", "AWS access key id.")
+	flag.StringVar(&AWSKey, "awsKey", "", "AWS secret access key.")
+	flag.StringVar(&S3BucketName, "s3BucketName", "", "Amazon S3 bucket name.")
 	flag.StringVar(&CheckExtension, "checkExtension", "exe,dll,bin", "Comma separated file extension for important file. Default value: 'exe,dll,bin'.")
 	flag.StringVar(&ImportantFiles, "importantFiles", "", "Comma separated file list for mark as important file.")
 	flag.StringVar(&TorrentConfig, "torrentConfig", "", "Torrent config file.")

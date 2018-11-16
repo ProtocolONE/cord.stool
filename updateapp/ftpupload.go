@@ -7,12 +7,19 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jlaffaye/ftp"
 
 	"../appargs"
+	"../utils"
 )
+
+type enumDirCallbackFtp struct {
+	conn            *ftp.ServerConn
+	continueOnError bool
+}
 
 // UploadToFTP ...
 func UploadToFTP() {
@@ -29,93 +36,64 @@ func UploadToFTP() {
 		return
 	}
 
-	err = uploadDir(conn, appargs.OutputDir, "")
+	defer conn.Logout()
+	defer conn.Quit()
+
+	var callback utils.IEnumDirCallback = enumDirCallbackFtp{conn: conn, continueOnError: true}
+	_, err = utils.EnumDir(appargs.OutputDir, callback)
 	if err != nil {
 		fmt.Println(err.Error())
-		return
 	}
 
-	conn.Logout()
-	conn.Quit()
 }
 
-func uploadDir(conn *ftp.ServerConn, path string, ftppath string) error {
+func (callback enumDirCallbackFtp) Process(fi os.FileInfo, path string) (bool, error) {
 
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		return errors.New("Cannot read directory: " + err.Error())
+	if fi.IsDir() {
+		return utils.EnumDir(path, callback)
 	}
-
-	for _, f := range files {
-
-		if f.IsDir() {
-
-			var destfile string
-			if len(ftppath) > 0 {
-				destfile = ftppath + "\\" + f.Name()
-			} else {
-				destfile = f.Name()
-			}
-
-			err = uploadDir(conn, path+"\\"+f.Name(), destfile)
-			if err != nil {
-				fmt.Println(err.Error())
-				//return err
-			}
-
-		} else {
-
-			err = uploadFile(conn, appargs.OutputDir, f.Name(), ftppath)
-			if err != nil {
-				fmt.Println(err.Error())
-				//return err
-			}
-		}
-	}
-
-	return nil
+	return uploadFileToFtp(callback.conn, fi, path)
 }
 
-func uploadFile(conn *ftp.ServerConn, path string, fname string, ftppath string) error {
+func (callback enumDirCallbackFtp) Error(err error, fi os.FileInfo, path string) bool {
+	fmt.Println(err.Error())
+	return callback.continueOnError
+}
 
-	var fpath, destfile string
+func uploadFileToFtp(conn *ftp.ServerConn, fi os.FileInfo, path string) (bool, error) {
 
-	fpath = path + "\\" + fname
+	destname := path[len(appargs.OutputDir)+1 : len(path)]
+	destpath, _ := filepath.Split(destname)
 
-	if len(ftppath) > 0 {
-		destfile = ftppath + "\\" + fname
-	} else {
-		destfile = fname
-	}
+	fmt.Println("Uploading file:", path)
 
-	fmt.Println("Uploading file:", fpath)
-	//fmt.Println("to:", destfile)
-
-	file, err := os.Open(fpath)
+	file, err := os.Open(path)
 	if err != nil {
-		return errors.New("Cannot open file: " + err.Error())
+		return true, errors.New("Cannot open file: " + err.Error())
 	}
+
+	defer file.Close()
 
 	r := bufio.NewReader(file)
 	_, err = ioutil.ReadAll(r)
 	if err != nil {
-		return errors.New("Cannot read file: " + err.Error())
+		return true, errors.New("Cannot read file: " + err.Error())
 	}
 
-	if len(ftppath) > 0 {
-		err = conn.MakeDir(ftppath)
+	if len(destpath) > 0 {
+		err = conn.MakeDir(destpath)
 		if err != nil {
 			// ignore error
 			//return errors.New("Cannnot create ftp directory: " + err.Error())
 		}
 	}
 
-	err = conn.Stor(destfile, r)
+	err = conn.Stor(destname, r)
 	if err != nil {
-		return errors.New("Cannot upload file: " + err.Error())
+		return true, errors.New("Cannot upload file: " + err.Error())
 	}
 
-	return nil
+	return true, nil
 }
 
 func initConnect() (*ftp.ServerConn, error) {
