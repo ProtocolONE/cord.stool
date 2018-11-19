@@ -3,7 +3,7 @@ package updateapp
 import (
 	"fmt"
 
-	"../appargs"
+	"uplgen/appargs"
 )
 
 // Start ...

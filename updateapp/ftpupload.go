@@ -12,8 +12,8 @@ import (
 
 	"github.com/jlaffaye/ftp"
 
-	"../appargs"
-	"../utils"
+	"uplgen/appargs"
+	"uplgen/utils"
 )
 
 type enumDirCallbackFtp struct {

@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-
-	"./updateapp"
+	"uplgen/updateapp"
 )
 
 func main() {
