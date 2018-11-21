@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jlaffaye/ftp"
-
 	"uplgen/appargs"
 	"uplgen/utils"
+
+	"github.com/jlaffaye/ftp"
 )
 
 type enumDirCallbackFtp struct {

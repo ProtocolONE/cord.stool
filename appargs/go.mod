@@ -1,1 +1,1 @@
-module appargs
+module uplgen/appargs
