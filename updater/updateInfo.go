@@ -161,7 +161,11 @@ LOOP:
 
 }
 
-func PrepairDistr(inputDir string, outputDir string) (UpdateInfo, error) {
+func copy(relativePath string, inputDir, outputDir string) error {
+	return nil
+}
+
+func PrepairDistr(inputDir string, outputDir string, useArchive bool) (UpdateInfo, error) {
 	var t tomb.Tomb
 	var result UpdateInfo
 

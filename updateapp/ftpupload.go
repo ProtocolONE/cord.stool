@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"uplgen/appargs"
-	"uplgen/utils"
+	"cord.stool/appargs"
+	"cord.stool/utils"
 
 	"github.com/jlaffaye/ftp"
 )

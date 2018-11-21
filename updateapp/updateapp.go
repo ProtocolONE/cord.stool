@@ -3,7 +3,7 @@ package updateapp
 import (
 	"fmt"
 
-	"uplgen/appargs"
+	"cord.stool/appargs"
 )
 
 // Start ...
