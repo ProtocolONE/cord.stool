@@ -7,10 +7,13 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"cord.stool/updateapp"
 
 	tomb "gopkg.in/tomb.v2"
 )
@@ -62,6 +65,42 @@ func UnpackUpdateInfo(buffer []byte) (UpdateInfo, error) {
 	u := new(UpdateInfo)
 	e := xml.Unmarshal(buffer, u)
 	return *u, e
+}
+
+func (s *UpdateInfo) Save(filepath string) (err error) {
+	sfi, err := os.Stat(filepath)
+
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return
+		}
+	} else {
+		if !(sfi.Mode().IsRegular()) {
+			return fmt.Errorf("UpdateInfo.Save: non-regular destination file %s (%q)", sfi.Name(), sfi.Mode().String())
+		}
+	}
+
+	f, err := os.Create(filepath)
+	if err != nil {
+		return
+	}
+
+	defer f.Close()
+
+	writer := bufio.NewWriter(f)
+
+	writer.Write([]byte(xml.Header))
+	enc := xml.NewEncoder(writer)
+	enc.Indent("", "  ")
+	err = enc.Encode(s)
+
+	if err != nil {
+		return
+	}
+
+	writer.Flush()
+
+	return nil
 }
 
 func getAllFilesJob(rootDir string, resultCh chan<- FileInfo, stopCh <-chan struct{}) error {
@@ -139,7 +178,7 @@ LOOP:
 				break LOOP
 			}
 
-			hash, hashErr := calcMd5(fi.fullPath)
+			hash, hashErr := Md5(fi.fullPath)
 			if hashErr != nil {
 				return hashErr
 			}
@@ -161,18 +200,75 @@ LOOP:
 
 }
 
-func copy(relativePath string, inputDir, outputDir string) error {
+func archiveJob(
+	sourceDir, targetDir string,
+	useArchive bool,
+	inputCh <-chan FileInfo,
+	resultCh chan<- FileInfo,
+	stopCh <-chan struct{},
+	wg *sync.WaitGroup) (err error) {
+
+	var (
+		fi   FileInfo
+		dfi  os.FileInfo
+		more bool
+	)
+
+	defer wg.Done()
+
+LOOP:
+	for {
+		select {
+		case fi, more = <-inputCh:
+			if !more {
+				break LOOP
+			}
+
+			fullSrc := filepath.Join(sourceDir, fi.Path)
+			fullDst := filepath.Join(targetDir, fi.Path)
+
+			if useArchive {
+				fullDst += ".zip"
+				err = updateapp.CompressFile(fullSrc, fullDst)
+				if err != nil {
+					return
+				}
+
+			} else {
+				err = CopyFile(fullSrc, fullDst)
+				if err != nil {
+					return
+				}
+			}
+
+			dfi, err = os.Stat(fullDst)
+			if err != nil {
+				return
+			}
+
+			fi.ArchiveLength = dfi.Size()
+
+		case <-stopCh:
+			break LOOP
+		}
+
+		select {
+		case resultCh <- fi:
+		case <-stopCh:
+			break LOOP
+		}
+	}
+
 	return nil
 }
 
-func PrepairDistr(inputDir string, outputDir string, useArchive bool) (UpdateInfo, error) {
+func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result UpdateInfo, err error) {
 	var t tomb.Tomb
-	var result UpdateInfo
 
-	rootInputDir, pathErr := filepath.Abs(inputDir)
+	rootInputDir, err := filepath.Abs(inputDir)
 
-	if pathErr != nil {
-		return result, pathErr
+	if err != nil {
+		return
 	}
 
 	scanPathCh := make(chan FileInfo)
@@ -198,13 +294,36 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (UpdateInf
 		close(hashInfoCh)
 	}()
 
+	// ---- archive files
+	archiveWg := &sync.WaitGroup{}
+	archiveCh := make(chan FileInfo)
+
+	archiveThreadCount := 10
+	archiveWg.Add(archiveThreadCount)
+
+	for q := 0; q < archiveThreadCount; q++ {
+		t.Go(func() error {
+			return archiveJob(
+				inputDir, outputDir,
+				useArchive,
+				hashInfoCh, archiveCh, t.Dying(), archiveWg)
+		})
+	}
+
+	go func() {
+		archiveWg.Wait()
+		close(archiveCh)
+	}()
+
+	//----
+
 	t.Go(func() error {
 		res := make([]FileInfo, 0, 100)
 
 	LOOPCONSUME:
 		for {
 			select {
-			case fi, more := <-hashInfoCh:
+			case fi, more := <-archiveCh:
 				if !more {
 					break LOOPCONSUME
 				}
@@ -219,7 +338,20 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (UpdateInf
 		return nil
 	})
 
-	totalError := t.Wait()
+	err = t.Wait()
+	if err != nil {
+		return
+	}
 
-	return result, totalError
+	crcPath := filepath.Join(outputDir, "update.crc")
+	crcPathArc := filepath.Join(outputDir, "update.crc.zip")
+	err = result.Save(crcPath)
+	if err != nil {
+		return
+	}
+
+	updateapp.CompressFile(crcPath, crcPathArc)
+	err = os.Remove(crcPath)
+
+	return result, err
 }

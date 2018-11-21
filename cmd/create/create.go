@@ -60,7 +60,7 @@ func Register(ctx *context.StoolContext) {
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	u, e := updater.PrepairDistr(args.SourceDir, args.TargetDir, false)
+	u, e := updater.PrepairDistr(args.SourceDir, args.TargetDir, args.Archive)
 
 	fmt.Printf("%# v", pretty.Formatter(u))
 

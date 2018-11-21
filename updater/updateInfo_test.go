@@ -52,4 +52,9 @@ func Test_UpdateInfoPack(t *testing.T) {
 
 	assert.True(t, e == nil)
 	assert.True(t, s == expectedResult)
+
+	var u UpdateInfo
+	u.Unpack([]byte(s))
+
+	assert.Equal(t, info.Version1, u.Version1)
 }
