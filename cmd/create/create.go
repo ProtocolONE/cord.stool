@@ -24,29 +24,19 @@ func Register(ctx *context.StoolContext) {
 		Description: "Create update for application",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:        "sourceDir",
+				Name:        "sourceDir, sd",
 				Usage:       "Path to game(short form sd)",
 				Value:       "",
 				Destination: &args.SourceDir,
 			},
 			cli.StringFlag{
-				Name:        "sd",
-				Hidden:      true,
-				Destination: &args.SourceDir,
-			},
-			cli.StringFlag{
-				Name:        "outputDir",
+				Name:        "outputDir, od",
 				Usage:       "Path to game(short form sd)",
 				Value:       "",
-				Destination: &args.TargetDir,
-			},
-			cli.StringFlag{
-				Name:        "od",
-				Hidden:      true,
 				Destination: &args.TargetDir,
 			},
 			cli.BoolFlag{
-				Name: "archive",
+				Name: "archive, a",
 				Destination: &args.Archive,
 			},
 		},
