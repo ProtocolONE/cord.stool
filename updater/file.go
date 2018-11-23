@@ -3,10 +3,12 @@ package updater
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 // CopyFile copies a file from src to dst.
@@ -99,4 +101,51 @@ func Md5(filepath string) (result string, err error) {
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func EnumFilesRecursive(rootDir string, stopCh <-chan struct{}) (result chan string, err chan error) {
+	result = make(chan string)
+	err = make(chan error, 1)
+
+	fullRootDir, e := filepath.Abs(rootDir)
+	if e != nil {
+		err <- e
+		return
+	}
+
+	go func(dir string, res chan<- string, stCh <-chan struct{}, errorCh chan<- error) {
+		var errorCancelad = errors.New("canceled")
+
+		defer close(res)
+		defer close(errorCh)
+
+		r := filepath.Walk(dir, func(path string, info os.FileInfo, err error) (werr error) {
+			runtime.Gosched()
+
+			werr = err
+
+			if err != nil {
+				return
+			}
+
+			if info.IsDir() || !info.Mode().IsRegular() {
+				return
+			}
+
+			select {
+			case res <- path:
+			case <-stCh:
+				return errorCancelad
+			}
+
+			return
+		})
+
+		if r == nil || r == errorCancelad {
+			return
+		}
+
+		errorCh <- r
+	}(fullRootDir, result, stopCh, err)
+	return
 }

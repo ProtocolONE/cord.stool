@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"cord.stool/updateapp"
+	"cord.stool/compressor/zip"
 
 	tomb "gopkg.in/tomb.v2"
 )
@@ -32,7 +32,7 @@ type FileInfoList struct {
 type FileInfo struct {
 	XMLName       xml.Name `xml:"file"`
 	Path          string   `xml:"path,string,attr"`
-	fullPath      string   `xml:"-`
+	fullPath      string   `xml:"-"`
 	Hash          string   `xml:"crc,string,attr"`
 	RawLength     int64    `xml:"rawLength,string,attr"`
 	ArchiveLength int64    `xml:"archiveLength,string,attr"`
@@ -229,7 +229,8 @@ LOOP:
 
 			if useArchive {
 				fullDst += ".zip"
-				err = updateapp.CompressFile(fullSrc, fullDst)
+
+				err = zip.CompressFile(fullSrc, fullDst)
 				if err != nil {
 					return
 				}
@@ -350,7 +351,7 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return
 	}
 
-	updateapp.CompressFile(crcPath, crcPathArc)
+	zip.CompressFile(crcPath, crcPathArc)
 	err = os.Remove(crcPath)
 
 	return result, err

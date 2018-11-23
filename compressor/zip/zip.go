@@ -1,4 +1,4 @@
-package updateapp
+package zip
 
 import (
 	"archive/zip"

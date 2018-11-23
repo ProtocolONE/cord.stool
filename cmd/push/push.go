@@ -4,8 +4,15 @@ import (
 	"fmt"
 
 	"cord.stool/context"
+	"cord.stool/upload/ftp"
+
 	"github.com/urfave/cli"
 )
+
+var args = struct {
+	FtpUrl    string
+	SourceDir string
+}{}
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
@@ -15,8 +22,15 @@ func Register(ctx *context.StoolContext) {
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "ftp",
-				Value: "",
+				Name:        "sourceDir, sd",
+				Usage:       "Path to game(short form sd)",
+				Value:       "",
+				Destination: &args.SourceDir,
+			},
+			cli.StringFlag{
+				Name:        "ftp",
+				Value:       "",
+				Destination: &args.FtpUrl,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -27,12 +41,9 @@ func Register(ctx *context.StoolContext) {
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	fmt.Printf("push update\n")
-	if ctx.Verbose {
-		fmt.Println("verbose show")
+	if args.FtpUrl == "" {
+		return fmt.Errorf("ftp url required")
 	}
 
-	//fmt.Println(ctx.App, c)
-	fmt.Println(c.Args())
-	return nil
+	return ftp.UploadToFTP(args.FtpUrl, args.SourceDir)
 }

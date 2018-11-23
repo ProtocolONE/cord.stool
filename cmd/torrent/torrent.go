@@ -39,7 +39,7 @@ func Register(ctx *context.StoolContext) {
 				Destination: &args.TargetFile,
 			},
 			cli.StringSliceFlag{
-				Name:  "web-seeds, ws",
+				Name:   "web-seeds, ws",
 				Value: &args.WebSeeds,
 				Usage: "Slice of torrent web seeds",
 			},
