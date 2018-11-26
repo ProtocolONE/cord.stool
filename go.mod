@@ -6,7 +6,7 @@ require (
 	github.com/anacrolix/dht v0.0.0-20181123025733-9b0a8e862ccc // indirect
 	github.com/anacrolix/go-libutp v0.0.0-20180808010927-aebbeb60ea05 // indirect
 	github.com/anacrolix/log v0.0.0-20180808012509-286fcf906b48 // indirect
-	github.com/anacrolix/missinggo v0.0.0-20181123025335-189175ccdc8c // indirect
+	github.com/anacrolix/missinggo v0.0.0-20181123102432-08c0c0b796c8
 	github.com/anacrolix/mmsg v0.0.0-20180808012353-5adb2c1127c0 // indirect
 	github.com/anacrolix/tagflag v0.0.0-20180803105420-3a8ff5428f76
 	github.com/anacrolix/torrent v0.0.0-20181121062509-35642c832b53
@@ -19,6 +19,7 @@ require (
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/jlaffaye/ftp v0.0.0-20181101112434-47f21d10f0ee
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
+	github.com/josephspurrier/goversioninfo v0.0.0-20180220052333-42534847954b // indirect
 	github.com/kr/pretty v0.1.0
 	github.com/kr/pty v1.1.3 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect

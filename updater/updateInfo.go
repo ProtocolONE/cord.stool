@@ -3,12 +3,8 @@ package updater
 import (
 	"bufio"
 	"bytes"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/xml"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -103,158 +99,85 @@ func (s *UpdateInfo) Save(filepath string) (err error) {
 	return nil
 }
 
-func getAllFilesJob(rootDir string, resultCh chan<- FileInfo, stopCh <-chan struct{}) error {
-	var errorCancelad = errors.New("canceled")
-
-	defer close(resultCh)
-
-	r := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		relative, rerr := filepath.Rel(rootDir, path)
-
-		if rerr != nil {
-			return rerr
-		}
-
-		result := FileInfo{
-			Path:      relative,
-			fullPath:  filepath.Join(rootDir, relative),
-			RawLength: info.Size(),
-		}
-
-		select {
-		case resultCh <- result:
-		case <-stopCh:
-			return errorCancelad
-		}
-
-		return nil
-	})
-
-	if r == errorCancelad {
-		return nil
-	}
-
-	return r
-}
-
-func calcMd5(fullPath string) (string, error) {
-	f, err := os.Open(fullPath)
-
-	if err != nil {
-		return "", err
-	}
-
-	defer f.Close()
-	h := md5.New()
-
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), err
-}
-
-func calcHashJob(inputCh <-chan FileInfo, resultCh chan<- FileInfo, stopCh <-chan struct{}, wg *sync.WaitGroup) error {
-	var (
-		fi   FileInfo
-		more bool
-	)
-
-	defer wg.Done()
-
-LOOP:
-	for {
-		select {
-		case fi, more = <-inputCh:
-			if !more {
-				break LOOP
-			}
-
-			hash, hashErr := Md5(fi.fullPath)
-			if hashErr != nil {
-				return hashErr
-			}
-
-			fi.Hash = hash
-
-		case <-stopCh:
-			break LOOP
-		}
-
-		select {
-		case resultCh <- fi:
-		case <-stopCh:
-			break LOOP
-		}
-	}
-
-	return nil
-
-}
-
-func archiveJob(
-	sourceDir, targetDir string,
+func processFile(sourceDir, targetDir string,
 	useArchive bool,
-	inputCh <-chan FileInfo,
+	inputCh <-chan string,
 	resultCh chan<- FileInfo,
 	stopCh <-chan struct{},
 	wg *sync.WaitGroup) (err error) {
 
 	var (
-		fi   FileInfo
-		dfi  os.FileInfo
-		more bool
+		path, relativePath, hash string
+		more                     bool
+		fi                       os.FileInfo
+		ufi                      FileInfo
 	)
 
 	defer wg.Done()
-
 LOOP:
 	for {
 		select {
-		case fi, more = <-inputCh:
+		case path, more = <-inputCh:
 			if !more {
 				break LOOP
 			}
 
-			fullSrc := filepath.Join(sourceDir, fi.Path)
-			fullDst := filepath.Join(targetDir, fi.Path)
+			relativePath, err = filepath.Rel(sourceDir, path)
 
-			if useArchive {
-				fullDst += ".zip"
-
-				err = zip.CompressFile(fullSrc, fullDst)
-				if err != nil {
-					return
-				}
-
-			} else {
-				err = CopyFile(fullSrc, fullDst)
-				if err != nil {
-					return
-				}
-			}
-
-			dfi, err = os.Stat(fullDst)
 			if err != nil {
 				return
 			}
 
-			fi.ArchiveLength = dfi.Size()
+			fi, err = os.Stat(path)
+			if err != nil {
+				return
+			}
+
+			ufi = FileInfo{
+				Path:      relativePath,
+				fullPath:  path,
+				RawLength: fi.Size(),
+			}
+
+			hash, err = Md5(path)
+			if err != nil {
+				return
+			}
+
+			ufi.Hash = hash
+
+			fullDst := filepath.Join(targetDir, relativePath)
+
+			if useArchive {
+				fullDst += ".zip"
+
+				err = zip.CompressFile(path, fullDst)
+				if err != nil {
+					return
+				}
+
+				fi, err = os.Stat(fullDst)
+				if err != nil {
+					return
+				}
+
+				ufi.ArchiveLength = fi.Size()
+
+			} else {
+				err = CopyFile(path, fullDst)
+				if err != nil {
+					return
+				}
+
+				ufi.ArchiveLength = ufi.RawLength
+			}
 
 		case <-stopCh:
 			break LOOP
 		}
 
 		select {
-		case resultCh <- fi:
+		case resultCh <- ufi:
 		case <-stopCh:
 			break LOOP
 		}
@@ -264,59 +187,51 @@ LOOP:
 }
 
 func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result UpdateInfo, err error) {
-	var t tomb.Tomb
-
-	rootInputDir, err := filepath.Abs(inputDir)
-
+	result = UpdateInfo{}
+	files, err := GetAllFiles(inputDir)
 	if err != nil {
 		return
 	}
 
-	scanPathCh := make(chan FileInfo)
+	var t tomb.Tomb
+
+	pathCh := make(chan string)
 
 	t.Go(func() error {
-		return getAllFilesJob(rootInputDir, scanPathCh, t.Dying())
+		defer close(pathCh)
+
+	LOOPPRODUCE:
+		for _, p := range files {
+			select {
+			case pathCh <- p:
+				continue
+			case <-t.Dying():
+				break LOOPPRODUCE
+			}
+		}
+
+		return nil
 	})
 
-	hashWg := &sync.WaitGroup{}
-	hashInfoCh := make(chan FileInfo)
+	wg := &sync.WaitGroup{}
+	fiCh := make(chan FileInfo)
 
-	hashThreadCount := 10
-	hashWg.Add(hashThreadCount)
+	threadCount := 10
+	wg.Add(threadCount)
 
-	for q := 0; q < hashThreadCount; q++ {
+	for q := 0; q < threadCount; q++ {
 		t.Go(func() error {
-			return calcHashJob(scanPathCh, hashInfoCh, t.Dying(), hashWg)
-		})
-	}
-
-	go func() {
-		hashWg.Wait()
-		close(hashInfoCh)
-	}()
-
-	// ---- archive files
-	archiveWg := &sync.WaitGroup{}
-	archiveCh := make(chan FileInfo)
-
-	archiveThreadCount := 10
-	archiveWg.Add(archiveThreadCount)
-
-	for q := 0; q < archiveThreadCount; q++ {
-		t.Go(func() error {
-			return archiveJob(
+			return processFile(
 				inputDir, outputDir,
 				useArchive,
-				hashInfoCh, archiveCh, t.Dying(), archiveWg)
+				pathCh, fiCh, t.Dying(), wg)
 		})
 	}
 
 	go func() {
-		archiveWg.Wait()
-		close(archiveCh)
+		wg.Wait()
+		close(fiCh)
 	}()
-
-	//----
 
 	t.Go(func() error {
 		res := make([]FileInfo, 0, 100)
@@ -324,7 +239,7 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 	LOOPCONSUME:
 		for {
 			select {
-			case fi, more := <-archiveCh:
+			case fi, more := <-fiCh:
 				if !more {
 					break LOOPCONSUME
 				}

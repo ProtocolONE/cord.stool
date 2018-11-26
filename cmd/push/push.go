@@ -29,6 +29,7 @@ func Register(ctx *context.StoolContext) {
 			},
 			cli.StringFlag{
 				Name:        "ftp",
+				Usage:       "Full ftp url path. Example ftp://user@password:host:port/upload/directory",
 				Value:       "",
 				Destination: &args.FtpUrl,
 			},
