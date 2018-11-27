@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_UploadToFTPError(t *testing.T) {
+func UploadToFTPError(t *testing.T) {
 	e := UploadToFTP("ftp://ftpuser:ftppass@ftp.protocol.local:21/cordtest/", `..\`)
 
 	if e != nil {

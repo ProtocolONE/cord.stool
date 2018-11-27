@@ -1,18 +1,18 @@
 package create
 
 import (
-	"fmt"
+	//	"fmt"
 
 	"cord.stool/context"
 	"cord.stool/updater"
+	//	"github.com/kr/pretty"
 	"github.com/urfave/cli"
-	"github.com/kr/pretty"
 )
 
 var args = struct {
 	SourceDir string
 	TargetDir string
-	Archive bool
+	Archive   bool
 }{
 	Archive: false,
 }
@@ -36,7 +36,8 @@ func Register(ctx *context.StoolContext) {
 				Destination: &args.TargetDir,
 			},
 			cli.BoolFlag{
-				Name: "archive, a",
+				Name:        "archive, a",
+				Usage:       "Archie with zip each file",
 				Destination: &args.Archive,
 			},
 		},
@@ -50,10 +51,9 @@ func Register(ctx *context.StoolContext) {
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	u, e := updater.PrepairDistr(args.SourceDir, args.TargetDir, args.Archive)
+	_, e := updater.PrepairDistr(args.SourceDir, args.TargetDir, args.Archive)
 
-	fmt.Printf("%# v", pretty.Formatter(u))
-
+	//fmt.Printf("%# v", pretty.Formatter(u))
 
 	return e
 }
