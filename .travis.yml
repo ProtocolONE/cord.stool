@@ -6,7 +6,7 @@ go:
 git:
   depth: 3
 
-install: true
+#install: true
 
 dist: trusty
 sudo: false
@@ -17,14 +17,19 @@ os:
 notifications:
   email: false
 
-before_install:
-- env GO111MODULE=on go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+#before_install:
+#- env GO111MODULE=on go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+# - env GO111MODULE=on go get -u
+
+install:
+- travis_wait env GO111MODULE=on go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+- travis_wait env GO111MODULE=on go get -u
 
 script:
-- env GO111MODULE=on go get -u
-- env GO111MODULE=on go generate
-- env GO111MODULE=on go build
-- env GO111MODULE=on go test -v -race ./...
+#- travis_wait env GO111MODULE=on go get -u
+#- env GO111MODULE=on vtag=$TRAVIS_TAG v1=`go run tag/tag.go $vtag 1` && v2=`go run tag/tag.go $vtag 2` && v3=`go run tag/tag.go $vtag 3`&& goversioninfo -ver-major=$v1 -ver-minor=$v2 -ver-patch=$v3 -ver-build=$TRAVIS_BUILD_NUMBER -file-version="$v1.$v2.$v3" -product-version="$v1.$v2.$v3.`git log -1 --pretty=format:%h`" -product-ver-major=$v1 -product-ver-minor=$v2 -product-ver-patch=$v3 -product-ver-build=$TRAVIS_BUILD_NUMBER
+- travis_wait env GO111MODULE=on go build
+- travis_wait env GO111MODULE=on go test -v -race ./...
 
 deploy:
   provider: releases
