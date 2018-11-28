@@ -123,7 +123,6 @@ func EnumFilesRecursive(rootDir string, stopCh <-chan struct{}) (result chan str
 			runtime.Gosched()
 
 			werr = err
-
 			if err != nil {
 				return
 			}
@@ -172,4 +171,24 @@ func GetAllFiles(rootDir string) (result []string, err error) {
 	})
 
 	return
+}
+
+func FileCount(rootDir string) (res int, err error) {
+	r := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) (werr error) {
+		runtime.Gosched()
+
+		werr = err
+		if err != nil {
+			return
+		}
+
+		if info.IsDir() || !info.Mode().IsRegular() {
+			return
+		}
+
+		res++
+		return
+	})
+
+	return res, r
 }

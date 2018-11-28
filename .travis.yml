@@ -19,7 +19,7 @@ notifications:
   email: false
 
 before_install:
-- go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+- env GO111MODULE=on go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 
 script:
 - env GO111MODULE=on go generate
