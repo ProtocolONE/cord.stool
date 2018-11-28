@@ -12,7 +12,6 @@ dist: trusty
 sudo: false
 
 os:
-#- linux
 - windows
 
 notifications:
@@ -22,6 +21,7 @@ before_install:
 - env GO111MODULE=on go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 
 script:
+- env GO111MODULE=on go get -u
 - env GO111MODULE=on go generate
 - env GO111MODULE=on go build
 - env GO111MODULE=on go test -v -race ./...
