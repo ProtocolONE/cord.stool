@@ -10,7 +10,7 @@ require (
 	github.com/anacrolix/mmsg v0.0.0-20180808012353-5adb2c1127c0 // indirect
 	github.com/anacrolix/tagflag v0.0.0-20180803105420-3a8ff5428f76
 	github.com/anacrolix/torrent v0.0.0-20181121062509-35642c832b53
-	github.com/aws/aws-sdk-go v1.15.81
+	github.com/aws/aws-sdk-go v1.15.86
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/edsrzf/mmap-go v0.0.0-20170320065105-0bce6a688712

@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
 
   CGO_XD3_FROM_FILE_OPEN_FAILED = -1,
@@ -36,5 +40,9 @@ typedef enum {
   CGO_XD3_UNIMPLEMENTED = -17714  /* currently VCD_TARGET, VCD_CODETABLE */
 } cgo_xd3_rvalues;
 
-int encodeDiff(const char* from, const char* to, const char* diff);
-int decodeDiff(const char* from, const char* to, const char* diff);
+int encodeDiff(unsigned int from, unsigned int to, unsigned int diff);
+int decodeDiff(unsigned int from, unsigned int to, unsigned int diff);
+
+#ifdef __cplusplus
+}
+#endif

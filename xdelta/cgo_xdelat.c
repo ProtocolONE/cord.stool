@@ -1,7 +1,8 @@
-//#define WINVER  0x0602
-
 #include <stdio.h>
 #include <sys/stat.h>
+#include <io.h>
+#include <Fcntl.h>
+
 #include "xdelta3.h"
 #include "cgo_xdelat.h"
 
@@ -131,90 +132,102 @@ int code(
 
 };
 
-int encodeDiff(const char* from, const char* to, const char* diff)
+int encodeDiff(unsigned int from, unsigned int to, unsigned int diff)
 {
-  FILE* fromFile = NULL;
-  FILE* toFile = NULL;
-  FILE* diffFile = NULL;
-  errno_t err = 0;
   int result = 0;
 
-  fromFile = fopen(from, "rb");
+  int fdfrom = _open_osfhandle(from, _O_RDONLY|_O_BINARY);
+  if (-1 == fdfrom) {
+    result = CGO_XD3_FROM_FILE_OPEN_FAILED;
+    goto cleanup;
+  }
+
+  FILE* fromFile = fdopen(fdfrom, "rb");
   if (!fromFile) {
     result = CGO_XD3_FROM_FILE_OPEN_FAILED;
     goto cleanup;
   }
 
-  toFile = fopen(to, "rb");
+  int fdTo = _open_osfhandle(to, _O_RDONLY|_O_BINARY);
+  if (-1 == fdTo) {
+    result = CGO_XD3_TO_FILE_OPEN_FAILED;
+    goto cleanup;
+  }
+
+  FILE* toFile = fdopen(fdTo, "rb");
   if (!toFile) {
     result = CGO_XD3_TO_FILE_OPEN_FAILED;
     goto cleanup;
   }
 
-  diffFile = fopen(diff, "wb");
+  int fdDiff = _open_osfhandle(diff, _O_CREAT|_O_WRONLY|_O_BINARY);
+  if (-1 == fdDiff) {
+    result = CGO_XD3_DIFF_FILE_CREATE_FAILED;
+    goto cleanup;
+  }
+
+  FILE* diffFile = fdopen(fdDiff, "wb");
   if (!diffFile) {
     result = CGO_XD3_DIFF_FILE_CREATE_FAILED;
     goto cleanup;
   }
 
   result = code(1, toFile, fromFile, diffFile, 0x1000);
-  if (result) {
+  if (result)
     goto cleanup;
-  }
+
+  fflush(diffFile);
 
 cleanup:
-  if (fromFile)
-    fclose(fromFile);
-  
-  if (toFile)
-    fclose(toFile);
-
-  if (diffFile)
-    fclose(diffFile);
-
   return result;
 }
 
-int decodeDiff(const char* from, const char* to, const char* diff)
+int decodeDiff(unsigned int from, unsigned int to, unsigned int diff)
 {
-  FILE* fromFile = NULL;
-  FILE* toFile = NULL;
-  FILE* diffFile = NULL;
-  errno_t err = 0;
   int result = 0;
 
-  fromFile = fopen(from, "rb");
-  if (!fromFile) {
+  int fdfrom = _open_osfhandle(from, _O_RDONLY|_O_BINARY);
+  if (-1 == fdfrom) {
     result = CGO_XD3_FROM_FILE_OPEN_FAILED;
     goto cleanup;
   }
 
-  toFile = fopen(to, "wb");
-  if (!toFile) {
+  FILE* fromFile = fdopen(fdfrom, "rb");
+  if (!fromFile) {
+    result = CGO_XD3_FROM_FILE_OPEN_FAILED;
+    return result;
+  }
+
+  int fdTo = _open_osfhandle(to, _O_CREAT|_O_WRONLY|_O_BINARY);
+  if (-1 == fdTo) {
     result = CGO_XD3_TO_FILE_CREATE_FAILED;
     goto cleanup;
   }
 
-  diffFile = fopen(diff, "rb");
-  if (!diffFile) {
+  FILE* toFile = fdopen(fdTo, "wb");
+  if (!toFile) {
+    result = CGO_XD3_TO_FILE_CREATE_FAILED;
+    return result;
+  }
+
+  int fdDiff = _open_osfhandle(diff, _O_RDONLY|_O_BINARY);
+  if (-1 == fdDiff) {
     result = CGO_XD3_DIFF_FILE_OPEN_FAILED;
     goto cleanup;
   }
 
-  result = code(0, diffFile, fromFile, toFile, 0x1000);
-  if (result) {
-    goto cleanup;
+  FILE* diffFile = fdopen(fdDiff, "rb");
+  if (!diffFile) {
+    result = CGO_XD3_DIFF_FILE_OPEN_FAILED;
+    return result;
   }
 
+  result = code(0, diffFile, fromFile, toFile, 0x1000);
+  if (result)
+    goto cleanup;
+
+  fflush(toFile);
+
 cleanup:
-  if (fromFile)
-    fclose(fromFile);
-
-  if (toFile)
-    fclose(toFile);
-
-  if (diffFile)
-    fclose(diffFile);
-
   return result;
 }

@@ -7,21 +7,32 @@ package xdelta
 import "C"
 import (
 	"errors"
+	"os"
 	"strconv"
-	"unsafe"
 )
 
 // EncodeDiff ...
 func EncodeDiff(from string, to string, diff string) error {
 
-	cfrom := C.CString(from)
-	defer C.free(unsafe.Pointer(cfrom))
-	cto := C.CString(to)
-	defer C.free(unsafe.Pointer(cto))
-	cdiff := C.CString(diff)
-	defer C.free(unsafe.Pointer(cdiff))
+	fileFrom, err := os.Open(from)
+	if err != nil {
+		return errors.New("Cannot open source_old file: " + err.Error())
+	}
+	defer fileFrom.Close()
 
-	ret := C.encodeDiff(cfrom, cto, cdiff)
+	fileTo, err := os.Open(to)
+	if err != nil {
+		return errors.New("Cannot open source_new file: " + err.Error())
+	}
+	defer fileTo.Close()
+
+	filediff, err := os.Create(diff)
+	if err != nil {
+		return errors.New("Cannot create diff file: " + err.Error())
+	}
+	defer filediff.Close()
+
+	ret := C.encodeDiff(_Ctype_uint(fileFrom.Fd()), _Ctype_uint(fileTo.Fd()), _Ctype_uint(filediff.Fd()))
 	if ret != 0 {
 		return errors.New("xdelta error: " + strconv.Itoa(int(ret)))
 	}
@@ -32,14 +43,25 @@ func EncodeDiff(from string, to string, diff string) error {
 // DecodeDiff ...
 func DecodeDiff(from string, to string, diff string) error {
 
-	cfrom := C.CString(from)
-	defer C.free(unsafe.Pointer(cfrom))
-	cto := C.CString(to)
-	defer C.free(unsafe.Pointer(cto))
-	cdiff := C.CString(diff)
-	defer C.free(unsafe.Pointer(cdiff))
+	fileFrom, err := os.Open(from)
+	if err != nil {
+		return errors.New("Cannot open source_old file: " + err.Error())
+	}
+	defer fileFrom.Close()
 
-	ret := C.decodeDiff(cfrom, cto, cdiff)
+	fileTo, err := os.Create(to)
+	if err != nil {
+		return errors.New("Cannot create source_new file: " + err.Error())
+	}
+	defer fileTo.Close()
+
+	filediff, err := os.Open(diff)
+	if err != nil {
+		return errors.New("Cannot open diff file: " + err.Error())
+	}
+	defer filediff.Close()
+
+	ret := C.decodeDiff(_Ctype_uint(fileFrom.Fd()), _Ctype_uint(fileTo.Fd()), _Ctype_uint(filediff.Fd()))
 	if ret != 0 {
 		return errors.New("xdelta error: " + strconv.Itoa(int(ret)))
 	}
