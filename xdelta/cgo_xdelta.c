@@ -4,7 +4,7 @@
 #include <Fcntl.h>
 
 #include "xdelta3.h"
-#include "cgo_xdelat.h"
+#include "cgo_xdelta.h"
 
 int code(
   int encode,
