@@ -17,17 +17,12 @@ os:
 notifications:
   email: false
 
-#before_install:
-#- env GO111MODULE=on go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
-# - env GO111MODULE=on go get -u
-
 install:
 - travis_wait env GO111MODULE=on go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 - travis_wait env GO111MODULE=on go get -u
 
 script:
-#- travis_wait env GO111MODULE=on go get -u
-#- env GO111MODULE=on vtag=$TRAVIS_TAG v1=`go run tag/tag.go $vtag 1` && v2=`go run tag/tag.go $vtag 2` && v3=`go run tag/tag.go $vtag 3`&& goversioninfo -ver-major=$v1 -ver-minor=$v2 -ver-patch=$v3 -ver-build=$TRAVIS_BUILD_NUMBER -file-version="$v1.$v2.$v3" -product-version="$v1.$v2.$v3.`git log -1 --pretty=format:%h`" -product-ver-major=$v1 -product-ver-minor=$v2 -product-ver-patch=$v3 -product-ver-build=$TRAVIS_BUILD_NUMBER
+- travis_wait env GO111MODULE=on go generate
 - travis_wait env GO111MODULE=on go build
 - travis_wait env GO111MODULE=on go test -v -race ./...
 
@@ -36,7 +31,7 @@ deploy:
   skip_cleanup: true
   draft: true
   api_key:
-    secure: $push_secure_token
+    secure: cY55nm6y+4C22dM6Si6e6soNTJStXax/DC8hRbmgi2KsZaxktqcQT1cxWD8wTR5P16JXFngHjMprK6mrQHGjz4B7JQFLmNmoGiE4QmiB0IRKeng3O/ViMhxJT/RpOPJCm0S9o94Z8iXLGoeBrd4auruaJ4LJ4qC+Ath6SVexbKJc+Ln0HYXDHvZvMANdR/GUHnbgqooZZieLsXbPngnM/mtLK7HRfQv1yRuYBmXLB9wyWMW3mWuttHrOPgojxdBlJlEahNdUP2iYg5/F+uAC8z1Rydh5F3r4LFkqK5uE0akrT2bHzPZ7OYBYhePQf/n/woFwBsfKsXhu714txgPPrKyJKzjKjw/F1S1nxNw6eSxl+lm1Ww4Wez8hbUUtaMpc7eDzV3/cEF+ajscU7GgeJRqAcTun0GsIjPttwF7fQI+izzbtcTpf9b9q1ExbUa+C6CsUl3yD/OhTYTWi84DO1UDhtO5Q0tcQ45797/evZFPIEwrBYtZoE+bdNCAU+ne68+vrj6BR3r24T5/p9IGRJGx6ABP1fmHEmBlw/M6n5COQoN8E1fsn1/fZ6Cwycg3IDRumGQVDuy1kM/zrabFGFybiZXugn6uMSqgf60fCEYezNSIbAV58X0PKgf6o7jO6nVTzO6a9GhyxU5nOD3kH4zpcMolHqoYiBKbOngYrRAs=
   file: cord.stool.exe
   on:
     tags: true

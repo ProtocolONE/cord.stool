@@ -1,15 +1,15 @@
 {
     "FixedFileInfo": {
         "FileVersion": {
-            "Major": 1,
+            "Major": 0,
             "Minor": 0,
-            "Patch": 0,
+            "Patch": 6,
             "Build": 0
         },
         "ProductVersion": {
-            "Major": 1,
+            "Major": 0,
             "Minor": 0,
-            "Patch": 0,
+            "Patch": 6,
             "Build": 0
         },
         "FileFlagsMask": "3f",
@@ -22,14 +22,14 @@
         "Comments": "",
         "CompanyName": "ProtocolONE",
         "FileDescription": "",
-        "FileVersion": "",
+        "FileVersion": "v0.0.6.0",
         "InternalName": "cord.stool",
         "LegalCopyright": "",
         "LegalTrademarks": "",
         "OriginalFilename": "cord.stool",
         "PrivateBuild": "",
         "ProductName": "",
-        "ProductVersion": "v1.0.0.0",
+        "ProductVersion": "v0.0.6.0",
         "SpecialBuild": ""
     },
     "VarFileInfo": {
