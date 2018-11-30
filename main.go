@@ -12,20 +12,9 @@ import (
 	"cord.stool/context"
 	// "github.com/gosuri/uiprogress"
 	// "cord.stool/updater"
-	//"cord.stool/xdelta"
 )
 
 func main() {
-
-	/*err1 := xdelta.EncodeDiff("test_old.txt", "test_new.txt", "test.diff")
-	if err1 != nil {
-		log.Fatal(err1)
-	}
-
-	err1 = xdelta.DecodeDiff("test_old.txt", "test_new2.txt", "test.diff")
-	if err1 != nil {
-		log.Fatal(err1)
-	}*/
 
 	// uiprogress.Start()            // start rendering
 	// bar := uiprogress.AddBar(100) // Add a new bar
