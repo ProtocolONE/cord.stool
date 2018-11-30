@@ -22,8 +22,8 @@ func Register(ctx *context.StoolContext) {
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:        "sourceDir, sd",
-				Usage:       "Path to game(short form sd)",
+				Name:        "source, s",
+				Usage:       "Path to game",
 				Value:       "",
 				Destination: &args.SourceDir,
 			},

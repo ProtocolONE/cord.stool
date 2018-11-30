@@ -23,20 +23,20 @@ func Register(ctx *context.StoolContext) {
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:        "sourceOldDir, sod",
-				Usage:       "Path to old files (short form sod)",
+				Name:        "old, o",
+				Usage:       "Path to old files",
 				Value:       "",
 				Destination: &args.SourceOldDir,
 			},
 			cli.StringFlag{
-				Name:        "sourceNewDir, snd",
-				Usage:       "Path to new files (short form snd)",
+				Name:        "new, n",
+				Usage:       "Path to new files",
 				Value:       "",
 				Destination: &args.SourceNewDir,
 			},
 			cli.StringFlag{
-				Name:        "outputDir, od",
-				Usage:       "Path to diff files (short form od)",
+				Name:        "patch, p",
+				Usage:       "Path to patch files",
 				Value:       "",
 				Destination: &args.OutputDiffDir,
 			},

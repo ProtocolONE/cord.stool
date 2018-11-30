@@ -1,7 +1,6 @@
 package updater
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -29,8 +28,7 @@ func CreateBinDiff(SourceOldDir string, SourceNewDir string, OutputDiffDir strin
 	for pathNewFile := range f {
 		relativePath, err := filepath.Rel(SourceNewDir, pathNewFile)
 		if err != nil {
-			fmt.Println(err.Error())
-			//return err
+			return err
 		}
 
 		pathOldFile := filepath.Join(SourceOldDir, relativePath)
@@ -46,8 +44,7 @@ func CreateBinDiff(SourceOldDir string, SourceNewDir string, OutputDiffDir strin
 			cmp := equalfile.New(nil, equalfile.Options{})
 			equal, err := cmp.CompareFile(pathOldFile, pathNewFile)
 			if err != nil {
-				fmt.Println(err.Error())
-				//return err
+				return err
 			}
 
 			if equal {
@@ -59,14 +56,12 @@ func CreateBinDiff(SourceOldDir string, SourceNewDir string, OutputDiffDir strin
 		if _, err := os.Stat(pathDiff); os.IsNotExist(err) {
 			err = os.MkdirAll(pathDiff, 0777)
 			if err != nil {
-				fmt.Println(err.Error())
-				//return err
+				return err
 			}
 		}
 		err = xdelta.EncodeDiff(pathOldFile, pathNewFile, pathDiffFile)
 		if err != nil {
-			fmt.Println(err.Error())
-			//return err
+			return err
 		}
 	}
 
