@@ -33,14 +33,13 @@ func Register(ctx *context.StoolContext) {
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:        "sourceDir, sd",
-				Usage:       "Path to game(short form sd)",
+				Name:        "source, s",
+				Usage:       "Path to game",
 				Value:       "",
 				Destination: &args.SourceDir,
 			},
-
 			cli.StringFlag{
-				Name:        "targetFile, tf",
+				Name:        "target, t",
 				Usage:       "Path for new torrent file",
 				Value:       "",
 				Destination: &args.TargetFile,
@@ -51,12 +50,12 @@ func Register(ctx *context.StoolContext) {
 				Usage: "Slice of torrent web seeds",
 			},
 			cli.StringSliceFlag{
-				Name:  "announce-list, a",
+				Name:  "announce-list, al",
 				Value: &args.AnnounceList,
 				Usage: "Slice of announce server url",
 			},
 			cli.Int64Flag{
-				Name:        "pieceLength, pl",
+				Name:        "piece-length, pl",
 				Usage:       "Torrent piece length",
 				Value:       512,
 				Destination: &args.PieceLength,

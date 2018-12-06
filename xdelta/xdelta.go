@@ -2,7 +2,7 @@ package xdelta
 
 /*
 #include <stdlib.h> // for C.free
-#include "cgo_xdelat.h"
+#include "cgo_xdelta.h"
 */
 import "C"
 import (
