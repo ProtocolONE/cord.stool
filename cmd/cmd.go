@@ -6,6 +6,7 @@ import (
 	"cord.stool/cmd/push"
 	"cord.stool/cmd/torrent"
 	"cord.stool/cmd/diff"
+	"cord.stool/cmd/upgrade"
 )
 
 func RegisterCmdCommands(ctx *context.StoolContext) {
@@ -13,4 +14,5 @@ func RegisterCmdCommands(ctx *context.StoolContext) {
 	push.Register(ctx)
 	torrent.Register(ctx)
 	diff.Register(ctx)
+	upgrade.Register(ctx)
 }

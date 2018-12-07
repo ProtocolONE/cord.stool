@@ -9,12 +9,14 @@ import (
 type StoolContext struct {
 	App     *cli.App
 	Verbose bool
+	Version string
 }
 
-func NewContext() *StoolContext {
+func NewContext(version string) *StoolContext {
 	c := &StoolContext{
 		App:     cli.NewApp(),
 		Verbose: false,
+		Version: version,
 	}
 
 	cli.VersionFlag = cli.BoolFlag{
@@ -24,7 +26,7 @@ func NewContext() *StoolContext {
 
 	app := c.App
 	app.Name = "stool"
-	app.Version = "0.1.0"
+	app.Version = version
 	app.Description = "Cord update tool"
 
 	app.Before = c.setupGlobalFlags

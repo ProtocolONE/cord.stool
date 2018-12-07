@@ -16,9 +16,10 @@ var args = struct {
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        "push",
-		Usage:       "Upload update",
-		Description: "Upload update app bundle to one of servers",
+		Name:        	"push",
+		ShortName:		"p",
+		Usage:			"Upload update",
+		Description:	"Upload update app bundle to one of servers",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{

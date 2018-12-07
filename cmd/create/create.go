@@ -20,9 +20,10 @@ var args = struct {
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        "create",
-		Usage:       "Create update",
-		Description: "Create update for application",
+		Name:        	"create",
+		ShortName:		"c",
+		Usage:       	"Create update",
+		Description: 	"Create update for application",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:        "source, s",

@@ -17,9 +17,10 @@ var args = struct {
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        "diff",
-		Usage:       "Make patch",
-		Description: "Generate the difference between files",
+		Name:        	"diff",
+		ShortName:		"d",
+		Usage:       	"Make patch",
+		Description:	"Generate the difference between files",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
