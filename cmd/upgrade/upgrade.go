@@ -86,27 +86,21 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	
+	fmt.Printf("Application is upgraded from %s to %s\n", ctx.Version, *release.TagName)
 
 	return nil
 }
 
 func upgrade(client *github.Client, id int64) error {
 
-	execPath, err := os.Executable()
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "p1-")	
 	if err != nil {
 		return err
 	}
+	defer os.RemoveAll(tmpDir)
 
-	execDir := filepath.Dir(execPath)
-
-	dir := filepath.Join(execDir, ".self-upgrade")
-	err = os.MkdirAll(dir, 0755)
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(dir)
-
-	tmpfn := filepath.Join(dir, "upgrade.zip")
+	tmpfn := filepath.Join(tmpDir, "upgrade.zip")
 
 	fmt.Println("Downloading ...")
 	err = downloadLatestRelease(client, id, tmpfn)
@@ -120,16 +114,26 @@ func upgrade(client *github.Client, id int64) error {
 	if err != nil {
 		return err
 	}
-
 	defer r.Close()
 
 	type Item struct {
-		source string
 		dest   string
 		backup string
 	}
 
 	var items []Item
+	rollback := func() {
+		for _, item := range items {
+			os.Rename(item.backup, item.dest)
+		}
+	}
+	defer rollback()
+
+	execPath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	execDir := filepath.Dir(execPath)
 
 	for _, f := range r.File {
 
@@ -137,73 +141,37 @@ func upgrade(client *github.Client, id int64) error {
 		if err != nil {
 			return err
 		}
-
 		defer rc.Close()
 
-		tmpfn := filepath.Join(dir, f.Name)
-		outFile, err := os.Create(tmpfn)
+		dest := filepath.Join(execDir, f.Name)
+		backup := dest + ".old"
+		os.Rename(dest, backup)
 		if err != nil {
 			return err
 		}
+		defer os.Remove(backup)
 
+		outFile, err := os.Create(dest)
+		if err != nil {
+			return err
+		}
 		defer outFile.Close()
 
 		_, err = io.Copy(outFile, rc)
 		if err != nil {
 			return err
 		}
-
 		outFile.Close()
+
 		items = append(items, Item{
-			source: tmpfn,
-			dest:   filepath.Join(execDir, f.Name),
-			backup: filepath.Join(execDir, f.Name) + ".old",
+			dest:   dest,
+			backup: backup,
 		})
 	}
 
-	backup := func() {
-		for _, item := range items {
-			os.Rename(item.dest, item.backup)
-		}
-	}
-
-	apply := func() error {
-		for _, item := range items {
-			err := os.Rename(item.source, item.dest)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	rollback := func() {
-		for _, item := range items {
-			os.Rename(item.backup, item.dest)
-		}
-	}
-
-	cleanup := func() {
-		for _, item := range items {
-			err = os.Remove(item.backup)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-		}
-	}
-
-	defer cleanup()
-
-	backup()
-	err = apply()
-	if err != nil {
-		rollback()
-		return err
-	}
-
+	items = nil
 	return nil
 }
-
 
 func getLatestRelease(client *github.Client) (*github.RepositoryRelease, error) {
 
