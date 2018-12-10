@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"cord.stool/compressor/zip"
+	"cord.stool/utils"
 
 	tomb "gopkg.in/tomb.v2"
 )
@@ -139,7 +140,7 @@ LOOP:
 				RawLength: fi.Size(),
 			}
 
-			hash, err = Md5(path)
+			hash, err = utils.Md5(path)
 			if err != nil {
 				return
 			}
@@ -164,7 +165,7 @@ LOOP:
 				ufi.ArchiveLength = fi.Size()
 
 			} else {
-				err = CopyFile(path, fullDst)
+				err = utils.CopyFile(path, fullDst)
 				if err != nil {
 					return
 				}
@@ -188,7 +189,7 @@ LOOP:
 
 func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result UpdateInfo, err error) {
 	result = UpdateInfo{}
-	files, err := GetAllFiles(inputDir)
+	files, err := utils.GetAllFiles(inputDir)
 	if err != nil {
 		return
 	}

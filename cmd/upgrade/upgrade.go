@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"path/filepath"
 	"os"
+	"time"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"archive/zip"
 	context2 "context"
 	"cord.stool/context"
+	"cord.stool/utils"
 	"github.com/urfave/cli"
 	"github.com/google/go-github/github"
 )
@@ -17,6 +19,7 @@ import (
 var args = struct {
 	Force bool
 	Check bool
+	FileList cli.StringSlice
 }{
 	Force: false,
 	Check: false,
@@ -44,6 +47,24 @@ func Register(ctx *context.StoolContext) {
 		},
 		Action: func(c *cli.Context) error {
 			return do(ctx, c)
+		},
+	}
+	ctx.App.Commands = append(ctx.App.Commands, cmd)
+
+	cmd = cli.Command{
+		Name:       "upgrade_complete",
+		HideHelp:   true,
+		Hidden:     true,
+
+		Flags: []cli.Flag{
+			cli.StringSliceFlag{
+				Name:  "file, f",
+				Value: &args.FileList,
+				Hidden: true,
+			},
+		},
+		Action: func(c *cli.Context) error {
+			return doComplete(ctx, c)
 		},
 	}
 	ctx.App.Commands = append(ctx.App.Commands, cmd)
@@ -120,6 +141,12 @@ func upgrade(client *github.Client, id int64) error {
 		dest   string
 		backup string
 	}
+	
+	var backups []string
+	complete := func() {
+		utils.CompleteUpgrade(backups)
+	}
+	defer complete()
 
 	var items []Item
 	rollback := func() {
@@ -145,11 +172,12 @@ func upgrade(client *github.Client, id int64) error {
 
 		dest := filepath.Join(execDir, f.Name)
 		backup := dest + ".old"
+
 		os.Rename(dest, backup)
 		if err != nil {
 			return err
 		}
-		defer os.Remove(backup)
+		backups = append(backups, backup)
 
 		outFile, err := os.Create(dest)
 		if err != nil {
@@ -211,3 +239,12 @@ func downloadLatestRelease(client *github.Client, id int64, pathfile string) err
 	return nil
 }
 
+func doComplete(ctx *context.StoolContext, c *cli.Context) error {
+	
+	time.Sleep(1 * time.Second)
+	
+	for _, f := range args.FileList {
+		os.Remove(f)
+	}
+	return nil
+}

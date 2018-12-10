@@ -10,8 +10,7 @@ import (
 
 	"net/textproto"
 
-	"cord.stool/updater"
-
+	"cord.stool/utils"
 	"github.com/jlaffaye/ftp"
 )
 
@@ -63,7 +62,7 @@ func UploadToFTP(ftpUrl, sourceDir string) (cerr error) {
 		close(stopCh)
 	}()
 
-	f, e := updater.EnumFilesRecursive(fullSourceDir, stopCh)
+	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
 	var relativePath string
 	var file *os.File
 

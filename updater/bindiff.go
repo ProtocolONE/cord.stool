@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"cord.stool/xdelta"
+	"cord.stool/utils"
 
 	"github.com/udhos/equalfile"
 )
@@ -23,7 +24,7 @@ func CreateBinDiff(SourceOldDir string, SourceNewDir string, OutputDiffDir strin
 
 	os.RemoveAll(OutputDiffDir)
 
-	f, e := EnumFilesRecursive(SourceNewDir, stopCh)
+	f, e := utils.EnumFilesRecursive(SourceNewDir, stopCh)
 
 	for pathNewFile := range f {
 		relativePath, err := filepath.Rel(SourceNewDir, pathNewFile)
