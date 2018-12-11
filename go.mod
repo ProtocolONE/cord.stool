@@ -2,6 +2,7 @@ module cord.stool
 
 require (
 	github.com/RoaringBitmap/roaring v0.4.16 // indirect
+	github.com/akamai/netstoragekit-golang v0.0.0-20170703043328-78536ade4f6d
 	github.com/akavel/rsrc v0.0.0-20170831122431-f6a15ece2cfd // indirect
 	github.com/anacrolix/dht v0.0.0-20181123025733-9b0a8e862ccc // indirect
 	github.com/anacrolix/go-libutp v0.0.0-20180808010927-aebbeb60ea05 // indirect
