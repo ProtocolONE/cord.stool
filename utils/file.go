@@ -1,4 +1,4 @@
-package updater
+package utils
 
 import (
 	"crypto/md5"
@@ -192,3 +192,4 @@ func FileCount(rootDir string) (res int, err error) {
 
 	return res, r
 }
+

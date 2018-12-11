@@ -27,9 +27,10 @@ var args = struct {
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        "torrent",
-		Usage:       "Create torrent",
-		Description: "Create torrent file",
+		Name:        	"torrent",
+		ShortName:		"t",
+		Usage:       	"Create torrent",
+		Description: 	"Create torrent file",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{

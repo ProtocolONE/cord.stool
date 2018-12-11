@@ -14,6 +14,8 @@ import (
 	// "cord.stool/updater"
 )
 
+var version = "develop"
+
 func main() {
 
 	// uiprogress.Start()            // start rendering
@@ -30,7 +32,7 @@ func main() {
 	// }
 
 	// return
-	ctx := context.NewContext()
+	ctx := context.NewContext(version)
 	cmd.RegisterCmdCommands(ctx)
 	err := ctx.Run(os.Args)
 	if err != nil {
