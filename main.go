@@ -12,42 +12,11 @@ import (
 	"cord.stool/context"
 	// "github.com/gosuri/uiprogress"
 	// "cord.stool/updater"
-	
-	//"github.com/akamai/netstoragekit-golang"
-	//"fmt"
 )
 
 var version = "develop"
 
 func main() {
-
-	/*nsHostname := "akamai.cdn.protocol.one"
-	nsKeyname  := "p1upload"
-	nsKey := "bSOmA4aHPYfWLd2uFgzohewFFhnE3rN7KaPfpv0z"
-	nsCpcode := "360949"
-  
-	ns := netstorage.NewNetstorage(nsHostname, nsKeyname, nsKey, false)
-  
-	localSource := "text.txt"
-	nsDestination := fmt.Sprintf("/%s/hello.txt", nsCpcode) // or "/%s/" is same. 
-  
-	res, body, err1 := ns.Upload(localSource, nsDestination)
-	if err1 != nil {
-		// Do something
-	}
-  
-	if res.StatusCode == 200 {
-		fmt.Printf(body)
-	}	
-
-	res, body, err1 = ns.Download(nsDestination, "D:\\Projects\\Syncopate\\sources\\ProtocolONE\\cord.stool\\text2.txt")
-	if err1 != nil {
-		// Do something
-	}
-
-	if res.StatusCode == 200 {
-		fmt.Printf(body)
-	}*/
 
 	// uiprogress.Start()            // start rendering
 	// bar := uiprogress.AddBar(100) // Add a new bar
