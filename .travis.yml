@@ -27,7 +27,8 @@ script:
 - travis_wait env GO111MODULE=on go test -v -race ./...
 
 before_deploy:
-- tar -zcf ${TRAVIS_BUILD_DIR}${REPO}-${BUILD_ENV}-${TRAVIS_TAG}-${TRAVIS_BUILD_NUMBER}.tar.gz cord.stool.exe
+#- tar -zcf ${TRAVIS_BUILD_DIR}${REPO}-${BUILD_ENV}-${TRAVIS_TAG}-${TRAVIS_BUILD_NUMBER}.tar.gz cord.stool.exe
+- zip ${TRAVIS_BUILD_DIR}${REPO}-${BUILD_ENV}-${TRAVIS_TAG}-${TRAVIS_BUILD_NUMBER}.tar.gz cord.stool.exe
 
 deploy:
   provider: releases
