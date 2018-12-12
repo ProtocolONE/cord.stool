@@ -36,7 +36,7 @@ deploy:
   draft: true
   api_key:
     secure: cY55nm6y+4C22dM6Si6e6soNTJStXax/DC8hRbmgi2KsZaxktqcQT1cxWD8wTR5P16JXFngHjMprK6mrQHGjz4B7JQFLmNmoGiE4QmiB0IRKeng3O/ViMhxJT/RpOPJCm0S9o94Z8iXLGoeBrd4auruaJ4LJ4qC+Ath6SVexbKJc+Ln0HYXDHvZvMANdR/GUHnbgqooZZieLsXbPngnM/mtLK7HRfQv1yRuYBmXLB9wyWMW3mWuttHrOPgojxdBlJlEahNdUP2iYg5/F+uAC8z1Rydh5F3r4LFkqK5uE0akrT2bHzPZ7OYBYhePQf/n/woFwBsfKsXhu714txgPPrKyJKzjKjw/F1S1nxNw6eSxl+lm1Ww4Wez8hbUUtaMpc7eDzV3/cEF+ajscU7GgeJRqAcTun0GsIjPttwF7fQI+izzbtcTpf9b9q1ExbUa+C6CsUl3yD/OhTYTWi84DO1UDhtO5Q0tcQ45797/evZFPIEwrBYtZoE+bdNCAU+ne68+vrj6BR3r24T5/p9IGRJGx6ABP1fmHEmBlw/M6n5COQoN8E1fsn1/fZ6Cwycg3IDRumGQVDuy1kM/zrabFGFybiZXugn6uMSqgf60fCEYezNSIbAV58X0PKgf6o7jO6nVTzO6a9GhyxU5nOD3kH4zpcMolHqoYiBKbOngYrRAs=
-  file: ${TRAVIS_BUILD_DIR}${REPO}-${BUILD_ENV}-${TRAVIS_TAG}-${TRAVIS_BUILD_NUMBER}.tar.gz
+  file: ${TRAVIS_BUILD_DIR}${REPO}-${BUILD_ENV}-${TRAVIS_TAG}-${TRAVIS_BUILD_NUMBER}.tar.gz #
   on:
     tags: true
     repo: ProtocolONE/cord.stool
