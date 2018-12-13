@@ -16,22 +16,6 @@ var args = struct {
 	s3Args s3.Args
 }{}
 
-/*
--aws-region eu-west-3
--aws-credentials D:\\Data\\.aws\\credentials
--aws-profile=
-
--aws-id AKIAJVKPZUMLZD3GDVXA
--aws-key 5gPGR8wap3vKxLSwmobyTpfz5SenT8fL/tU9NIeN
--aws-token=
-
--s3-bucket protocol-one-test
-
-eu-west-3 D:\\Data\\.aws\\credentials protocol-one-test
-eu-west-3 AKIAJVKPZUMLZD3GDVXA 5gPGR8wap3vKxLSwmobyTpfz5SenT8fL/tU9NIeN protocol-one-test
-
-*/
-
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
 		Name:        	"push",
