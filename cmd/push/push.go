@@ -5,6 +5,7 @@ import (
 
 	"cord.stool/context"
 	"cord.stool/upload/ftp"
+	"cord.stool/upload/s3"
 
 	"github.com/urfave/cli"
 )
@@ -12,7 +13,24 @@ import (
 var args = struct {
 	FtpUrl    string
 	SourceDir string
+	s3Args s3.Args
 }{}
+
+/*
+-aws-region eu-west-3
+-aws-credentials D:\\Data\\.aws\\credentials
+-aws-profile=
+
+-aws-id AKIAJVKPZUMLZD3GDVXA
+-aws-key 5gPGR8wap3vKxLSwmobyTpfz5SenT8fL/tU9NIeN
+-aws-token=
+
+-s3-bucket protocol-one-test
+
+eu-west-3 D:\\Data\\.aws\\credentials protocol-one-test
+eu-west-3 AKIAJVKPZUMLZD3GDVXA 5gPGR8wap3vKxLSwmobyTpfz5SenT8fL/tU9NIeN protocol-one-test
+
+*/
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
@@ -34,6 +52,48 @@ func Register(ctx *context.StoolContext) {
 				Value:       "",
 				Destination: &args.FtpUrl,
 			},
+			cli.StringFlag{
+				Name:        "aws-region",
+				Usage:       "AWS region name",
+				Value:       "",
+				Destination: &args.s3Args.AWSRegion,
+			},
+			cli.StringFlag{
+				Name:        "aws-credentials",
+				Usage:       "Path to AWS credentials file",
+				Value:       "",
+				Destination: &args.s3Args.AWSCredentials,
+			},
+			cli.StringFlag{
+				Name:        "aws-profile",
+				Usage:       "AWS profile name",
+				Value:       "",
+				Destination: &args.s3Args.AWSProfile,
+			},
+			cli.StringFlag{
+				Name:        "aws-id",
+				Usage:       "AWS access key id",
+				Value:       "",
+				Destination: &args.s3Args.AWSID,
+			},
+			cli.StringFlag{
+				Name:        "aws-key",
+				Usage:       "AWS secret access key",
+				Value:       "",
+				Destination: &args.s3Args.AWSKey,
+			},
+			cli.StringFlag{
+				Name:        "aws-token",
+				Usage:       "AWS session token",
+				Value:       "",
+				Destination: &args.s3Args.AWSToken,
+			},
+			cli.StringFlag{
+				Name:        "s3-bucket",
+				Usage:       "Amazon S3 bucket name",
+				Value:       "",
+				Destination: &args.s3Args.S3Bucket,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			return do(ctx, c)
@@ -43,9 +103,29 @@ func Register(ctx *context.StoolContext) {
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	if args.FtpUrl == "" {
-		return fmt.Errorf("ftp url required")
+	
+	if args.SourceDir == "" {
+		return fmt.Errorf("Path to game is required")
 	}
 
-	return ftp.UploadToFTP(args.FtpUrl, args.SourceDir)
+	if args.FtpUrl == "" && args.s3Args.S3Bucket == "" {
+		return fmt.Errorf("Specify one of following flags: ftp, s3-bucket")
+	}
+	
+	if args.FtpUrl != "" {
+		err := ftp.UploadToFTP(args.FtpUrl, args.SourceDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	if args.s3Args.S3Bucket != "" {
+		args.s3Args.SourceDir = args.SourceDir
+		err := s3.UploadToS3(args.s3Args)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

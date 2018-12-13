@@ -144,7 +144,6 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 			fmt.Printf("The version %s is not found\n", args.version)
 			return nil
 		}
-		//release2 = *release
 
 	} else {
 
@@ -159,7 +158,6 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 			fmt.Println("There are no any new version available")
 			return nil
 		}
-		//release2 = *release
 	}
 
 	fmt.Println("Current version is", ctx.Version)
