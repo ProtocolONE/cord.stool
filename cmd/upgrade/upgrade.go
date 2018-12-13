@@ -101,14 +101,24 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 			return nil
 		}
 
-		if len(releases) == 0 {
-			fmt.Println("Found one new version: ")
-		} else {
-			fmt.Printf("Found %d new versions:\n", len(releases))
-		}
+		var versions []string
 
 		for _, release := range releases {
-			fmt.Println(*release.TagName)
+			if !*release.Prerelease {
+				versions = append(versions, *release.TagName)
+			}
+		}
+
+		if len(versions) == 1 {
+			fmt.Println("Found one new version: ")
+		} else if len(versions) > 1 {
+			fmt.Printf("Found %d new versions:\n", len(releases))
+		} else {
+			fmt.Println("There are no any new version available")
+		}
+
+		for _, versions := range versions {
+			fmt.Println(versions)
 		}
 		return nil
 	}
@@ -338,7 +348,7 @@ func getRelease(client *github.Client, ver string) (*github.RepositoryRelease, e
 	}
 
 	for _, release := range releases {
-		if ver == *release.TagName && len(release.Assets) > 0 { 
+		if ver == *release.TagName && len(release.Assets) > 0 && !*release.Prerelease { 
 			return release, nil
 		}
 	}
