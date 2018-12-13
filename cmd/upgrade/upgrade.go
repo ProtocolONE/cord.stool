@@ -2,6 +2,8 @@ package upgrade
 
 import (
 	"fmt"
+	"strings"
+	"strconv"
 	"path/filepath"
 	"os"
 	"time"
@@ -17,12 +19,15 @@ import (
 )
 
 var args = struct {
-	Force bool
-	Check bool
-	FileList cli.StringSlice
+	force bool
+	check bool
+	list bool
+	version string
+	fileList cli.StringSlice
 }{
-	Force: false,
-	Check: false,
+	force: false,
+	check: false,
+	list: false,
 }
 
 func Register(ctx *context.StoolContext) {
@@ -37,12 +42,23 @@ func Register(ctx *context.StoolContext) {
 			cli.BoolFlag{
 				Name:        "force, f",
 				Usage:       "Force to upgrade self-built version",
-				Destination: &args.Force,
+				Destination: &args.force,
 			},
 			cli.BoolFlag{
 				Name:        "check, c",
 				Usage:       "Checking for new version",
-				Destination: &args.Check,
+				Destination: &args.check,
+			},
+			cli.BoolFlag{
+				Name:        "list, l",
+				Usage:       "Show all new available versions",
+				Destination: &args.list,
+			},
+			cli.StringFlag{
+				Name:        "ver, v",
+				Usage:       "Upgrades application to this version",
+				Value:       "",
+				Destination: &args.version,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -59,7 +75,7 @@ func Register(ctx *context.StoolContext) {
 		Flags: []cli.Flag{
 			cli.StringSliceFlag{
 				Name:  "file, f",
-				Value: &args.FileList,
+				Value: &args.fileList,
 				Hidden: true,
 			},
 		},
@@ -73,36 +89,87 @@ func Register(ctx *context.StoolContext) {
 func do(ctx *context.StoolContext, c *cli.Context) error {
 
 	client := github.NewClient(nil)
-	release, err := getLatestRelease(client)
-	if err != nil {
-		return err
+
+	if args.list {
+		releases, err := getReleaseList(client)
+		if err != nil {
+			return err
+		}
+
+		if releases == nil || len(releases) == 0 {
+			fmt.Println("There are no any new version available")
+			return nil
+		}
+
+		if len(releases) == 0 {
+			fmt.Println("Found one new version: ")
+		} else {
+			fmt.Printf("Found %d new versions:\n", len(releases))
+		}
+
+		for _, release := range releases {
+			fmt.Println(*release.TagName)
+		}
+		return nil
 	}
 
-	needUpgrade := ctx.Version != *release.TagName
+	var release *github.RepositoryRelease
+	var err error
 
-	if (release != nil) {
-		fmt.Println("There is a new version available:", *release.TagName)
+	if args.version != "" {
+
+		if compareVersion(ctx.Version, args.version) < 0 {
+			fmt.Printf("Current version %s is newer version than %s\n", ctx.Version, args.version)
+			return nil
+		}
+
+		release, err = getRelease(client, args.version)
+		if err != nil {
+			return err
+		}
+
+		if release != nil && compareVersion(args.version, *release.TagName) == 0 {
+			fmt.Printf("Found version %s\n", *release.TagName)
+		} else {
+			fmt.Printf("The version %s is not found\n", args.version)
+			return nil
+		}
+		//release2 = *release
+
 	} else {
-		fmt.Println("There are no any new version available")
-		return nil
+
+		release, err = getLatestRelease(client)
+		if err != nil {
+			return err
+		}
+
+		if (release != nil) {
+			fmt.Println("There is a new version available:", *release.TagName)
+		} else {
+			fmt.Println("There are no any new version available")
+			return nil
+		}
+		//release2 = *release
 	}
 
 	fmt.Println("Current version is", ctx.Version)
 
+	needUpgrade := compareVersion(ctx.Version, *release.TagName) > 0
 	if !needUpgrade {
 		fmt.Println("The application is up-to-date")
 		return nil
 	}
 
-	if (args.Check) {
+	if (args.check) {
 		return nil
 	}
 	
-	if ctx.Version == "" || ctx.Version == "develop" && !args.Force {
+	if ctx.Version == "" || ctx.Version == "develop" && !args.force {
 		fmt.Println("Refusing to upgrade self-built application without --force")
 		return nil
 	}
 
+	fmt.Printf("Upgrading application to %s version\n", *release.TagName)
 	err = upgrade(client, *release.Assets[0].ID)
 	if err != nil {
 		return err
@@ -215,6 +282,81 @@ func getLatestRelease(client *github.Client) (*github.RepositoryRelease, error) 
 	return release, nil
 }
 
+func compareVersion(ver1 string, ver2 string) int {
+	
+	v1 := strings.Split(ver1, ".")
+	v2 := strings.Split(ver2, ".")
+
+	v10, v11, v12, v20, v21, v22 := 0, 0, 0, 0, 0, 0
+
+	if len(v1) >= 1 {
+		v10, _ = strconv.Atoi(v1[0])
+		if len(v1) >= 2 {
+			v11, _ = strconv.Atoi(v1[1])
+			if len(v1) >= 3 {
+				v12, _ = strconv.Atoi(v1[2])
+			}
+		}
+	}
+
+	if len(v2) >= 1 {
+		v20, _ = strconv.Atoi(v2[0])
+		if len(v2) >= 2 {
+			v21, _ = strconv.Atoi(v2[1])
+			if len(v2) >= 3 {
+				v22, _ = strconv.Atoi(v2[2])
+			}
+		}
+	}
+
+	if v10 > v20 {
+		return -1
+	} else if v10 < v20 {
+		return 1
+	} else if v11 > v21 {
+		return -1
+	} else if v11 < v21 {
+		return 1
+	} else if v12 > v22 {
+		return -1
+	} else if v12 < v22 {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+func getRelease(client *github.Client, ver string) (*github.RepositoryRelease, error) {
+
+	releases, err := getReleaseList(client)
+	if err != nil {
+		return nil, err
+	}
+
+	if releases == nil || len(releases) == 0 {
+		return nil, nil
+	}
+
+	for _, release := range releases {
+		if ver == *release.TagName && len(release.Assets) > 0 { 
+			return release, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func getReleaseList(client *github.Client) ([]*github.RepositoryRelease, error) {
+
+	opt := &github.ListOptions{Page: 1, PerPage: 20}
+	releases, resp, err := client.Repositories.ListReleases(context2.Background(), "ProtocolONE", "cord.stool", opt)
+	if err != nil {
+		return nil, fmt.Errorf("Repositories.ListReleases returned error: %v\n%v", err, resp.Body)
+	}
+
+	return releases, nil
+}
+
 func downloadLatestRelease(client *github.Client, id int64, pathfile string) error {
 
 	_, redir, err := client.Repositories.DownloadReleaseAsset(context2.Background(), "ProtocolONE", "cord.stool", id)
@@ -243,7 +385,7 @@ func doComplete(ctx *context.StoolContext, c *cli.Context) error {
 	
 	time.Sleep(1 * time.Second)
 	
-	for _, f := range args.FileList {
+	for _, f := range args.fileList {
 		os.Remove(f)
 	}
 	return nil
