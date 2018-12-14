@@ -78,6 +78,12 @@ func Register(ctx *context.StoolContext) {
 				Value:       "",
 				Destination: &args.s3Args.S3Bucket,
 			},
+			cli.StringFlag{
+				Name:        "s3-bucket",
+				Usage:       "Amazon S3 bucket name",
+				Value:       "",
+				Destination: &args.s3Args.S3Bucket,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			return do(ctx, c)
