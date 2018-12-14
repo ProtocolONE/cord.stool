@@ -6,6 +6,7 @@ import (
 	"cord.stool/context"
 	"cord.stool/upload/ftp"
 	"cord.stool/upload/s3"
+	"cord.stool/upload/akamai"
 
 	"github.com/urfave/cli"
 )
@@ -13,7 +14,9 @@ import (
 var args = struct {
 	FtpUrl    string
 	SourceDir string
+	OutputDir string
 	s3Args s3.Args
+	akmArgs akamai.Args
 }{}
 
 func Register(ctx *context.StoolContext) {
@@ -29,6 +32,12 @@ func Register(ctx *context.StoolContext) {
 				Usage:       "Path to game",
 				Value:       "",
 				Destination: &args.SourceDir,
+			},
+			cli.StringFlag{
+				Name:        "output, o",
+				Usage:       "Path to upload",
+				Value:       "",
+				Destination: &args.OutputDir,
 			},
 			cli.StringFlag{
 				Name:        "ftp",
@@ -79,10 +88,28 @@ func Register(ctx *context.StoolContext) {
 				Destination: &args.s3Args.S3Bucket,
 			},
 			cli.StringFlag{
-				Name:        "s3-bucket",
-				Usage:       "Amazon S3 bucket name",
+				Name:        "akm-hostname",
+				Usage:       "Akamai hostname",
 				Value:       "",
-				Destination: &args.s3Args.S3Bucket,
+				Destination: &args.akmArgs.Hostname,
+			},
+			cli.StringFlag{
+				Name:        "akm-keyname",
+				Usage:       "Akamai keyname",
+				Value:       "",
+				Destination: &args.akmArgs.Keyname,
+			},
+			cli.StringFlag{
+				Name:        "akm-key",
+				Usage:       "Akamai key",
+				Value:       "",
+				Destination: &args.akmArgs.Key,
+			},
+			cli.StringFlag{
+				Name:        "akm-code",
+				Usage:       "Akamai code",
+				Value:       "",
+				Destination: &args.akmArgs.Code,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -98,8 +125,8 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Path to game is required")
 	}
 
-	if args.FtpUrl == "" && args.s3Args.S3Bucket == "" {
-		return fmt.Errorf("Specify one of following flags: ftp, s3-bucket")
+	if args.FtpUrl == "" && args.s3Args.S3Bucket == "" && args.akmArgs.Hostname == "" {
+		return fmt.Errorf("Specify one of following flags: ftp, s3-bucket, akm-hostname")
 	}
 	
 	if args.FtpUrl != "" {
@@ -111,7 +138,17 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 
 	if args.s3Args.S3Bucket != "" {
 		args.s3Args.SourceDir = args.SourceDir
-		err := s3.UploadToS3(args.s3Args)
+		args.s3Args.OutputDir = args.OutputDir
+		err := s3.Upload(args.s3Args)
+		if err != nil {
+			return err
+		}
+	}
+
+	if args.akmArgs.Hostname != "" {
+		args.akmArgs.SourceDir = args.SourceDir
+		args.akmArgs.OutputDir = args.OutputDir
+		err := akamai.Upload(args.akmArgs)
 		if err != nil {
 			return err
 		}

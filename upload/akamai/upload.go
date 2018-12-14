@@ -1,0 +1,128 @@
+package akamai
+
+import (
+	"errors"
+	"fmt"
+	"net/textproto"
+	"path/filepath"
+	"strings"
+
+	"cord.stool/utils"
+
+	"github.com/akamai/netstoragekit-golang"
+)
+
+type Args = struct {
+	SourceDir string
+	OutputDir string
+	Hostname  string
+	Keyname   string
+	Key       string
+	Code      string
+}
+
+func Upload(args Args) error {
+
+	fmt.Println("Upload to Akamai CDN ...")
+
+	fullSourceDir, err := filepath.Abs(args.SourceDir)
+	if err != nil {
+		return err
+	}
+
+	ns := netstorage.NewNetstorage(args.Hostname, args.Keyname, args.Key, false)
+
+	rootPath := fmt.Sprintf("/%s/", args.Code)
+	if args.OutputDir != "" {
+		path := strings.Replace(args.OutputDir, "\\", "/", -1)
+		err = mkdirRecursive(ns, rootPath, path)
+		if err != nil {
+			return err
+		}
+	}
+
+	stopCh := make(chan struct{})
+	defer func() {
+		select {
+		case stopCh <- struct{}{}:
+		default:
+		}
+
+		close(stopCh)
+	}()
+
+	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
+
+	for path := range f {
+
+		relativePath, err := filepath.Rel(fullSourceDir, path)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Uploading file:", path)
+
+		destPath := filepath.Join(rootPath, args.OutputDir)
+		destPath = filepath.Join(destPath, relativePath)
+		destPath = strings.Replace(destPath, "\\", "/", -1)
+
+		RootDir := filepath.Join(rootPath, args.OutputDir)
+		RootDir = strings.Replace(RootDir, "\\", "/", -1)
+		destDir, _ := filepath.Split(relativePath)
+		destDir = strings.Replace(destDir, "\\", "/", -1)
+
+		if destDir != "" {
+			err := mkdirRecursive(ns, RootDir, destDir)
+			if err != nil {
+				return err
+			}
+		}
+
+		res, _, err := ns.Upload(path, destPath)
+		if err != nil {
+			return err
+		}
+		if res.StatusCode != 200 {
+			return errors.New("Akamai Upload failed")
+		}
+	}
+
+	err = <-e
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func mkdirRecursive(ns *netstorage.Netstorage, root string, dir string) error {
+	dir = filepath.ToSlash(dir)
+	dirs := strings.Split(dir, "/")
+
+	tmpDir := ""
+
+	for _, d := range dirs {
+		if d == "" {
+			continue
+		}
+
+		tmpDir += d + "/"
+
+		path := filepath.Join(root , tmpDir)
+		path = strings.Replace(path, "\\", "/", -1)
+
+		res, _, err := ns.Mkdir(path)
+		if err != nil {
+			code := err.(*textproto.Error).Code
+			if code == 550 {
+				continue
+			}
+			return err
+		}
+		if res.StatusCode != 200 {
+			return errors.New("Akamai Mkdir failed")
+		}
+	}
+
+	return nil
+}
