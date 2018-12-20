@@ -5,6 +5,7 @@ import (
 
 	"cord.stool/context"
 	"cord.stool/upload/ftp"
+	"cord.stool/upload/sftp"
 	"cord.stool/upload/s3"
 	"cord.stool/upload/akamai"
 
@@ -13,6 +14,7 @@ import (
 
 var args = struct {
 	FtpUrl    string
+	SftpUrl    string
 	SourceDir string
 	OutputDir string
 	s3Args s3.Args
@@ -41,9 +43,15 @@ func Register(ctx *context.StoolContext) {
 			},
 			cli.StringFlag{
 				Name:        "ftp",
-				Usage:       "Full ftp url path. Example ftp://user@password:host:port/upload/directory",
+				Usage:       "Full ftp url path. Example ftp://user:password@host:port/upload/directory",
 				Value:       "",
 				Destination: &args.FtpUrl,
+			},
+			cli.StringFlag{
+				Name:        "sftp",
+				Usage:       "Full sftp url path. Example sftp://user:password@host:port/upload/directory",
+				Value:       "",
+				Destination: &args.SftpUrl,
 			},
 			cli.StringFlag{
 				Name:        "aws-region",
@@ -125,12 +133,19 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Path to game is required")
 	}
 
-	if args.FtpUrl == "" && args.s3Args.S3Bucket == "" && args.akmArgs.Hostname == "" {
-		return fmt.Errorf("Specify one of following flags: ftp, s3-bucket, akm-hostname")
+	if args.FtpUrl == "" && args.SftpUrl == "" && args.s3Args.S3Bucket == "" && args.akmArgs.Hostname == "" {
+		return fmt.Errorf("Specify one of following flags: ftp, sftp, s3-bucket, akm-hostname")
 	}
 	
 	if args.FtpUrl != "" {
 		err := ftp.UploadToFTP(args.FtpUrl, args.SourceDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	if args.SftpUrl != "" {
+		err := sftp.Upload(args.SftpUrl, args.SourceDir)
 		if err != nil {
 			return err
 		}
