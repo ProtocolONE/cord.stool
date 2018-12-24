@@ -9,6 +9,7 @@ import (
 
 	"cord.stool/utils"
 
+	"github.com/gosuri/uiprogress"
 	"github.com/akamai/netstoragekit-golang"
 )
 
@@ -23,12 +24,24 @@ type Args = struct {
 
 func Upload(args Args) error {
 
-	fmt.Println("Upload to Akamai CDN ...")
+	fmt.Println("Uploading to Akamai CDN ...")
+	uiprogress.Start()
 
 	fullSourceDir, err := filepath.Abs(args.SourceDir)
 	if err != nil {
 		return err
 	}
+
+	fc, err := utils.FileCount(fullSourceDir)
+	if err != nil {
+		return err
+	}
+
+	uiprogress.Start()
+	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
+		return "Total progress"
+	})
 
 	ns := netstorage.NewNetstorage(args.Hostname, args.Keyname, args.Key, false)
 
@@ -53,14 +66,32 @@ func Upload(args Args) error {
 
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
 
+	bar := uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
+
+	var curTitle string
+	var title *string
+	title = &curTitle
+
+	bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return *title
+	})
+
+	barTotal.Incr();
+
 	for path := range f {
+
+		_, fn := filepath.Split(path)
+		curTitle := fmt.Sprint("Uploading file: ", fn)
+		title = &curTitle
+
+		barTotal.Incr();
+		bar.Set(0);
+		bar.Incr();
 
 		relativePath, err := filepath.Rel(fullSourceDir, path)
 		if err != nil {
 			return err
 		}
-
-		fmt.Println("Uploading file:", path)
 
 		destPath := filepath.Join(rootPath, args.OutputDir)
 		destPath = filepath.Join(destPath, relativePath)
@@ -78,19 +109,30 @@ func Upload(args Args) error {
 			}
 		}
 
+		bar.Incr();
+
 		res, _, err := ns.Upload(path, destPath)
 		if err != nil {
 			return err
 		}
+
 		if res.StatusCode != 200 {
 			return errors.New("Akamai Upload failed")
 		}
+
+		bar.Incr();
 	}
 
 	err = <-e
 	if err != nil {
 		return err
 	}
+
+	curTitle = "Uploadind files is done"
+	title = &curTitle
+
+	uiprogress.Stop()
+	fmt.Println("Upload completed.")
 
 	return nil
 }

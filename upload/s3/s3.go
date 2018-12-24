@@ -8,11 +8,14 @@ import (
 	"path/filepath"
 
 	"cord.stool/utils"
+	"github.com/gosuri/uiprogress"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
+
+var _bar *uiprogress.Bar
 
 type Args = struct {
 	SourceDir string
@@ -34,12 +37,23 @@ type enumDirCallbackS3 struct {
 // Upload ...
 func Upload(args Args) error {
 
-	fmt.Println("Upload to Amazon S3 Bucket ...")
-
+	fmt.Println("Uploading to Amazon S3 Bucket ...")
+	
 	fullSourceDir, err := filepath.Abs(args.SourceDir)
 	if err != nil {
 		return err
 	}
+
+	fc, err := utils.FileCount(fullSourceDir)
+	if err != nil {
+		return err
+	}
+
+	uiprogress.Start()
+	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
+		return "Total progress"
+	})
 
 	sess, err := initAWS(args)
 	if err != nil {
@@ -57,8 +71,27 @@ func Upload(args Args) error {
 	}()
 
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
-	
+
+	_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
+
+	var curTitle string
+	var title *string
+	title = &curTitle
+
+	_bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return *title
+	})
+
+	barTotal.Incr();
+
 	for path := range f {
+
+		_, fn := filepath.Split(path)
+		curTitle := fmt.Sprint("Uploading file: ", fn)
+		title = &curTitle
+
+		barTotal.Incr();
+		_bar.Set(0);
 
 		err := uploadFile(sess, args.OutputDir, path, fullSourceDir, args.S3Bucket)
 		if err != nil {
@@ -71,6 +104,12 @@ func Upload(args Args) error {
 		return err
 	}
 
+	curTitle = "Uploadind files is done"
+	title = &curTitle
+	uiprogress.Stop()
+
+	fmt.Println("Upload completed.")
+	
 	return nil
 }
 
@@ -102,14 +141,15 @@ func initAWS(args Args) (*session.Session, error) {
 
 func uploadFile(sess *session.Session, root string, path string, source string, bucket string) error {
 
-	fmt.Println("Uploading file:", path)
+	_bar.Incr();
 
 	file, err := os.Open(path)
 	if err != nil {
 		return errors.New("Cannot open file: " + err.Error())
 	}
-
 	defer file.Close()
+
+	_bar.Incr();
 
 	fname := path[len(source)+1 : len(path)]
 	fname = filepath.Join(root, fname)
@@ -125,6 +165,8 @@ func uploadFile(sess *session.Session, root string, path string, source string, 
 	if err != nil {
 		return errors.New("Cannot upload file: " + err.Error())
 	}
+
+	_bar.Incr();
 
 	return nil
 }

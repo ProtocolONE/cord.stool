@@ -138,7 +138,7 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 	}
 	
 	if args.FtpUrl != "" {
-		err := ftp.UploadToFTP(args.FtpUrl, args.SourceDir)
+		err := ftp.Upload(args.FtpUrl, args.SourceDir)
 		if err != nil {
 			return err
 		}

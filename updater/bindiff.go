@@ -2,15 +2,46 @@ package updater
 
 import (
 	"os"
+	"fmt"
 	"path/filepath"
 
 	"cord.stool/xdelta"
 	"cord.stool/utils"
 
+	"github.com/gosuri/uiprogress"
 	"github.com/udhos/equalfile"
 )
 
-func CreateBinDiff(SourceOldDir string, SourceNewDir string, OutputDiffDir string) error {
+func CreateBinDiff(sourceOldDir string, sourceNewDir string, outputDiffDir string) error {
+
+	fmt.Println("Making patch ...")
+	uiprogress.Start()
+
+	fullSourceOldDir, err := filepath.Abs(sourceOldDir)
+	if err != nil {
+		return err
+	}
+
+	fullSourceNewDir, err := filepath.Abs(sourceNewDir)
+	if err != nil {
+		return err
+	}
+
+	fullOutputDiffDir, err := filepath.Abs(outputDiffDir)
+	if err != nil {
+		return err
+	}
+
+	fc, err := utils.FileCount(fullSourceNewDir)
+	if err != nil {
+		return err
+	}
+
+	uiprogress.Start()
+	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
+		return "Total progress"
+	})
 
 	stopCh := make(chan struct{})
 	defer func() {
@@ -22,18 +53,39 @@ func CreateBinDiff(SourceOldDir string, SourceNewDir string, OutputDiffDir strin
 		close(stopCh)
 	}()
 
-	os.RemoveAll(OutputDiffDir)
+	os.RemoveAll(fullOutputDiffDir)
 
-	f, e := utils.EnumFilesRecursive(SourceNewDir, stopCh)
+	f, e := utils.EnumFilesRecursive(fullSourceNewDir, stopCh)
+
+	bar := uiprogress.AddBar(4).AppendCompleted().PrependElapsed()
+
+	var curTitle string
+	var title *string
+	title = &curTitle
+
+	bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return *title
+	})
+
+	barTotal.Incr();
 
 	for pathNewFile := range f {
-		relativePath, err := filepath.Rel(SourceNewDir, pathNewFile)
+
+		_, fn := filepath.Split(pathNewFile)
+		curTitle := fmt.Sprint("Patching file: ", fn)
+		title = &curTitle
+
+		barTotal.Incr();
+		bar.Set(0);
+		bar.Incr();
+
+		relativePath, err := filepath.Rel(fullSourceNewDir, pathNewFile)
 		if err != nil {
 			return err
 		}
 
-		pathOldFile := filepath.Join(SourceOldDir, relativePath)
-		pathDiffFile := filepath.Join(OutputDiffDir, relativePath)
+		pathOldFile := filepath.Join(fullSourceOldDir, relativePath)
+		pathDiffFile := filepath.Join(fullOutputDiffDir, relativePath)
 		pathDiffFile += ".diff"
 
 		if _, err := os.Stat(pathOldFile); os.IsNotExist(err) { // the file is not exist
@@ -49,9 +101,12 @@ func CreateBinDiff(SourceOldDir string, SourceNewDir string, OutputDiffDir strin
 			}
 
 			if equal {
+				bar.Set(4);
 				continue
 			}
 		}
+
+		bar.Incr();
 
 		pathDiff, _ := filepath.Split(pathDiffFile)
 		if _, err := os.Stat(pathDiff); os.IsNotExist(err) {
@@ -60,16 +115,27 @@ func CreateBinDiff(SourceOldDir string, SourceNewDir string, OutputDiffDir strin
 				return err
 			}
 		}
+
+		bar.Incr();
+
 		err = xdelta.EncodeDiff(pathOldFile, pathNewFile, pathDiffFile)
 		if err != nil {
 			return err
 		}
+
+		bar.Incr();
 	}
 
-	err := <-e
+	err = <-e
 	if err != nil {
 		return err
 	}
+
+	curTitle = "Patching files is done"
+	title = &curTitle
+
+	uiprogress.Stop()
+	fmt.Println("Patch completed.")
 
 	return nil
 }
