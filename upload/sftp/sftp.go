@@ -109,8 +109,7 @@ func Upload(sftpUrl, sourceDir string) error {
 	for path := range f {
 
 		_, fn := filepath.Split(path)
-		curTitle := fmt.Sprint("Uploading file: ", fn)
-		title = &curTitle
+		curTitle = fmt.Sprint("Uploading file: ", fn)
 
 		barTotal.Incr();
 		bar.Set(0);
@@ -161,8 +160,7 @@ func Upload(sftpUrl, sourceDir string) error {
 		return err
 	}
 
-	curTitle = "Uploadind files is done"
-	title = &curTitle
+	curTitle = "Finished"
 
 	uiprogress.Stop()
 	fmt.Println("Upload completed.")

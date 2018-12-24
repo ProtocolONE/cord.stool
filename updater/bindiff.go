@@ -72,8 +72,7 @@ func CreateBinDiff(sourceOldDir string, sourceNewDir string, outputDiffDir strin
 	for pathNewFile := range f {
 
 		_, fn := filepath.Split(pathNewFile)
-		curTitle := fmt.Sprint("Patching file: ", fn)
-		title = &curTitle
+		curTitle = fmt.Sprint("Patching file: ", fn)
 
 		barTotal.Incr();
 		bar.Set(0);
@@ -131,8 +130,7 @@ func CreateBinDiff(sourceOldDir string, sourceNewDir string, outputDiffDir strin
 		return err
 	}
 
-	curTitle = "Patching files is done"
-	title = &curTitle
+	curTitle = "Finished"
 
 	uiprogress.Stop()
 	fmt.Println("Patch completed.")
