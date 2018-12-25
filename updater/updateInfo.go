@@ -12,6 +12,9 @@ import (
 	"cord.stool/compressor/zip"
 	"cord.stool/utils"
 
+	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
+
 	tomb "gopkg.in/tomb.v2"
 )
 
@@ -35,6 +38,9 @@ type FileInfo struct {
 	ArchiveLength int64    `xml:"archiveLength,string,attr"`
 	Check         bool     `xml:"check,string,attr"`
 }
+
+var progrssBar *uiprogress.Bar
+var curProgressTitle string
 
 func (s UpdateInfo) Pack() (string, error) {
 	var b bytes.Buffer
@@ -123,6 +129,10 @@ LOOP:
 				break LOOP
 			}
 
+			_, fn := filepath.Split(path)
+			curProgressTitle = fmt.Sprint("Calcing hash for ", fn)
+			progrssBar.Incr();
+		
 			relativePath, err = filepath.Rel(sourceDir, path)
 
 			if err != nil {
@@ -150,6 +160,10 @@ LOOP:
 			fullDst := filepath.Join(targetDir, relativePath)
 
 			if useArchive {
+
+				progrssBar.Incr();
+				curProgressTitle = fmt.Sprint("Compressing file: ", fn)
+
 				fullDst += ".zip"
 
 				err = zip.CompressFile(path, fullDst)
@@ -173,6 +187,8 @@ LOOP:
 				ufi.ArchiveLength = ufi.RawLength
 			}
 
+			progrssBar.Incr();
+
 		case <-stopCh:
 			break LOOP
 		}
@@ -188,11 +204,30 @@ LOOP:
 }
 
 func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result UpdateInfo, err error) {
+
+	fmt.Println("Creating update ...")
+
 	result = UpdateInfo{}
 	files, err := utils.GetAllFiles(inputDir)
 	if err != nil {
 		return
 	}
+
+	pbIndex := 2
+	if useArchive {
+		pbIndex++
+	}
+
+	uiprogress.Start()
+	progrssBar = uiprogress.AddBar(len(files) * pbIndex + 3).AppendCompleted().PrependElapsed()
+ 
+	var title *string
+	title = &curProgressTitle
+	curProgressTitle = "Preparing ..."
+
+	progrssBar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(*title, 35)
+	})
 
 	var t tomb.Tomb
 
@@ -214,6 +249,8 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return nil
 	})
 
+	progrssBar.Incr();
+
 	wg := &sync.WaitGroup{}
 	fiCh := make(chan FileInfo)
 
@@ -233,6 +270,9 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		wg.Wait()
 		close(fiCh)
 	}()
+
+	curProgressTitle = "Createing update.crc ..."
+	title = &curProgressTitle
 
 	t.Go(func() error {
 		res := make([]FileInfo, 0, 100)
@@ -260,6 +300,8 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return
 	}
 
+	progrssBar.Incr();
+
 	crcPath := filepath.Join(outputDir, "update.crc")
 	crcPathArc := filepath.Join(outputDir, "update.crc.zip")
 	err = result.Save(crcPath)
@@ -267,8 +309,20 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return
 	}
 
+	progrssBar.Incr();
+	curProgressTitle = "Compressing update.crc ..."
+	title = &curProgressTitle
+
 	zip.CompressFile(crcPath, crcPathArc)
 	err = os.Remove(crcPath)
+
+	progrssBar.Incr();
+
+	curProgressTitle = "Finished"
+	title = &curProgressTitle
+	uiprogress.Stop()
+
+	fmt.Println("Creating is completed.")
 
 	return result, err
 }

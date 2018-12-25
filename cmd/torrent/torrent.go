@@ -15,6 +15,8 @@ import (
 	"github.com/anacrolix/missinggo/slices"
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/anacrolix/torrent/metainfo"
+	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 )
 
 var args = struct {
@@ -24,6 +26,9 @@ var args = struct {
 	AnnounceList cli.StringSlice
 	PieceLength  int64
 }{}
+
+var progrssBar *uiprogress.Bar
+var curProgressTitle string
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
@@ -86,7 +91,11 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 		Files:       nil,
 	}
 
+	progrssBar.Incr();
+	curProgressTitle = "Getting files info ..."
+
 	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
+		
 		if err != nil {
 			return err
 		}
@@ -98,6 +107,7 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 			info.Length = fi.Size()
 			return nil
 		}
+
 		relPath, err := filepath.Rel(root, path)
 		if err != nil {
 			return fmt.Errorf("error getting relative path: %s", err)
@@ -113,22 +123,44 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 		})
 		return nil
 	})
+
 	if err != nil {
 		return
 	}
+
+	progrssBar.Incr();
+	curProgressTitle = "Generating pieces ..."
+
 	slices.Sort(info.Files, func(l, r metainfo.FileInfo) bool {
 		return strings.Join(l.Path, "/") < strings.Join(r.Path, "/")
 	})
+
 	err = info.GeneratePieces(func(fi metainfo.FileInfo) (io.ReadCloser, error) {
 		return os.Open(filepath.Join(root, strings.Join(fi.Path, string(filepath.Separator))))
 	})
+
 	if err != nil {
 		err = fmt.Errorf("error generating pieces: %s", err)
 	}
+
 	return
 }
 
 func CreateTorrent(rootDir string, targetFile string, announceList []string, urlList []string) (err error) {
+
+	fmt.Println("Creating torrent file ...")
+
+	uiprogress.Start()
+	progrssBar = uiprogress.AddBar(4).AppendCompleted().PrependElapsed()
+ 
+	var title *string
+	title = &curProgressTitle
+	curProgressTitle = "Getting metainfo ..."
+
+	progrssBar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(*title, 35)
+	})
+
 	mi := metainfo.MetaInfo{
 		AnnounceList: builtinAnnounceList,
 		CreatedBy:    "stool",
@@ -153,6 +185,9 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 		return
 	}
 
+	progrssBar.Incr();
+	curProgressTitle = "Creating torrent file ..."
+
 	mi.InfoBytes, err = bencode.Marshal(info)
 	if err != nil {
 		return
@@ -165,6 +200,13 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 
 	defer f.Close()
 	err = mi.Write(f)
+
+	progrssBar.Incr();
+	curProgressTitle = "Finished"
+	title = &curProgressTitle
+	uiprogress.Stop()
+
+	fmt.Println("Creating is completed.")
 
 	return
 }

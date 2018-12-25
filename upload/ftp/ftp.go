@@ -1,6 +1,7 @@
 package ftp
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"time"
 	"net/url"
@@ -11,17 +12,33 @@ import (
 	"net/textproto"
 
 	"cord.stool/utils"
+	"github.com/gosuri/uiprogress"
 	"github.com/jlaffaye/ftp"
+	"github.com/gosuri/uiprogress/util/strutil"
 )
 
 // UploadToFTP upload all files from sourceDir recursive
 // User, password and releative ftp path should be set in ftpUrl. 
 // ftp://ftpuser:ftppass@ftp.protocol.local:21/cordtest/
-func UploadToFTP(ftpUrl, sourceDir string) (cerr error) {
+func Upload(ftpUrl, sourceDir string) (cerr error) {
+
+	fmt.Println("Uploading to FTP Server ...")
+
 	fullSourceDir, cerr := filepath.Abs(sourceDir)
 	if cerr != nil {
 		return
 	}
+
+	fc, err := utils.FileCount(fullSourceDir)
+	if err != nil {
+		return err
+	}
+
+	uiprogress.Start()
+	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize("Total progress", 35)
+	})
 
 	u, err := url.Parse(ftpUrl)
 
@@ -63,10 +80,31 @@ func UploadToFTP(ftpUrl, sourceDir string) (cerr error) {
 	}()
 
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
+
+	bar := uiprogress.AddBar(4).AppendCompleted().PrependElapsed()
+
+	var curTitle string
+	var title *string
+	title = &curTitle
+
+	bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(*title, 35)
+	})
+
+	barTotal.Incr();
+
 	var relativePath string
 	var file *os.File
 
 	for path := range f {
+
+		_, fn := filepath.Split(path)
+		curTitle = fmt.Sprint("Uploading file: ", fn)
+
+		barTotal.Incr();
+		bar.Set(0);
+		bar.Incr();
+
 		relativePath, cerr = filepath.Rel(fullSourceDir, path)
 		if cerr != nil {
 			return
@@ -77,6 +115,8 @@ func UploadToFTP(ftpUrl, sourceDir string) (cerr error) {
 		ftpDir,_ := filepath.Split(ftpPath)
 		cerr = mkdirRecursive(conn, ftpDir)
 		
+		bar.Incr();
+
 		if cerr != nil {
 			return
 		}
@@ -85,20 +125,28 @@ func UploadToFTP(ftpUrl, sourceDir string) (cerr error) {
 		if cerr != nil {
 			return
 		}
-
 		defer file.Close()
 		
+		bar.Incr();
+
 		cerr = conn.Stor(filepath.ToSlash(ftpPath), file)
 
 		if cerr != nil {
 			return
 		}
+
+		bar.Incr();
 	}
 
 	cerr = <-e
 	if cerr != nil {
 		return
 	}
+
+	curTitle = "Finished"
+
+	uiprogress.Stop()
+	fmt.Println("Upload completed.")
 
 	return nil
 }
