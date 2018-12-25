@@ -17,4 +17,5 @@
 
 ## Description
    Command **torrent** creates a torrent file.</br>
-   Use option **--source** to specify path to source files and option **--target** to specify a created torrent file name.
+   Use option **--source** to specify path to source files and option **--target** to specify a created torrent file name. Option **--piece-length** specifies a value of Torrent pieces length (default: 512).</br>
+   Use **--web-seeds** to specify a slice of torrent web seeds (multi option). Use **--announce-list** to specify a slice of announce server url (multi option).

@@ -15,4 +15,4 @@
 
 ## Description
    Command **create** creates update for application.</br>
-   Use option **--source** to specify path to source files and option **--output** to specify path to store created files. To archie each file with zip-format  specify simply option **--archive**.
+   Use option **--source** to specify path to source files and option **--output** to specify path to store created files. To archie each file with zip-format specify simply option **--archive**.
