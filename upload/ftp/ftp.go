@@ -14,6 +14,7 @@ import (
 	"cord.stool/utils"
 	"github.com/gosuri/uiprogress"
 	"github.com/jlaffaye/ftp"
+	"github.com/gosuri/uiprogress/util/strutil"
 )
 
 // UploadToFTP upload all files from sourceDir recursive
@@ -36,7 +37,7 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 	uiprogress.Start()
 	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
-		return "Total progress"
+		return strutil.Resize("Total progress", 35)
 	})
 
 	u, err := url.Parse(ftpUrl)
@@ -87,7 +88,7 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 	title = &curTitle
 
 	bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return *title
+		return strutil.Resize(*title, 35)
 	})
 
 	barTotal.Incr();

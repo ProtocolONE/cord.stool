@@ -9,6 +9,7 @@ import (
 	"cord.stool/utils"
 
 	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/udhos/equalfile"
 )
 
@@ -40,7 +41,7 @@ func CreateBinDiff(sourceOldDir string, sourceNewDir string, outputDiffDir strin
 	uiprogress.Start()
 	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
-		return "Total progress"
+		return strutil.Resize("Total progress", 35)
 	})
 
 	stopCh := make(chan struct{})
@@ -64,7 +65,7 @@ func CreateBinDiff(sourceOldDir string, sourceNewDir string, outputDiffDir strin
 	title = &curTitle
 
 	bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return *title
+		return strutil.Resize(*title, 35)
 	})
 
 	barTotal.Incr();

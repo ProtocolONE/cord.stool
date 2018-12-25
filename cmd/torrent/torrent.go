@@ -16,6 +16,7 @@ import (
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/anacrolix/torrent/metainfo"
 	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 )
 
 var args = struct {
@@ -157,7 +158,7 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 	_curProgressTitle = "Getting metainfo ..."
 
 	_progrssBar.PrependFunc(func(b *uiprogress.Bar) string {
-		return *title
+		return strutil.Resize(*title, 35)
 	})
 
 	mi := metainfo.MetaInfo{

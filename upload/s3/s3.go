@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/gosuri/uiprogress/util/strutil"
 )
 
 var _bar *uiprogress.Bar
@@ -52,7 +53,7 @@ func Upload(args Args) error {
 	uiprogress.Start()
 	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
-		return "Total progress"
+		return strutil.Resize("Total progress", 35)
 	})
 
 	sess, err := initAWS(args)
@@ -79,7 +80,7 @@ func Upload(args Args) error {
 	title = &curTitle
 
 	_bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return *title
+		return strutil.Resize(*title, 35)
 	})
 
 	barTotal.Incr();

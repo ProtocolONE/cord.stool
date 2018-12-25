@@ -13,6 +13,7 @@ import (
 	"cord.stool/utils"
 
 	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 
 	tomb "gopkg.in/tomb.v2"
 )
@@ -225,7 +226,7 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 	_curProgressTitle = "Preparing ..."
 
 	_progrssBar.PrependFunc(func(b *uiprogress.Bar) string {
-		return *title
+		return strutil.Resize(*title, 35)
 	})
 
 	var t tomb.Tomb

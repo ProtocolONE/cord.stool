@@ -10,6 +10,7 @@ import (
 	"cord.stool/utils"
 
 	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/pkg/errors"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -33,7 +34,7 @@ func Upload(sftpUrl, sourceDir string) error {
 	uiprogress.Start()
 	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
-		return "Total progress"
+		return strutil.Resize("Total progress", 35)
 	})
 
 	u, err := url.Parse(sftpUrl)
@@ -101,7 +102,7 @@ func Upload(sftpUrl, sourceDir string) error {
 	title = &curTitle
 
 	bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return *title
+		return strutil.Resize(*title, 35)
 	})
 
 	barTotal.Incr();
