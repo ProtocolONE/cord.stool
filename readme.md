@@ -25,7 +25,7 @@ If you want to specify version info and icon for Windows download `goversioninfo
 go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 ```
   
-To generate Windows resource file check [documentation](github.com/josephspurrier/goversioninfo/) or use default options:
+To generate Windows resource file check [documentation](https://github.com/josephspurrier/goversioninfo/) or use default options:
 ```sh
 go generate
 ```
@@ -52,4 +52,4 @@ Commands:
  * [push](docs\push.md)
  * [torrent](docs\torrent.md)
  * [upgrade](docs\upgrade.md)
- * [help](docs\create.md)
+ * [help](docs\help.md)
