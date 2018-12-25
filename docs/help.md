@@ -1,5 +1,5 @@
 # Help command
-   Cord update tool
+   Show more info
 
 ## Usage
 ```sh
@@ -24,5 +24,5 @@
 ```
 
 ## Description
-   TO BE DONE
+   Command **help** shows a list of commands or help for one command.
 

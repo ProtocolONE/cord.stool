@@ -14,4 +14,4 @@
 ```
 
 ## Description
-   TO BE DONE
+   Command **create** creates update for application. Use option **--source** to specify path to source files and option **--output** to specify path to store created files. To archie each file with zip-format  specify simply option **--archive**.
