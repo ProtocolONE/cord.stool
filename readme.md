@@ -47,9 +47,9 @@ cord.stool.exe help [command]
 ```
 
 Commands:
- * [create](docs\create.md)
- * [diff](docs\diff.md)
- * [push](docs\push.md)
- * [torrent](docs\torrent.md)
- * [upgrade](docs\upgrade.md)
- * [help](docs\help.md)
+ * [create](docs/create.md)
+ * [diff](docs/diff.md)
+ * [push](docs/push.md)
+ * [torrent](docs/torrent.md)
+ * [upgrade](docs/upgrade.md)
+ * [help](docs/help.md)
