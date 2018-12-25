@@ -16,4 +16,5 @@
 ```
 
 ## Description
-   Command **torrent** creates a torrent file. Use option **--source** to specify path to source files and option **--target** to specify a created torrent file name.
+   Command **torrent** creates a torrent file.</br>
+   Use option **--source** to specify path to source files and option **--target** to specify a created torrent file name.

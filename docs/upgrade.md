@@ -15,4 +15,5 @@
 ```
 
 ## Description
-   Command **upgrade** upgrades the application to the latest version. Use option **--check** to check for the latest available version only. To show all new available versions use option **--list**. To upgrade the application to specified version specify the version by option **--ver**. Option **--force** forces to upgrade self-built version.
+   Command **upgrade** upgrades the application to the latest version.</br>
+   Use option **--check** to check for the latest available version only. To show all new available versions use option **--list**. To upgrade the application to specified version specify the version by option **--ver**. Option **--force** forces to upgrade self-built version.

@@ -14,4 +14,5 @@
 ```
 
 ## Description
-   Command **diff** generates the difference between files. Use option **--old** to specify path to old files and option **--new** to specify path to new files. The application generates the difference between files and creates patch in folder specified by option **--patch**.
+   Command **diff** generates the difference between files.</br>
+   Use option **--old** to specify path to old files and option **--new** to specify path to new files. The application generates the difference between files and creates patch in folder specified by option **--patch**.
