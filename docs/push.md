@@ -1,17 +1,10 @@
 # Push command
-
-## Name
-```sh
-   cord.stool.exe push - Upload update
-```
+   Upload update app bundle to one of servers
 
 ## Usage
 ```sh
    cord.stool.exe push [command options] [arguments...]
 ```
-
-## Description
-   Upload update app bundle to one of servers
 
 ## Options
 ```sh
@@ -31,3 +24,6 @@
    --akm-key value           Akamai key
    --akm-code value          Akamai code
 ```
+
+## Description
+   TO BE DONE

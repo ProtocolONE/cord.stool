@@ -1,17 +1,10 @@
 # Create command
-
-## Name
-```sh
-   cord.stool.exe create - Create update
-```
+   Create update for application
 
 ## Usage
 ```sh
    cord.stool.exe create [command options] [arguments...]
 ```
-
-## Description
-   Create update for application
 
 ## Options
 ```sh
@@ -19,3 +12,6 @@
    --output value, -o value  Path to game
    --archive, -a             Archie with zip each file
 ```
+
+## Description
+   TO BE DONE

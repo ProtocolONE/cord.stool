@@ -1,17 +1,10 @@
 # Diff command
-
-## Name
-```sh
-   cord.stool.exe diff - Make patch
-```
+   Generate the difference between files
 
 ## Usage
 ```sh
    cord.stool.exe diff [command options] [arguments...]
 ```
-
-## Description
-   Generate the difference between files
 
 ## Options
 ```sh
@@ -19,3 +12,6 @@
    --new value, -n value    Path to new files
    --patch value, -p value  Path to patch files
 ```
+
+## Description
+   TO BE DONE

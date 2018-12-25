@@ -1,17 +1,10 @@
 # Help command
-
-## Name
-```sh
-   cord.stool.exe help - Show help
-```
+   Cord update tool
 
 ## Usage
 ```sh
    cord.stool.exe [global options] command [command options] [arguments...]
 ```
-
-## Description
-   Cord update tool
 
 ## Commands
 ```sh
@@ -29,3 +22,7 @@
    --help, -h           show help
    --print-version, -V  print only the version
 ```
+
+## Description
+   TO BE DONE
+

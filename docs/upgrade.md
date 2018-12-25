@@ -1,17 +1,10 @@
 # Upgrade command
-
-## Name
-```sh
-   cord.stool.exe upgrade - Looking for upgrades
-```
+   Upgrades application to the latest version
 
 ## Usage
 ```sh
    cord.stool.exe upgrade [command options] [arguments...]
 ```
-
-## Description
-   Upgrades application to the latest version
 
 ## Options
 ```sh
@@ -20,3 +13,7 @@
    --list, -l             Show all new available versions
    --ver value, -v value  Upgrades application to this version
 ```
+
+## Description
+   TO BE DONE
+
