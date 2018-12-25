@@ -27,8 +27,8 @@ var args = struct {
 	PieceLength  int64
 }{}
 
-var _progrssBar *uiprogress.Bar
-var _curProgressTitle string
+var progrssBar *uiprogress.Bar
+var curProgressTitle string
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
@@ -91,8 +91,8 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 		Files:       nil,
 	}
 
-	_progrssBar.Incr();
-	_curProgressTitle = "Getting files info ..."
+	progrssBar.Incr();
+	curProgressTitle = "Getting files info ..."
 
 	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
 		
@@ -128,8 +128,8 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 		return
 	}
 
-	_progrssBar.Incr();
-	_curProgressTitle = "Generating pieces ..."
+	progrssBar.Incr();
+	curProgressTitle = "Generating pieces ..."
 
 	slices.Sort(info.Files, func(l, r metainfo.FileInfo) bool {
 		return strings.Join(l.Path, "/") < strings.Join(r.Path, "/")
@@ -151,13 +151,13 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 	fmt.Println("Creating torrent file ...")
 
 	uiprogress.Start()
-	_progrssBar = uiprogress.AddBar(4).AppendCompleted().PrependElapsed()
+	progrssBar = uiprogress.AddBar(4).AppendCompleted().PrependElapsed()
  
 	var title *string
-	title = &_curProgressTitle
-	_curProgressTitle = "Getting metainfo ..."
+	title = &curProgressTitle
+	curProgressTitle = "Getting metainfo ..."
 
-	_progrssBar.PrependFunc(func(b *uiprogress.Bar) string {
+	progrssBar.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize(*title, 35)
 	})
 
@@ -185,8 +185,8 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 		return
 	}
 
-	_progrssBar.Incr();
-	_curProgressTitle = "Creating torrent file ..."
+	progrssBar.Incr();
+	curProgressTitle = "Creating torrent file ..."
 
 	mi.InfoBytes, err = bencode.Marshal(info)
 	if err != nil {
@@ -201,9 +201,9 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 	defer f.Close()
 	err = mi.Write(f)
 
-	_progrssBar.Incr();
-	_curProgressTitle = "Finished"
-	title = &_curProgressTitle
+	progrssBar.Incr();
+	curProgressTitle = "Finished"
+	title = &curProgressTitle
 	uiprogress.Stop()
 
 	fmt.Println("Creating is completed.")

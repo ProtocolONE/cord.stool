@@ -39,8 +39,8 @@ type FileInfo struct {
 	Check         bool     `xml:"check,string,attr"`
 }
 
-var _progrssBar *uiprogress.Bar
-var _curProgressTitle string
+var progrssBar *uiprogress.Bar
+var curProgressTitle string
 
 func (s UpdateInfo) Pack() (string, error) {
 	var b bytes.Buffer
@@ -130,8 +130,8 @@ LOOP:
 			}
 
 			_, fn := filepath.Split(path)
-			_curProgressTitle = fmt.Sprint("Calcing hash for ", fn)
-			_progrssBar.Incr();
+			curProgressTitle = fmt.Sprint("Calcing hash for ", fn)
+			progrssBar.Incr();
 		
 			relativePath, err = filepath.Rel(sourceDir, path)
 
@@ -161,8 +161,8 @@ LOOP:
 
 			if useArchive {
 
-				_progrssBar.Incr();
-				_curProgressTitle = fmt.Sprint("Compressing file: ", fn)
+				progrssBar.Incr();
+				curProgressTitle = fmt.Sprint("Compressing file: ", fn)
 
 				fullDst += ".zip"
 
@@ -187,7 +187,7 @@ LOOP:
 				ufi.ArchiveLength = ufi.RawLength
 			}
 
-			_progrssBar.Incr();
+			progrssBar.Incr();
 
 		case <-stopCh:
 			break LOOP
@@ -219,13 +219,13 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 	}
 
 	uiprogress.Start()
-	_progrssBar = uiprogress.AddBar(len(files) * pbIndex + 3).AppendCompleted().PrependElapsed()
+	progrssBar = uiprogress.AddBar(len(files) * pbIndex + 3).AppendCompleted().PrependElapsed()
  
 	var title *string
-	title = &_curProgressTitle
-	_curProgressTitle = "Preparing ..."
+	title = &curProgressTitle
+	curProgressTitle = "Preparing ..."
 
-	_progrssBar.PrependFunc(func(b *uiprogress.Bar) string {
+	progrssBar.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize(*title, 35)
 	})
 
@@ -249,7 +249,7 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return nil
 	})
 
-	_progrssBar.Incr();
+	progrssBar.Incr();
 
 	wg := &sync.WaitGroup{}
 	fiCh := make(chan FileInfo)
@@ -271,8 +271,8 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		close(fiCh)
 	}()
 
-	_curProgressTitle = "Createing update.crc ..."
-	title = &_curProgressTitle
+	curProgressTitle = "Createing update.crc ..."
+	title = &curProgressTitle
 
 	t.Go(func() error {
 		res := make([]FileInfo, 0, 100)
@@ -300,7 +300,7 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return
 	}
 
-	_progrssBar.Incr();
+	progrssBar.Incr();
 
 	crcPath := filepath.Join(outputDir, "update.crc")
 	crcPathArc := filepath.Join(outputDir, "update.crc.zip")
@@ -309,17 +309,17 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return
 	}
 
-	_progrssBar.Incr();
-	_curProgressTitle = "Compressing update.crc ..."
-	title = &_curProgressTitle
+	progrssBar.Incr();
+	curProgressTitle = "Compressing update.crc ..."
+	title = &curProgressTitle
 
 	zip.CompressFile(crcPath, crcPathArc)
 	err = os.Remove(crcPath)
 
-	_progrssBar.Incr();
+	progrssBar.Incr();
 
-	_curProgressTitle = "Finished"
-	title = &_curProgressTitle
+	curProgressTitle = "Finished"
+	title = &curProgressTitle
 	uiprogress.Stop()
 
 	fmt.Println("Creating is completed.")
