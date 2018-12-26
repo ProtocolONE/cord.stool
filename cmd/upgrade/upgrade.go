@@ -154,7 +154,11 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 		}
 
 		if (release != nil) {
-			fmt.Println("There is a new version available:", *release.TagName)
+			if compareVersion(ctx.Version, *release.TagName) > 0 {
+				fmt.Println("There is a new version available:", *release.TagName)
+			} else {
+				fmt.Println("Found the latest version:", *release.TagName)
+			}
 		} else {
 			fmt.Println("There are no any new version available")
 			return nil
