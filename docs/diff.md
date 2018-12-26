@@ -1,5 +1,5 @@
 # Diff command
-   Generate the difference between files
+   Generate the difference between two directories
 
 ## Usage
 ```sh
@@ -14,5 +14,5 @@
 ```
 
 ## Description
-   Command **diff** generates the difference between files.</br>
-   Use option **--old** to specify path to old files and option **--new** to specify path to new files. The application generates the difference between files and creates patch in folder specified by option **--patch**.
+   Command **diff** generates the difference between two directories. It is using VCDIFF/RFC 3284 streams provided [Xdelta](http://xdelta.org/) library.</br>
+   Use option **--old** to specify path to directory contains old files and option **--new** to specify path to directory contains  new files. The application generates the difference between files and creates patch in folder specified by option **--patch**.
