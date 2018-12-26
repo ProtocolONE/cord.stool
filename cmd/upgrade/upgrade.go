@@ -41,7 +41,7 @@ func Register(ctx *context.StoolContext) {
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:        "force, f",
-				Usage:       "Force to upgrade self-built version",
+				Usage:       "Force to upgrade self-built version or downgrade version",
 				Destination: &args.force,
 			},
 			cli.BoolFlag{
@@ -128,8 +128,9 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 
 	if args.version != "" {
 
-		if compareVersion(ctx.Version, args.version) < 0 {
+		if compareVersion(ctx.Version, args.version) < 0 && !args.force {
 			fmt.Printf("Current version %s is newer version than %s\n", ctx.Version, args.version)
+			fmt.Println("Use --force to downgrade the application version")
 			return nil
 		}
 
@@ -163,8 +164,9 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 	fmt.Println("Current version is", ctx.Version)
 
 	needUpgrade := compareVersion(ctx.Version, *release.TagName) > 0
-	if !needUpgrade {
+	if !needUpgrade && !args.force && args.version == "" {
 		fmt.Println("The application is up-to-date")
+		fmt.Println("Use --force and --ver to force upgrade the application to specific version")
 		return nil
 	}
 
@@ -173,7 +175,7 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 	}
 	
 	if ctx.Version == "" || ctx.Version == "develop" && !args.force {
-		fmt.Println("Refusing to upgrade self-built application without --force")
+		fmt.Println("Use --force to upgrade self-built application")
 		return nil
 	}
 
