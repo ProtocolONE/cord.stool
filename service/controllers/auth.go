@@ -18,6 +18,7 @@ import (
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
+    
     reqUser := new(models.Authorisation)
     decoder := json.NewDecoder(r.Body)
     decoder.Decode(&reqUser)

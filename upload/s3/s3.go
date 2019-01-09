@@ -21,12 +21,12 @@ var _bar *uiprogress.Bar
 type Args = struct {
 	SourceDir string
 	OutputDir string
-	AWSRegion string
-	AWSCredentials string
-	AWSProfile string
-	AWSID string
-	AWSKey string
-	AWSToken string
+	Region string
+	Credentials string
+	Profile string
+	ID string
+	Key string
+	Token string
 	S3Bucket string
 }
 
@@ -115,14 +115,14 @@ func Upload(args Args) error {
 func initAWS(args Args) (*session.Session, error) {
 
 	var cred *credentials.Credentials
-	if len(args.AWSCredentials) > 0 {
-		cred = credentials.NewSharedCredentials(args.AWSCredentials, args.AWSProfile)
+	if len(args.Credentials) > 0 {
+		cred = credentials.NewSharedCredentials(args.Credentials, args.Profile)
 	} else {
-		cred = credentials.NewStaticCredentials(args.AWSID, args.AWSKey, args.AWSToken)
+		cred = credentials.NewStaticCredentials(args.ID, args.Key, args.Token)
 	}
 
 	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(args.AWSRegion),
+		Region:      aws.String(args.Region),
 		Credentials: cred,
 	})
 
