@@ -30,7 +30,7 @@ func Start(port uint) error {
 
     // For Testing only
     os.Setenv("MONGO_HOST", "127.0.0.1:27017")
-    os.Setenv("MONGO_DB", "management")
+    os.Setenv("MONGO_DB", "cord_stool")
     os.Setenv("MONGO_USER", "")
     os.Setenv("MONGO_PASSWORD", "")
     os.Setenv("HTTP_SCHEME", "http")
