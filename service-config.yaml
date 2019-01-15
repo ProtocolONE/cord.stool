@@ -1,0 +1,13 @@
+database:
+    mongo_host: "127.0.0.1:27017"
+    mongo_db: cord_stool
+    mongo_user:
+    mongo_password:
+
+service:
+    http_scheme: http
+    service_port: 5000
+    private_key_path: 'D:\Projects\Syncopate\sources\ProtocolONE\cord.stool\service\config\keys\private_key'
+    public_key_path: 'D:\Projects\Syncopate\sources\ProtocolONE\cord.stool\service\config\keys\public_key.pub'
+    jwt_expiration_delta: 72
+    storage_root_path: 'D:\Temp\server_storage'

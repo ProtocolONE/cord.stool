@@ -38,7 +38,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
             w.Write(response)
         } else {
             hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(reqUser.Password), 10)
-            err = dbc.Insert(models.Authorisation{reqUser.Username, string(hashedPassword)})
+            err = dbc.Insert(models.Authorisation{reqUser.Username, string(hashedPassword), reqUser.Username})
             if err != nil {
                 zap.S().Errorf("Can`t add user \"%s\" in db, err: %v", reqUser.Username, err)
                 w.WriteHeader(http.StatusInternalServerError)
@@ -107,7 +107,7 @@ func login(reqUser *models.Authorisation) (int, []byte) {
     authBackend := authentication.InitJWTAuthenticationBackend()
     if authBackend.Authenticate(reqUser) {
         uuid := uuid.New()
-        token, err := authBackend.GenerateToken(uuid)
+        token, err := authBackend.GenerateToken(reqUser.Username, uuid)
         if err != nil {
             zap.S().Infof("Can`t generate token; err %v", err)
             return http.StatusInternalServerError, []byte("")
@@ -123,7 +123,7 @@ func login(reqUser *models.Authorisation) (int, []byte) {
 func refreshToken(requestUser *models.Authorisation) []byte {
     authBackend := authentication.InitJWTAuthenticationBackend()
     uuid := uuid.New()
-    token, err := authBackend.GenerateToken(uuid)
+    token, err := authBackend.GenerateToken(requestUser.Username, uuid)
     if err != nil {
         panic(err)
     }

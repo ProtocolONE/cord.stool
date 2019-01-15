@@ -1,38 +1,59 @@
 package config
 
 import (
-	"github.com/kelseyhightower/envconfig"
+	//"github.com/kelseyhightower/envconfig"
+	"os"
+	"path/filepath"
+
+	"gopkg.in/yaml.v2"
 )
 
-type DatabaseEnv struct {
-	Host     string `envconfig:"MONGO_HOST"`
-	Database string `envconfig:"MONGO_DB"`
-	User     string `envconfig:"MONGO_USER"`
-	Password string `envconfig:"MONGO_PASSWORD"`
+type DatabaseCfg struct {
+	Host     string `yaml:"mongo_host"`
+	Database string `yaml:"mongo_db"`
+	User     string `yaml:"mongo_user"`
+	Password string `yaml:"mongo_password"`
 }
 
-type ServiceEnv struct {
-	HttpScheme     string `envconfig:"HTTP_SCHEME"`
-	ServicePort    int    `envconfig:"SERVICE_PORT"`
-	PrivateKeyPath string `envconfig:"PRIVATE_KEY_PATH"`
-	PublicKeyPath  string `envconfig:"PUBLIC_KEY_PATH"`
-	JwtExpDelta    int    `envconfig:"JWT_EXPIRATION_DELTA"`
+type ServiceCfg struct {
+	HttpScheme      string `yaml:"http_scheme"`
+	ServicePort     int    `yaml:"service_port"`
+	PrivateKeyPath  string `yaml:"private_key_path"`
+	PublicKeyPath   string `yaml:"public_key_path"`
+	JwtExpDelta     int    `yaml:"jwt_expiration_delta"`
+	StorageRootPath string `yaml:"storage_root_path"`
 }
 
 type Config struct {
-	DatabaseEnv
-	ServiceEnv
+	Database DatabaseCfg `yaml:"database"`
+	Service  ServiceCfg  `yaml:"service"`
 }
 
 var cfg *Config
 
-func Init() (error, *Config) {
-	var err error
+func Init() (*Config, error) {
+
 	cfg = &Config{}
-	if err = envconfig.Process("", cfg); err != nil {
-		return err, nil
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
 	}
-	return nil, cfg
+
+	file, err := os.Open(filepath.Join(pwd, "service-config.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	decoder := yaml.NewDecoder(file)
+	decoder.Decode(&cfg)
+
+	/*if err = envconfig.Process("", cfg); err != nil {
+		return nil, err
+	}*/
+
+	return cfg, nil
 }
 
 func Get() *Config {

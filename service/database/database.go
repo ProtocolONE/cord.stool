@@ -23,7 +23,7 @@ var dbConf *DbConf
 
 
 func Init() (error) {
-    cfg := config.Get().DatabaseEnv
+    cfg := config.Get().Database
     dbConf = &DbConf{
         Addrs:    []string{cfg.Host},
         Database: cfg.Database,

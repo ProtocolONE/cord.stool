@@ -30,11 +30,6 @@ type Args = struct {
 	S3Bucket string
 }
 
-type enumDirCallbackS3 struct {
-	sess            *session.Session
-	continueOnError bool
-}
-
 // Upload ...
 func Upload(args Args) error {
 

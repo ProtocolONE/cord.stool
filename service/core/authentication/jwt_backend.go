@@ -44,13 +44,14 @@ func InitJWTAuthenticationBackend() *JWTAuthenticationBackend {
 }
 
 
-func (backend *JWTAuthenticationBackend) GenerateToken(userUUID string) (string, error) {
+func (backend *JWTAuthenticationBackend) GenerateToken(clientID string , userUUID string) (string, error) {
     token := jwt.New(jwt.SigningMethodRS512)
-    cfg := config.Get().ServiceEnv
+    cfg := config.Get().Service
     token.Claims = jwt.MapClaims{
         "exp": time.Now().Add(time.Hour * time.Duration(cfg.JwtExpDelta)).Unix(),
         "iat": time.Now().Unix(),
         "sub": userUUID,
+        "client_id": clientID,
     }
     tokenString, err := token.SignedString(backend.privateKey)
     if err != nil {
@@ -98,7 +99,7 @@ func (backend *JWTAuthenticationBackend) IsInBlacklist(tokenStr string) bool {
 
 
 func getPrivateKey() *rsa.PrivateKey {
-    cfg := config.Get().ServiceEnv
+    cfg := config.Get().Service
     privateKeyFile, err := os.Open(cfg.PrivateKeyPath)
     if err != nil {
         panic(fmt.Sprintf("Can`t open file \"%s\"", cfg.PrivateKeyPath))
@@ -125,7 +126,7 @@ func getPrivateKey() *rsa.PrivateKey {
 
 
 func getPublicKey() *rsa.PublicKey {
-    cfg := config.Get().ServiceEnv
+    cfg := config.Get().Service
     publicKeyFile, err := os.Open(cfg.PublicKeyPath)
     if err != nil {
         panic(err)

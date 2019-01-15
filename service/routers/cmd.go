@@ -12,6 +12,12 @@ import (
 func SetCmdRoutes(router *mux.Router) *mux.Router {
 
     router.Handle(
+        "/api/v1/cmd/upload", 
+        http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            authentication.RequireTokenAuthentication(w, r, controllers.UploadCmd)
+    })).Methods("POST")
+
+    /*router.Handle(
         "/api/v1/cmd/create", 
         http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             authentication.RequireTokenAuthentication(w, r, controllers.CreateCmd)
@@ -33,7 +39,7 @@ func SetCmdRoutes(router *mux.Router) *mux.Router {
         "/api/v1/cmd/torrent", 
         http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             authentication.RequireTokenAuthentication(w, r, controllers.TorrentCmd)
-	})).Methods("POST")
+	})).Methods("POST")*/
 
 	return router
 }

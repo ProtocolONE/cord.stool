@@ -38,6 +38,7 @@ func Start(port uint) error {
     os.Setenv("PRIVATE_KEY_PATH", `D:\Projects\Syncopate\sources\ProtocolONE\cord.stool\service\config\keys\private_key`)
     os.Setenv("PUBLIC_KEY_PATH", `D:\Projects\Syncopate\sources\ProtocolONE\cord.stool\service\config\keys\public_key.pub`)
     os.Setenv("JWT_EXPIRATION_DELTA", "72")
+    os.Setenv("STORAGE_ROOT_PATH", `D:\Temp\server_storage`)
 
     logger, err := zap.NewDevelopment()
     if err != nil {
@@ -47,7 +48,7 @@ func Start(port uint) error {
 	zap.ReplaceGlobals(logger)
     lw := &LogWriter{}
 	
-    err, conf := config.Init()
+    conf, err := config.Init()
     if err != nil {
         return err
     }
@@ -58,8 +59,8 @@ func Start(port uint) error {
     }
 
     router := routers.InitRoutes()
-    zap.S().Infof("Create service. Scheme: \"%s\", port: \"%d\"", conf.ServiceEnv.HttpScheme, conf.ServiceEnv.ServicePort)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", conf.ServiceEnv.ServicePort), handlers.LoggingHandler(lw, router))
+    zap.S().Infof("Create service. Scheme: \"%s\", port: \"%d\"", conf.Service.HttpScheme, conf.Service.ServicePort)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", conf.Service.ServicePort), handlers.LoggingHandler(lw, router))
     if err != nil {
         return err
     }

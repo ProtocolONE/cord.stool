@@ -21,6 +21,7 @@ type Configuration struct {
 type Authorisation struct {
 	Username string `json:"username" form:"username"`
 	Password string `json:"password" form:"password"`
+	Storage string `json:"storage" form:"username"`
 }
 
 type CreatedId struct {
