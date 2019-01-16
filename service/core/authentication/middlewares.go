@@ -24,7 +24,7 @@ func RequireTokenAuthentication(rw http.ResponseWriter, req *http.Request, next 
 	req.Header.Set("ClientID", clientID)
 
 	if err == nil && token.Valid && !authBackend.IsInBlacklist(req.Header.Get("Authorization")) {
-		zap.S().Infof("req token %s", req.Header.Get("Authorization"))
+		//zap.S().Infof("req token %s", req.Header.Get("Authorization"))
 		next(rw, req)
 	} else {
 		zap.S().Info(err.Error())

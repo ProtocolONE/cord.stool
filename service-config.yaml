@@ -6,7 +6,7 @@ database:
 
 service:
     http_scheme: http
-    service_port: 5000
+    service_port: 5001
     private_key_path: 'D:\Projects\Syncopate\sources\ProtocolONE\cord.stool\service\config\keys\private_key'
     public_key_path: 'D:\Projects\Syncopate\sources\ProtocolONE\cord.stool\service\config\keys\public_key.pub'
     jwt_expiration_delta: 72

@@ -26,7 +26,7 @@ var NotImplemented = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 
 func Start(port uint) error {
 
-    fmt.Println("Service started...")
+    fmt.Println("Service starting...")
 
     // For Testing only
     os.Setenv("MONGO_HOST", "127.0.0.1:27017")

@@ -93,7 +93,7 @@ func (backend *JWTAuthenticationBackend) Logout(tokenStr string, token *jwt.Toke
 
 
 func (backend *JWTAuthenticationBackend) IsInBlacklist(tokenStr string) bool {
-    zap.S().Infof("is blist token: \"%s\"", tokenStr)
+    //zap.S().Infof("is blist token: \"%s\"", tokenStr)
     return false
 }
 

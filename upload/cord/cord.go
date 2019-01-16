@@ -3,11 +3,12 @@ package cord
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"net/http"
 	"encoding/json"
 	"bytes"
+	"io/ioutil"
+	"strings"
 
     "cord.stool/service/models"
 	"cord.stool/utils"
@@ -107,8 +108,12 @@ func login(url string, Username string, password string) (*models.AuthToken, err
 	if err != nil {
         return nil, err
 	}
-
 	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		message, _ := ioutil.ReadAll(res.Body)
+		return nil, errors.New("Authorisation failed. " +  string(message))
+	}
 
 	authRes := new(models.AuthToken)
 	decoder := json.NewDecoder(res.Body)
@@ -129,28 +134,40 @@ func uploadFile(url string, token string, root string, path string, source strin
 
 	fpath := filepath.Join(root, relativePath)
 	fpath, _ = filepath.Split(fpath)
+	fpath = strings.TrimRight(fpath, "/\\")
 
-	file, err := os.Open(path)
+	filedata, err := ioutil.ReadFile(path)
 	if err != nil {
-		return errors.New("Cannot open file: " + err.Error())
+		return errors.New("Cannot read file: " + err.Error())
 	}
-	defer file.Close()
 
 	_bar.Incr();
 
+	authReq := &models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata}
+	data, err := json.Marshal(authReq)
+    if err != nil {
+        return err
+	}	
+
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", fmt.Sprintf(url + "/api/v1/cmd/upload?storage=%s&name=%s", fpath, fname), file)
+	req, err := http.NewRequest("POST", url + "/api/v1/cmd/upload", bytes.NewBuffer(data))
 	if err != nil {
         return err
 	}
-
- 	req.Header.Set("Content-Type", "binary/octet-stream")
+ 	req.Header.Set("Content-Type", "application/json")
  	req.Header.Add("Authorization", token)
- 	res, err := client.Do(req)	
+	res, err := client.Do(req)
 	if err != nil {
-		return errors.New("Cannot upload file: " + err.Error())
+		return errors.New("Upload file failed: " + err.Error())
 	}
 	defer res.Body.Close()
+
+	//fmt.Printf("res.StatusCode %d, %s \n", res.StatusCode, fname)
+
+	if res.StatusCode != 200 {
+		message, _ := ioutil.ReadAll(res.Body)
+		return errors.New("Upload file failed. " +  string(message))
+	}
 
 	_bar.Incr();
 
