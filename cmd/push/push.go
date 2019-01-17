@@ -8,6 +8,7 @@ import (
 	"cord.stool/upload/sftp"
 	"cord.stool/upload/s3"
 	"cord.stool/upload/akamai"
+	"cord.stool/upload/cord"
 
 	"github.com/urfave/cli"
 )
@@ -19,6 +20,7 @@ var args = struct {
 	OutputDir string
 	s3Args s3.Args
 	akmArgs akamai.Args
+	cordArgs cord.Args
 }{}
 
 func Register(ctx *context.StoolContext) {
@@ -119,6 +121,29 @@ func Register(ctx *context.StoolContext) {
 				Value:       "",
 				Destination: &args.akmArgs.Code,
 			},
+			cli.StringFlag{
+				Name:        "cord-url",
+				Usage:       "Cord Server url",
+				Value:       "",
+				Destination: &args.cordArgs.Url,
+			},
+			cli.StringFlag{
+				Name:        "cord-login",
+				Usage:       "Cord user login",
+				Value:       "",
+				Destination: &args.cordArgs.Login,
+			},
+			cli.StringFlag{
+				Name:        "cord-password",
+				Usage:       "Cord user password",
+				Value:       "",
+				Destination: &args.cordArgs.Password,
+			},
+			cli.BoolFlag{
+				Name:        "cord-patch",
+				Usage:       "Upload the difference between files",
+				Destination: &args.cordArgs.Patch,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			return do(ctx, c)
@@ -133,8 +158,8 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Path to game is required")
 	}
 
-	if args.FtpUrl == "" && args.SftpUrl == "" && args.s3Args.S3Bucket == "" && args.akmArgs.Hostname == "" {
-		return fmt.Errorf("Specify one of following flags: ftp, sftp, s3-bucket, akm-hostname")
+	if args.FtpUrl == "" && args.SftpUrl == "" && args.s3Args.S3Bucket == "" && args.akmArgs.Hostname == "" && args.cordArgs.Url == "" {
+		return fmt.Errorf("Specify one of following flags: ftp, sftp, s3-bucket, akm-hostname, cord-url")
 	}
 	
 	if args.FtpUrl != "" {
@@ -164,6 +189,15 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 		args.akmArgs.SourceDir = args.SourceDir
 		args.akmArgs.OutputDir = args.OutputDir
 		err := akamai.Upload(args.akmArgs)
+		if err != nil {
+			return err
+		}
+	}
+
+	if args.cordArgs.Url != "" {
+		args.cordArgs.SourceDir = args.SourceDir
+		args.cordArgs.OutputDir = args.OutputDir
+		err := cord.Upload(args.cordArgs)
 		if err != nil {
 			return err
 		}

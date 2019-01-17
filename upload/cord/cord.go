@@ -19,12 +19,21 @@ import (
 
 var _bar *uiprogress.Bar
 
+type Args = struct {
+	Url    string
+	Login    string
+	Password    string
+	SourceDir string
+	OutputDir string
+	Patch bool
+}
+
 // Upload ...
-func Upload(url string, username string, password string, sourceDir string, outputDir string) error {
+func Upload(args Args) error {
 
 	fmt.Println("Uploading to cord server ...")
 
-	fullSourceDir, err := filepath.Abs(sourceDir)
+	fullSourceDir, err := filepath.Abs(args.SourceDir)
 	if err != nil {
 		return err
 	}
@@ -40,7 +49,7 @@ func Upload(url string, username string, password string, sourceDir string, outp
 		return strutil.Resize("Total progress", 35)
 	})
 
-	auth, err := login(url, username, password)
+	auth, err := login(args.Url, args.Login, args.Password)
 	if err != nil {
 		return err
 	}
@@ -77,7 +86,7 @@ func Upload(url string, username string, password string, sourceDir string, outp
 		barTotal.Incr();
 		_bar.Set(0);
 
-		err := uploadFile(url, auth.Token, outputDir, path, fullSourceDir)
+		err := uploadFile(args.Url, auth.Token, args.OutputDir, path, fullSourceDir, args.Patch)
 		if err != nil {
 			return err
 		}
@@ -122,7 +131,7 @@ func login(url string, Username string, password string) (*models.AuthToken, err
 	return authRes, nil
 }
 
-func uploadFile(url string, token string, root string, path string, source string) error {
+func uploadFile(url string, token string, root string, path string, source string, patch bool) error {
 
 	_bar.Incr();
 
@@ -143,7 +152,7 @@ func uploadFile(url string, token string, root string, path string, source strin
 
 	_bar.Incr();
 
-	authReq := &models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata}
+	authReq := &models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata, Patch: patch}
 	data, err := json.Marshal(authReq)
     if err != nil {
         return err
@@ -161,8 +170,6 @@ func uploadFile(url string, token string, root string, path string, source strin
 		return errors.New("Upload file failed: " + err.Error())
 	}
 	defer res.Body.Close()
-
-	//fmt.Printf("res.StatusCode %d, %s \n", res.StatusCode, fname)
 
 	if res.StatusCode != 200 {
 		message, _ := ioutil.ReadAll(res.Body)

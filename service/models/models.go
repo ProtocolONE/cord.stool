@@ -46,4 +46,5 @@ type UploadCmd struct {
 	FilePath  string `json:"filepath"`
 	FileName  string `json:"filename"`
 	FileData []byte   `json:filedata`
+	Patch bool `json:patch`
 }

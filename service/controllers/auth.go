@@ -6,6 +6,7 @@ import (
     "cord.stool/service/models"
     "cord.stool/service/database"
     "cord.stool/service/config"
+    "cord.stool/service/core/utils"
 
     "golang.org/x/crypto/bcrypt"
     "gopkg.in/mgo.v2/bson"
@@ -14,6 +15,7 @@ import (
     "go.uber.org/zap"
     "strings"
     "io/ioutil"
+	"fmt"
 
     "github.com/pborman/uuid"
     jwt "github.com/dgrijalva/jwt-go"
@@ -22,101 +24,147 @@ import (
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
     
+    w.Header().Set("Content-Type", "application/json")
+
     reqUser := new(models.Authorisation)
     decoder := json.NewDecoder(r.Body)
     decoder.Decode(&reqUser)
+
     dbc := database.Get("users")
     usersWon, err := dbc.Find(bson.M{"username": reqUser.Username}).Count()
-    w.Header().Set("Content-Type", "application/json")
     if err != nil {
-        zap.S().Errorf("Cannot find user \"%s\", err: %v", reqUser.Username, err)
-        w.WriteHeader(http.StatusInternalServerError)
-        response, _ := json.Marshal(models.Error{"Can`t add user."})
-        w.Write(response)
+		utils.ServiceError(w, http.StatusInternalServerError, "Cannot read from database", err)
         return
     } 
 
     if usersWon != 0 {
-        zap.S().Errorf("Can`t add user \"%s\", is exists", reqUser.Username)
-        w.WriteHeader(http.StatusUnauthorized)
-        response, _ := json.Marshal(models.Error{"User is exists."})
-        w.Write(response)
+		utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("User %s already exists", reqUser.Username), nil)
         return
     } 
 
     storage, err := getUserStorageName(reqUser.Username)
     if err != nil {
-        zap.S().Errorf("Cannot generate user storage name, err: %v", err)
-        w.WriteHeader(http.StatusInternalServerError)
-        response, _ := json.Marshal(models.Error{"Cannot generate user storage name."})
-        w.Write(response)
+    	utils.ServiceError(w, http.StatusInternalServerError, "Cannot generate user files storage name.", err)
         return
     }
 
     hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(reqUser.Password), 10)
     err = dbc.Insert(models.Authorisation{reqUser.Username, string(hashedPassword), storage})
     if err != nil {
-        zap.S().Errorf("Cannot add user \"%s\" in db, err: %v", reqUser.Username, err)
-        w.WriteHeader(http.StatusInternalServerError)
-        response, _ := json.Marshal(models.Error{"Cannot add user in db."})
-        w.Write(response)
+    	utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Cannot add user %s", reqUser.Username), err)
         return
     } 
     
-    zap.S().Errorf("Create new user \"%s\" in db, err: %v", reqUser.Username, err)
-    responseStatus, token := login(reqUser)
-    w.WriteHeader(responseStatus)
-    w.Write(token)
+    zap.S().Infof("Created new user %s.", reqUser.Username)
+    if !login(w, reqUser) {
+        return
+    }
+    w.WriteHeader(http.StatusOK)
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+
     reqUser := new(models.Authorisation)
     decoder := json.NewDecoder(r.Body)
     decoder.Decode(&reqUser)
+    
     dbc := database.Get("users")
     err := dbc.Remove(bson.M{"username": reqUser.Username})
     if err != nil {
-        zap.S().Errorf("Remove fail %v", err)
-        w.WriteHeader(http.StatusInternalServerError)
-        response, _ := json.Marshal(models.Error{"Cannot add user in db."})
-        w.Write(response)
-    } else {
-        zap.S().Infof("Remove user \"%s\" complete", reqUser.Username)
-        w.WriteHeader(http.StatusOK)
+    	utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Cannot delete user %s", reqUser.Username), err)
+        return
     }
+        
+    zap.S().Infof("Removed user %s", reqUser.Username)
+    w.WriteHeader(http.StatusOK)
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+
     reqUser := new(models.Authorisation)
     decoder := json.NewDecoder(r.Body)
     decoder.Decode(&reqUser)
-    zap.S().Infof("inpt > User: %s; Pswd: %s", reqUser.Username, reqUser.Password)
-    responseStatus, token := login(reqUser)
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(responseStatus)
-    w.Write(token)
+
+    zap.S().Infof("Login: username: %s; password: %s", reqUser.Username, reqUser.Password)
+    if !login(w, reqUser) {
+        return
+    }
+    w.WriteHeader(http.StatusOK)
 }
 
 func RefreshToken(w http.ResponseWriter, r *http.Request) {
+
+    w.Header().Set("Content-Type", "application/json")
+
     requestUser := new(models.Authorisation)
     decoder := json.NewDecoder(r.Body)
     decoder.Decode(&requestUser)
-    w.Header().Set("Content-Type", "application/json")
-    w.Write(refreshToken(requestUser))
+
+    authBackend := authentication.InitJWTAuthenticationBackend()
+    uuid := uuid.New()
+    
+    token, err := authBackend.GenerateToken(requestUser.Username, uuid)
+    if err != nil {
+    	utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Cannot generate token for user %s", requestUser.Username), err)
+        return
+    }
+
+    response, _ := json.Marshal(parameters.TokenAuthentication{token})
+    w.Write(response)
+    w.WriteHeader(http.StatusOK)
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-    err := logout(r)
+    
     w.Header().Set("Content-Type", "application/json")
 
+    authBackend := authentication.InitJWTAuthenticationBackend()
+    tokenRequest, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
+        return authBackend.PublicKey, nil
+    })
+
     if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-    } else {
-        w.WriteHeader(http.StatusOK)
+    	utils.ServiceError(w, http.StatusInternalServerError, "Logout failed", err)
+        return
     }
+
+    tokenString := r.Header.Get("Authorization")
+
+    err = authBackend.Logout(tokenString, tokenRequest)
+    if err != nil {
+    	utils.ServiceError(w, http.StatusInternalServerError, "Logout failed", err)
+        return
+    }
+    
+    w.WriteHeader(http.StatusOK)
 }
 
 //
+func login(w http.ResponseWriter, reqUser *models.Authorisation) bool {
+
+    authBackend := authentication.InitJWTAuthenticationBackend()
+    if !authBackend.Authenticate(reqUser) {
+        utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Invalid username %s or password", reqUser.Username), nil)
+        return false
+    }
+
+    uuid := uuid.New()
+    token, err := authBackend.GenerateToken(reqUser.Username, uuid)
+    if err != nil {
+        utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Cannot generate token for user %s", reqUser.Username), err)
+        return false
+    } 
+    
+    zap.S().Infof("token: \"%s\"", token)
+    response, _ := json.Marshal(models.AuthToken{reqUser.Username, token})
+    w.Write(response)
+
+    return true
+}
 
 func getUserStorageName(username string) (string, error) {
 
@@ -127,47 +175,4 @@ func getUserStorageName(username string) (string, error) {
     }
 
     return storage, nil
-}
-
-func login(reqUser *models.Authorisation) (int, []byte) {
-    authBackend := authentication.InitJWTAuthenticationBackend()
-    if authBackend.Authenticate(reqUser) {
-        uuid := uuid.New()
-        token, err := authBackend.GenerateToken(reqUser.Username, uuid)
-        if err != nil {
-            zap.S().Infof("Cannot generate token; err %v", err)
-            return http.StatusInternalServerError, []byte("")
-        } else {
-            zap.S().Infof("token: \"%s\"", token)
-            response, _ := json.Marshal(models.AuthToken{reqUser.Username, token})
-            return http.StatusOK, response
-        }
-    }
-    return http.StatusUnauthorized, []byte("")
-}
-
-func refreshToken(requestUser *models.Authorisation) []byte {
-    authBackend := authentication.InitJWTAuthenticationBackend()
-    uuid := uuid.New()
-    token, err := authBackend.GenerateToken(requestUser.Username, uuid)
-    if err != nil {
-        panic(err)
-    }
-    response, err := json.Marshal(parameters.TokenAuthentication{token})
-    if err != nil {
-        panic(err)
-    }
-    return response
-}
-
-func logout(req *http.Request) error {
-    authBackend := authentication.InitJWTAuthenticationBackend()
-    tokenRequest, err := request.ParseFromRequest(req, request.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
-        return authBackend.PublicKey, nil
-    })
-    if err != nil {
-        return err
-    }
-    tokenString := req.Header.Get("Authorization")
-    return authBackend.Logout(tokenString, tokenRequest)
 }

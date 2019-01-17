@@ -8,7 +8,6 @@ import (
 	"cord.stool/cmd/diff"
 	"cord.stool/cmd/upgrade"
 	"cord.stool/cmd/service"
-	remote_update "cord.stool/cmd/remote-update"
 )
 
 func RegisterCmdCommands(ctx *context.StoolContext) {
@@ -18,5 +17,4 @@ func RegisterCmdCommands(ctx *context.StoolContext) {
 	diff.Register(ctx)
 	upgrade.Register(ctx)
 	service.Register(ctx)
-	remote_update.Register(ctx)
 }
