@@ -18,7 +18,7 @@ type Configuration struct {
 	DbAuthCfg DbAuth `json:"db_auth"`
 }
 
-type Authorisation struct {
+type Authorization struct {
 	Username string `json:"username" form:"username"`
 	Password string `json:"password" form:"password"`
 	Storage string `json:"storage" form:"username"`
@@ -47,4 +47,14 @@ type UploadCmd struct {
 	FileName  string `json:"filename"`
 	FileData []byte   `json:filedata`
 	Patch bool `json:patch`
+}
+
+type CompareHashCmd struct {
+	FilePath  string `json:"filepath"`
+	FileName  string `json:"filename"`
+	FileHash string   `json:filehash`
+}
+
+type CompareHashCmdResult struct {
+	Equal bool   `json:equal`
 }

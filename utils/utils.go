@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"net/http"
+	"io"
 )
 
 // IEnumDirCallback ...
@@ -37,4 +39,16 @@ func EnumDir(path string, calback IEnumDirCallback) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func Post(url, token string, contentType string, body io.Reader) (resp *http.Response, err error) {
+
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+        return nil, err
+	}
+ 	req.Header.Set("Content-Type", contentType)
+ 	req.Header.Add("Authorization", token)
+	return client.Do(req)
 }

@@ -26,7 +26,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
     
     w.Header().Set("Content-Type", "application/json")
 
-    reqUser := new(models.Authorisation)
+    reqUser := new(models.Authorization)
     decoder := json.NewDecoder(r.Body)
     decoder.Decode(&reqUser)
 
@@ -49,7 +49,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
     }
 
     hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(reqUser.Password), 10)
-    err = dbc.Insert(models.Authorisation{reqUser.Username, string(hashedPassword), storage})
+    err = dbc.Insert(models.Authorization{reqUser.Username, string(hashedPassword), storage})
     if err != nil {
     	utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Cannot add user %s", reqUser.Username), err)
         return
@@ -66,7 +66,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-    reqUser := new(models.Authorisation)
+    reqUser := new(models.Authorization)
     decoder := json.NewDecoder(r.Body)
     decoder.Decode(&reqUser)
     
@@ -85,7 +85,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-    reqUser := new(models.Authorisation)
+    reqUser := new(models.Authorization)
     decoder := json.NewDecoder(r.Body)
     decoder.Decode(&reqUser)
 
@@ -100,7 +100,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 
     w.Header().Set("Content-Type", "application/json")
 
-    requestUser := new(models.Authorisation)
+    requestUser := new(models.Authorization)
     decoder := json.NewDecoder(r.Body)
     decoder.Decode(&requestUser)
 
@@ -143,12 +143,11 @@ func Logout(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
 }
 
-//
-func login(w http.ResponseWriter, reqUser *models.Authorisation) bool {
+func login(w http.ResponseWriter, reqUser *models.Authorization) bool {
 
     authBackend := authentication.InitJWTAuthenticationBackend()
     if !authBackend.Authenticate(reqUser) {
-        utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Invalid username %s or password", reqUser.Username), nil)
+        utils.ServiceError(w, http.StatusUnauthorized, fmt.Sprintf("Invalid username %s or password", reqUser.Username), nil)
         return false
     }
 

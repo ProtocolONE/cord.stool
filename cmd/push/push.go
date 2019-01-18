@@ -144,6 +144,11 @@ func Register(ctx *context.StoolContext) {
 				Usage:       "Upload the difference between files",
 				Destination: &args.cordArgs.Patch,
 			},
+			cli.BoolFlag{
+				Name:        "cord-hash",
+				Usage:       "Upload changed only files",
+				Destination: &args.cordArgs.Hash,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			return do(ctx, c)

@@ -59,10 +59,10 @@ func (backend *JWTAuthenticationBackend) GenerateToken(clientID string , userUUI
     return tokenString, nil
 }
 
-func (backend *JWTAuthenticationBackend) Authenticate(user *models.Authorisation) bool {
+func (backend *JWTAuthenticationBackend) Authenticate(user *models.Authorization) bool {
 
     dbc := database.Get("users")
-    var dbUsers []models.Authorisation
+    var dbUsers []models.Authorization
     err := dbc.Find(bson.M{"username": user.Username}).All(&dbUsers)
     if err != nil {
         zap.S().Infof("Cannot find user %s", user.Username)

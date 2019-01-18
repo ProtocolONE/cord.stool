@@ -26,6 +26,7 @@ type Args = struct {
 	SourceDir string
 	OutputDir string
 	Patch bool
+	Hash bool
 }
 
 // Upload ...
@@ -44,7 +45,7 @@ func Upload(args Args) error {
 	}
 
 	uiprogress.Start()
-	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal := uiprogress.AddBar(fc + 1).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize("Total progress", 35)
 	})
@@ -66,7 +67,11 @@ func Upload(args Args) error {
 
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
 
-	_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
+	if args.Hash {
+		_bar = uiprogress.AddBar(4).AppendCompleted().PrependElapsed()
+	} else {
+		_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
+	}
 
 	var curTitle string
 	var title *string
@@ -86,7 +91,7 @@ func Upload(args Args) error {
 		barTotal.Incr();
 		_bar.Set(0);
 
-		err := uploadFile(args.Url, auth.Token, args.OutputDir, path, fullSourceDir, args.Patch)
+		err := uploadFile(args, auth.Token, path, fullSourceDir)
 		if err != nil {
 			return err
 		}
@@ -107,7 +112,7 @@ func Upload(args Args) error {
 
 func login(url string, Username string, password string) (*models.AuthToken, error) {
 
-	authReq := &models.Authorisation{Username: Username, Password: password}
+	authReq := &models.Authorization{Username: Username, Password: password}
 	data, err := json.Marshal(authReq)
     if err != nil {
         return nil, err
@@ -115,13 +120,13 @@ func login(url string, Username string, password string) (*models.AuthToken, err
 	
 	res, err := http.Post(url + "/api/v1/token-auth", "application/json", bytes.NewBuffer(data))
 	if err != nil {
-        return nil, err
+        return nil, errors.New("Authorization failed. " +  err.Error())
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
 		message, _ := ioutil.ReadAll(res.Body)
-		return nil, errors.New("Authorisation failed. " +  string(message))
+		return nil, errors.New("Authorization error. " +  string(message))
 	}
 
 	authRes := new(models.AuthToken)
@@ -131,7 +136,38 @@ func login(url string, Username string, password string) (*models.AuthToken, err
 	return authRes, nil
 }
 
-func uploadFile(url string, token string, root string, path string, source string, patch bool) error {
+func compareHash(url string, token string, path string, fpath string, fname string) (bool, error) {
+	
+	hash, err := utils.Md5(path)
+	if err != nil {
+        return false, errors.New("Hash calculating error: " + err.Error())
+	}
+
+	cmpReq := &models.CompareHashCmd{FilePath: fpath, FileName: fname, FileHash: hash}
+	data, err := json.Marshal(cmpReq)
+    if err != nil {
+        return false, err
+	}	
+
+	res, err := utils.Post(url + "/api/v1/cmd/cmp-hash", token, "application/json", bytes.NewBuffer(data))
+	if err != nil {
+		return false, errors.New("Comapare hash request failed: " + err.Error())
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		message, _ := ioutil.ReadAll(res.Body)
+		return false, errors.New("Comapare hash request error. " +  string(message))
+	}
+
+	cmpRes := new(models.CompareHashCmdResult)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&cmpRes)
+
+	return cmpRes.Equal, nil
+}
+
+func uploadFile(args Args, token string, path string, source string) error {
 
 	_bar.Incr();
 
@@ -141,9 +177,24 @@ func uploadFile(url string, token string, root string, path string, source strin
 		return err
 	}
 
-	fpath := filepath.Join(root, relativePath)
+	fpath := filepath.Join(args.OutputDir, relativePath)
 	fpath, _ = filepath.Split(fpath)
 	fpath = strings.TrimRight(fpath, "/\\")
+
+	if args.Hash {
+		
+		r, err := compareHash(args.Url, token, path, fpath, fname)
+		if err != nil {
+			return errors.New("Compare hash error: " + err.Error())
+		}
+
+		_bar.Incr();
+
+		if r {
+			_bar.Incr();
+			return nil // no need to upload
+		}
+	}
 
 	filedata, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -152,20 +203,13 @@ func uploadFile(url string, token string, root string, path string, source strin
 
 	_bar.Incr();
 
-	authReq := &models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata, Patch: patch}
-	data, err := json.Marshal(authReq)
+	uploadReq := &models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch}
+	data, err := json.Marshal(uploadReq)
     if err != nil {
         return err
 	}	
 
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", url + "/api/v1/cmd/upload", bytes.NewBuffer(data))
-	if err != nil {
-        return err
-	}
- 	req.Header.Set("Content-Type", "application/json")
- 	req.Header.Add("Authorization", token)
-	res, err := client.Do(req)
+	res, err := utils.Post(args.Url + "/api/v1/cmd/upload", token, "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return errors.New("Upload file failed: " + err.Error())
 	}
@@ -173,7 +217,7 @@ func uploadFile(url string, token string, root string, path string, source strin
 
 	if res.StatusCode != 200 {
 		message, _ := ioutil.ReadAll(res.Body)
-		return errors.New("Upload file failed. " +  string(message))
+		return errors.New("Upload file error. " +  string(message))
 	}
 
 	_bar.Incr();

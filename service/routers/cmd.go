@@ -17,5 +17,11 @@ func SetCmdRoutes(router *mux.Router) *mux.Router {
             authentication.RequireTokenAuthentication(w, r, controllers.UploadCmd)
     })).Methods("POST")
 
-	return router
+    router.Handle(
+        "/api/v1/cmd/cmp-hash", 
+        http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            authentication.RequireTokenAuthentication(w, r, controllers.CompareHashCmd)
+    })).Methods("POST")
+
+    return router
 }
