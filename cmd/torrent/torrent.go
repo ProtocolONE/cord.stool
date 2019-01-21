@@ -10,8 +10,9 @@ import (
 	"strings"
 
 	"cord.stool/context"
-	"github.com/urfave/cli"
+	"cord.stool/utils"
 
+	"github.com/urfave/cli"
 	"github.com/anacrolix/missinggo/slices"
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/anacrolix/torrent/metainfo"
@@ -136,6 +137,7 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 	})
 
 	err = info.GeneratePieces(func(fi metainfo.FileInfo) (io.ReadCloser, error) {
+		progrssBar.Incr();
 		return os.Open(filepath.Join(root, strings.Join(fi.Path, string(filepath.Separator))))
 	})
 
@@ -150,8 +152,13 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 
 	fmt.Println("Creating torrent file ...")
 
+	fc, err := utils.FileCount(rootDir)
+	if err != nil {
+		return err
+	}
+
 	uiprogress.Start()
-	progrssBar = uiprogress.AddBar(4).AppendCompleted().PrependElapsed()
+	progrssBar = uiprogress.AddBar(fc + 4).AppendCompleted().PrependElapsed()
  
 	var title *string
 	title = &curProgressTitle
