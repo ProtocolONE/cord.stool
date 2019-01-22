@@ -4,14 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"net/http"
-	"encoding/json"
-	"bytes"
 	"io/ioutil"
 	"strings"
 
     "cord.stool/service/models"
 	"cord.stool/utils"
+	"cord.stool/cordapi"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
@@ -50,7 +48,7 @@ func Upload(args Args) error {
 		return strutil.Resize("Total progress", 35)
 	})
 
-	auth, err := login(args.Url, args.Login, args.Password)
+	auth, err := cordapi.Login(args.Url, args.Login, args.Password)
 	if err != nil {
 		return err
 	}
@@ -110,32 +108,6 @@ func Upload(args Args) error {
 	return nil
 }
 
-func login(url string, Username string, password string) (*models.AuthToken, error) {
-
-	authReq := &models.Authorization{Username: Username, Password: password}
-	data, err := json.Marshal(authReq)
-    if err != nil {
-        return nil, err
-	}	
-	
-	res, err := http.Post(url + "/api/v1/token-auth", "application/json", bytes.NewBuffer(data))
-	if err != nil {
-        return nil, errors.New("Authorization failed. " +  err.Error())
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		message, _ := ioutil.ReadAll(res.Body)
-		return nil, errors.New("Authorization error. " +  string(message))
-	}
-
-	authRes := new(models.AuthToken)
-	decoder := json.NewDecoder(res.Body)
-	decoder.Decode(&authRes)
-
-	return authRes, nil
-}
-
 func compareHash(url string, token string, path string, fpath string, fname string) (bool, error) {
 	
 	hash, err := utils.Md5(path)
@@ -143,26 +115,10 @@ func compareHash(url string, token string, path string, fpath string, fname stri
         return false, errors.New("Hash calculating error: " + err.Error())
 	}
 
-	cmpReq := &models.CompareHashCmd{FilePath: fpath, FileName: fname, FileHash: hash}
-	data, err := json.Marshal(cmpReq)
+	cmpRes, err := cordapi.CmpHash(url, token, &models.CompareHashCmd{FilePath: fpath, FileName: fname, FileHash: hash})
     if err != nil {
         return false, err
 	}	
-
-	res, err := utils.Post(url + "/api/v1/cmd/cmp-hash", token, "application/json", bytes.NewBuffer(data))
-	if err != nil {
-		return false, errors.New("Comapare hash request failed: " + err.Error())
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		message, _ := ioutil.ReadAll(res.Body)
-		return false, errors.New("Comapare hash request error. " +  string(message))
-	}
-
-	cmpRes := new(models.CompareHashCmdResult)
-	decoder := json.NewDecoder(res.Body)
-	decoder.Decode(&cmpRes)
 
 	return cmpRes.Equal, nil
 }
@@ -203,22 +159,10 @@ func uploadFile(args Args, token string, path string, source string) error {
 
 	_bar.Incr();
 
-	uploadReq := &models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch}
-	data, err := json.Marshal(uploadReq)
+	err = cordapi.Upload(args.Url, token, &models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch})
     if err != nil {
         return err
 	}	
-
-	res, err := utils.Post(args.Url + "/api/v1/cmd/upload", token, "application/json", bytes.NewBuffer(data))
-	if err != nil {
-		return errors.New("Upload file failed: " + err.Error())
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		message, _ := ioutil.ReadAll(res.Body)
-		return errors.New("Upload file error. " +  string(message))
-	}
 
 	_bar.Incr();
 

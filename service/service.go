@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
     "encoding/binary"
-    "os"
 
     "go.uber.org/zap"
     "github.com/gorilla/handlers"
@@ -27,18 +26,6 @@ var NotImplemented = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 func Start(port uint) error {
 
     fmt.Println("Service starting...")
-
-    // For Testing only
-    os.Setenv("MONGO_HOST", "127.0.0.1:27017")
-    os.Setenv("MONGO_DB", "cord_stool")
-    os.Setenv("MONGO_USER", "")
-    os.Setenv("MONGO_PASSWORD", "")
-    os.Setenv("HTTP_SCHEME", "http")
-    os.Setenv("SERVICE_PORT", "5000")
-    os.Setenv("PRIVATE_KEY_PATH", `D:\Projects\Syncopate\sources\ProtocolONE\cord.stool\service\config\keys\private_key`)
-    os.Setenv("PUBLIC_KEY_PATH", `D:\Projects\Syncopate\sources\ProtocolONE\cord.stool\service\config\keys\public_key.pub`)
-    os.Setenv("JWT_EXPIRATION_DELTA", "72")
-    os.Setenv("STORAGE_ROOT_PATH", `D:\Temp\server_storage`)
 
     logger, err := zap.NewDevelopment()
     if err != nil {
