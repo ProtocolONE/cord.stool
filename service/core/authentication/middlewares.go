@@ -6,13 +6,14 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	request "github.com/dgrijalva/jwt-go/request"
-	"go.uber.org/zap"
+
+	"github.com/labstack/echo"
 )
 
-func RequireTokenAuthentication(rw http.ResponseWriter, req *http.Request, next http.HandlerFunc) {
+func RequireTokenAuthentication(context echo.Context) bool {
 	
 	authBackend := InitJWTAuthenticationBackend()
-	token, err := request.ParseFromRequest(req, request.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
+	token, err := request.ParseFromRequest(context.Request(), request.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		} else {
@@ -22,13 +23,15 @@ func RequireTokenAuthentication(rw http.ResponseWriter, req *http.Request, next 
 
 	claims := token.Claims.(jwt.MapClaims)
 	clientID, _ := claims["client_id"].(string)
-	req.Header.Set("ClientID", clientID)
+	context.Request().Header.Set("ClientID", clientID)
 
-	if err == nil && token.Valid && !authBackend.IsInBlacklist(req.Header.Get("Authorization")) {
-		//zap.S().Infof("req token %s", req.Header.Get("Authorization"))
-		next(rw, req)
+	if err == nil && token.Valid && !authBackend.IsInBlacklist(context.Request().Header.Get("Authorization")) {
+		//context.Echo().Logger.Info("req token %s", req.Header.Get("Authorization"))
+		return true
 	} else {
-		zap.S().Info(err.Error())
-		rw.WriteHeader(http.StatusUnauthorized)
+		context.Echo().Logger.Error(err.Error())
+    	context.NoContent(http.StatusUnauthorized)
 	}
+
+	return false
 }

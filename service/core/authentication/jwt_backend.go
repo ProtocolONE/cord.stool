@@ -14,7 +14,6 @@ import (
     "os"
     "time"
     "fmt"
-    "go.uber.org/zap"
 )
 
 type JWTAuthenticationBackend struct {
@@ -53,8 +52,7 @@ func (backend *JWTAuthenticationBackend) GenerateToken(clientID string , userUUI
 
     tokenString, err := token.SignedString(backend.privateKey)
     if err != nil {
-        zap.S().Errorf("Cannot generate token, err: %v", err)
-        return "", err
+        return "", fmt.Errorf("Cannot generate token, error: %s", err)
     }
     return tokenString, nil
 }
@@ -65,7 +63,6 @@ func (backend *JWTAuthenticationBackend) Authenticate(user *models.Authorization
     var dbUsers []models.Authorization
     err := dbc.Find(bson.M{"username": user.Username}).All(&dbUsers)
     if err != nil {
-        zap.S().Infof("Cannot find user %s", user.Username)
         return false
     }
     return len(dbUsers) == 1 && user.Username == dbUsers[0].Username && bcrypt.CompareHashAndPassword([]byte(dbUsers[0].Password), []byte(user.Password)) == nil
@@ -85,13 +82,11 @@ func (backend *JWTAuthenticationBackend) getTokenRemainingValidity(timestamp int
 
 func (backend *JWTAuthenticationBackend) Logout(tokenStr string, token *jwt.Token) error {
 
-    zap.S().Infof("Logout token: \"%s\"", tokenStr)
     return nil
 }
 
 func (backend *JWTAuthenticationBackend) IsInBlacklist(tokenStr string) bool {
 
-    //zap.S().Infof("is blist token: \"%s\"", tokenStr)
     return false
 }
 

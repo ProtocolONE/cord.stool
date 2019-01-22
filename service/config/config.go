@@ -2,10 +2,6 @@ package config
 
 import (
 	"github.com/kelseyhightower/envconfig"
-	//"os"
-	//"path/filepath"
-
-	//"gopkg.in/yaml.v2"
 )
 
 type DatabaseCfg struct {
@@ -34,20 +30,6 @@ var cfg *Config
 func Init() (*Config, error) {
 
 	cfg = &Config{}
-
-	/*pwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	file, err := os.Open(filepath.Join(pwd, "service-config.yaml"))
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	decoder := yaml.NewDecoder(file)
-	decoder.Decode(&cfg)*/
 
 	if err := envconfig.Process("", cfg); err != nil {
 		return nil, err

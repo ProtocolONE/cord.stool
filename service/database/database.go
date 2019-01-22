@@ -9,8 +9,6 @@ import (
     "go.uber.org/zap"
 )
 
-
-
 type DbConf struct {
     Dbs      *mgo.Session
     Addrs    []string
@@ -20,7 +18,6 @@ type DbConf struct {
 }
 
 var dbConf *DbConf
-
 
 func Init() (error) {
     cfg := config.Get().Database
@@ -59,7 +56,6 @@ func Init() (error) {
     zap.S().Infof("Connected to DB: \"%s\" [u:\"%s\":p\"%s\"]", dbConf.Database, dbConf.Username, dbConf.Password)
     return nil
 }
-
 
 func Get(collection string) (*mgo.Collection) {
     session := dbConf.Dbs.Copy()

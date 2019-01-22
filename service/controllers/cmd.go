@@ -4,6 +4,7 @@ import (
 	"cord.stool/service/models"
 	"cord.stool/xdelta"
     "cord.stool/service/core/utils"
+    "cord.stool/service/core/authentication"
 	utils2 "cord.stool/utils"
 
 	"encoding/json"
@@ -13,27 +14,30 @@ import (
 	"io/ioutil"
 	"fmt"
 
+    "github.com/labstack/echo"
 )
 
-func UploadCmd(w http.ResponseWriter, r *http.Request) {
+func UploadCmd(context echo.Context) error {
 
-	w.Header().Set("Content-Type", "application/json")
-	
-	userRoot, err := utils.GetUserStorage(r.Header.Get("ClientID"))
+	if !authentication.RequireTokenAuthentication(context) {
+		return nil
+	}
+
+	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
     if err != nil {
-		utils.ServiceError(w, http.StatusInternalServerError, err.Error(), nil)
-		return
+		//utils.ServiceError(context, http.StatusInternalServerError, err.Error(), nil)
+		return err
 	}
 	
     reqUpload := new(models.UploadCmd)
-    decoder := json.NewDecoder(r.Body)
+    decoder := json.NewDecoder(context.Request().Body)
     decoder.Decode(&reqUpload)
 
 	fpath := path.Join(userRoot, reqUpload.FilePath)
 	err = os.MkdirAll(fpath, 0777)
 	if err != nil {
-		utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Cannot create path %s", fpath), err)
-		return
+		//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot create path %s", fpath), err)
+		return fmt.Errorf("Cannot create path %s, error: %s", fpath, err.Error())
 	}
 
 	fpath = path.Join(fpath, reqUpload.FileName)
@@ -43,16 +47,16 @@ func UploadCmd(w http.ResponseWriter, r *http.Request) {
 		fpath = fpath[0 : (len(fpath) - len(".diff"))]
 		patchfile, err := ioutil.TempFile(os.TempDir(), "patch")
 		if err != nil {
-			utils.ServiceError(w, http.StatusInternalServerError, "Cannot get temp file", err)
-			return
+			//utils.ServiceError(context, http.StatusInternalServerError, "Cannot get temp file", err)
+			return fmt.Errorf("Cannot get temp file, error: %s", err.Error())
 		} 
 		defer os.Remove(patchfile.Name())
 		patchfile.Close()
 
 		err = ioutil.WriteFile(patchfile.Name(), reqUpload.FileData, 0777)
 		if err != nil {
-			utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s", fpath), err)
-			return
+			//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s", fpath), err)
+			return fmt.Errorf("Cannot write to file %s, error: %s", fpath, err.Error())
 		} 
 
 		fpathold := fpath
@@ -62,34 +66,36 @@ func UploadCmd(w http.ResponseWriter, r *http.Request) {
 		
 		err = xdelta.DecodeDiff(fpathold, fpath, patchfile.Name())
 		if err != nil {
-			utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Cannot apply patch to %s", fpath), err)
-			return
+			//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot apply patch to %s", fpath), err)
+			return fmt.Errorf("Cannot apply patch to %s, error: %s", fpath, err.Error())
 		} 
 
 	} else {
 
 		err = ioutil.WriteFile(fpath, reqUpload.FileData, 0777)
 		if err != nil {
-			utils.ServiceError(w, http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s", fpath), err)
-			return
+			//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s", fpath), err)
+			return fmt.Errorf("Cannot write to file %s, error: %s", fpath, err.Error())
 		} 
 	}
 
-    w.WriteHeader(http.StatusOK)
+	return context.NoContent(http.StatusOK)
 }
 
-func CompareHashCmd(w http.ResponseWriter, r *http.Request) {
+func CompareHashCmd(context echo.Context) error {
 
-	w.Header().Set("Content-Type", "application/json")
+	if !authentication.RequireTokenAuthentication(context) {
+		return nil
+	}
 
-	userRoot, err := utils.GetUserStorage(r.Header.Get("ClientID"))
+	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
     if err != nil {
-		utils.ServiceError(w, http.StatusInternalServerError, err.Error(), nil)
-		return
+		//utils.ServiceError(context, http.StatusInternalServerError, err.Error(), nil)
+		return err
 	}
 
     reqCmp := new(models.CompareHashCmd)
-    decoder := json.NewDecoder(r.Body)
+    decoder := json.NewDecoder(context.Request().Body)
     decoder.Decode(&reqCmp)
 
 	fpath := path.Join(userRoot, reqCmp.FilePath)
@@ -98,7 +104,5 @@ func CompareHashCmd(w http.ResponseWriter, r *http.Request) {
 	hash, err := utils2.Md5(fpath)
 	equal := (err == nil && reqCmp.FileHash == hash)
 
-    response, _ := json.Marshal(models.CompareHashCmdResult{Equal: equal})
-    w.Write(response)
-    w.WriteHeader(http.StatusOK)
+	return context.JSON(http.StatusOK, models.CompareHashCmdResult{Equal: equal})
 }

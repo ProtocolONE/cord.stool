@@ -33,6 +33,9 @@ require (
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/kr/pretty v0.1.0
 	github.com/kr/pty v1.1.3 // indirect
+	github.com/labstack/echo v3.3.5+incompatible
+	github.com/labstack/gommon v0.2.8 // indirect
+	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/pborman/uuid v1.2.0
@@ -44,6 +47,8 @@ require (
 	github.com/stretchr/testify v1.2.2
 	github.com/udhos/equalfile v0.3.0
 	github.com/urfave/cli v1.20.0
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasttemplate v0.0.0-20170224212429-dcecefd839c4 // indirect
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1

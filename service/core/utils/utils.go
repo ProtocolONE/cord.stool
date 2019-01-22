@@ -3,26 +3,23 @@ package utils
 import (
 	"cord.stool/service/models"
     "cord.stool/service/database"
+	//"cord.stool/service"
 
-	"encoding/json"
-	"net/http"
 	"fmt"
 
-	"go.uber.org/zap"
     "gopkg.in/mgo.v2/bson"
+    "github.com/labstack/echo"
 )
 
-func ServiceError(w http.ResponseWriter, status int, message string, err error) {
+func ServiceError(context echo.Context, status int, message string, err error) {
 
 	if err != nil {
 		message += fmt.Sprintf(". Error: %s", err.Error())	
 	}
 
-	zap.S().Errorf(message)
+	context.Echo().Logger.Error(message)
 
-    w.WriteHeader(status)
-    response, _ := json.Marshal(models.Error{Message: message})
-	w.Write(response)
+	context.JSON(status, models.Error{Message: message})
 }
 
 func GetUserStorage(clientID string) (string, error) {

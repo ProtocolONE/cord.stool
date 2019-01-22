@@ -1,17 +1,20 @@
 package routers
 
 import (
-	"net/http"
+    "github.com/labstack/echo"
 
-	"github.com/gorilla/mux"
-
-	"cord.stool/service/controllers"
-    "cord.stool/service/core/authentication"
+    "cord.stool/service/controllers"
 )
 
-func SetAuthRoutes(router *mux.Router) *mux.Router {
+func InitAuthRoutes(e *echo.Echo) {
 
-	router.Handle(
+    e.POST("/api/v1/user", controllers.CreateUser)
+    e.DELETE("/api/v1/user", controllers.DeleteUser)
+    e.POST("/api/v1/token-auth", controllers.Login)
+    e.GET("/api/v1/refresh-token-auth", controllers.RefreshToken)
+    e.GET("/api/v1/logout", controllers.Logout)
+
+    /*router.Handle(
         "/api/v1/user",
         http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             controllers.CreateUser(w, r)
@@ -41,5 +44,5 @@ func SetAuthRoutes(router *mux.Router) *mux.Router {
             authentication.RequireTokenAuthentication(w, r, controllers.Logout)
 	})).Methods("GET")
 		
-	return router
+	return router*/
 }

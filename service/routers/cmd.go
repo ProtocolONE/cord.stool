@@ -1,27 +1,14 @@
 package routers
 
 import (
-	"net/http"
 
-	"github.com/gorilla/mux"
+    "github.com/labstack/echo"
 
 	"cord.stool/service/controllers"
-    "cord.stool/service/core/authentication"
 )
 
-func SetCmdRoutes(router *mux.Router) *mux.Router {
+func InitCmdRoutes(e *echo.Echo) {
 
-    router.Handle(
-        "/api/v1/cmd/upload", 
-        http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            authentication.RequireTokenAuthentication(w, r, controllers.UploadCmd)
-    })).Methods("POST")
-
-    router.Handle(
-        "/api/v1/cmd/cmp-hash", 
-        http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            authentication.RequireTokenAuthentication(w, r, controllers.CompareHashCmd)
-    })).Methods("POST")
-
-    return router
+    e.POST("/api/v1/cmd/upload", controllers.UploadCmd)
+    e.POST("/api/v1/cmd/cmp-hash", controllers.CompareHashCmd)
 }

@@ -1,12 +1,11 @@
 package routers
 
 import (
-	"github.com/gorilla/mux"
+    "github.com/labstack/echo"
 )
 
-func InitRoutes() *mux.Router {
-	router := mux.NewRouter()
-	router = SetAuthRoutes(router)
-	router = SetCmdRoutes(router)
-	return router
+func InitRoutes(e *echo.Echo) {
+
+	InitAuthRoutes(e)
+	InitCmdRoutes(e)
 }
