@@ -6,7 +6,6 @@ import (
     "cord.stool/service/models"
     "cord.stool/service/database"
     "cord.stool/service/config"
-    "cord.stool/service/core/utils"
 
     "golang.org/x/crypto/bcrypt"
     "encoding/json"
@@ -29,53 +28,30 @@ func CreateUser(context echo.Context) error {
     decoder := json.NewDecoder(context.Request().Body)
     decoder.Decode(&reqUser)
 
-    /*dbc := database.Get("users")
-    usersWon, err := dbc.Find(bson.M{"username": reqUser.Username}).Count()
-    if err != nil {
-		//utils.ServiceError(context, http.StatusInternalServerError, "Cannot read from database", err)
-		return fmt.Errorf("Cannot read from database, error: %s", err.Error())
-    }
-    
-    if usersWon != 0 {
-		//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("User %s already exists", reqUser.Username), nil)
-		return fmt.Errorf("User %s already exists", reqUser.Username)
-    } */
-
     manager := database.GeUserManager()
 	users, err := manager.FindByName(reqUser.Username)
     if err != nil {
-		return fmt.Errorf("Cannot read from database, error: %s", err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot read from database, error: %s", err.Error()))
     } 
 
     if len(users) != 0 {
-        return fmt.Errorf("User %s already exists", reqUser.Username)
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("User %s already exists", reqUser.Username))
     }
 
     storage, err := getUserStorageName(reqUser.Username)
     if err != nil {
-    	//utils.ServiceError(context, http.StatusInternalServerError, "Cannot generate user files storage name", err)
-		return fmt.Errorf("Cannot generate user files storage name, error: %s", err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate user files storage name, error: %s", err.Error()))
     }
 
     hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(reqUser.Password), 10)
     
-    /*err = dbc.Insert(models.Authorization{reqUser.Username, string(hashedPassword), storage})
-    if err != nil {
-    	//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot add user %s", reqUser.Username), err)
-		return fmt.Errorf("Cannot add user %s, error: %s", reqUser.Username, err.Error())
-    }*/
-
     err = manager.Insert(&models.User{reqUser.Username, string(hashedPassword), storage})
     if err != nil {
-		return fmt.Errorf("Cannot add user %s, error: %s", reqUser.Username, err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot add user %s, error: %s", reqUser.Username, err.Error()))
     }
     
     context.Echo().Logger.Info("Created new user %s.", reqUser.Username)
-    if !login(context, reqUser) {
-        return nil
-    }
-
-    return nil
+    return context.NoContent(http.StatusOK)
 }
 
 func DeleteUser(context echo.Context) error {
@@ -88,17 +64,10 @@ func DeleteUser(context echo.Context) error {
     decoder := json.NewDecoder(context.Request().Body)
     decoder.Decode(&reqUser)
     
-    /*dbc := database.Get("users")
-    err := dbc.Remove(bson.M{"username": reqUser.Username})
-    if err != nil {
-    	//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot delete user %s", reqUser.Username), err)
-		return fmt.Errorf("Cannot delete user %s, error: %s", reqUser.Username, err.Error())
-    }*/
-    
     manager := database.GeUserManager()
     err := manager.RemoveByName(reqUser.Username)
     if err != nil {
-		return fmt.Errorf("Cannot delete user %s, error: %s", reqUser.Username, err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot delete user %s, error: %s", reqUser.Username, err.Error()))
     }
         
     context.Echo().Logger.Info("Removed user %s", reqUser.Username)
@@ -112,10 +81,21 @@ func Login(context echo.Context) error {
     decoder.Decode(&reqUser)
 
     context.Echo().Logger.Info("Login: username: %s; password: %s", reqUser.Username, reqUser.Password)
-    if !login(context, reqUser) {
-        return nil
+
+    authBackend := authentication.InitJWTAuthenticationBackend()
+    if !authBackend.Authenticate(reqUser) {
+        return echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password")
     }
-    return nil
+
+    uuid := uuid.New()
+    token, err := authBackend.GenerateToken(reqUser.Username, uuid)
+    if err != nil {
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate token for user %s", reqUser.Username))
+    } 
+    
+    context.Echo().Logger.Info("token: \"%s\"", token)
+
+    return context.JSON(http.StatusOK, models.AuthToken{reqUser.Username, token})
 }
 
 func RefreshToken(context echo.Context) error {
@@ -133,8 +113,7 @@ func RefreshToken(context echo.Context) error {
     
     token, err := authBackend.GenerateToken(reqUser.Username, uuid)
     if err != nil {
-    	//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot generate token for user %s", reqUser.Username), err)
-		return fmt.Errorf("Cannot generate token for user %s, error: %s", reqUser.Username, err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate token for user %s, error: %s", reqUser.Username, err.Error()))
     }
 
     return context.JSON(http.StatusOK, parameters.TokenAuthentication{token})
@@ -152,40 +131,17 @@ func Logout(context echo.Context) error {
     })
 
     if err != nil {
-    	//utils.ServiceError(context, http.StatusInternalServerError, "Logout failed", err)
-		return fmt.Errorf("Logout failed, error: %s", err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Logout failed, error: %s", err.Error()))
     }
 
     tokenString := context.Request().Header.Get("Authorization")
 
     err = authBackend.Logout(tokenString, tokenRequest)
     if err != nil {
-    	//utils.ServiceError(context, http.StatusInternalServerError, "Logout failed", err)
-		return fmt.Errorf("Logout failed, error: %s", err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Logout failed, error: %s", err.Error()))
     }
     
     return context.NoContent(http.StatusOK)
-}
-
-func login(context echo.Context, reqUser *models.Authorization) bool {
-
-    authBackend := authentication.InitJWTAuthenticationBackend()
-    if !authBackend.Authenticate(reqUser) {
-        utils.ServiceError(context, http.StatusUnauthorized, fmt.Sprintf("Invalid username %s or password", reqUser.Username), nil)
-        return false
-    }
-
-    uuid := uuid.New()
-    token, err := authBackend.GenerateToken(reqUser.Username, uuid)
-    if err != nil {
-        utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot generate token for user %s", reqUser.Username), err)
-        return false
-    } 
-    
-    context.Echo().Logger.Info("token: \"%s\"", token)
-
-    context.JSON(http.StatusOK, models.AuthToken{reqUser.Username, token})
-    return true
 }
 
 func getUserStorageName(username string) (string, error) {

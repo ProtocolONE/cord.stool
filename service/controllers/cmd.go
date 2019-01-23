@@ -25,8 +25,7 @@ func UploadCmd(context echo.Context) error {
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
     if err != nil {
-		//utils.ServiceError(context, http.StatusInternalServerError, err.Error(), nil)
-		return err
+        return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	
     reqUpload := new(models.UploadCmd)
@@ -36,8 +35,7 @@ func UploadCmd(context echo.Context) error {
 	fpath := path.Join(userRoot, reqUpload.FilePath)
 	err = os.MkdirAll(fpath, 0777)
 	if err != nil {
-		//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot create path %s", fpath), err)
-		return fmt.Errorf("Cannot create path %s, error: %s", fpath, err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot create path %s, error: %s", fpath, err.Error()))
 	}
 
 	fpath = path.Join(fpath, reqUpload.FileName)
@@ -47,16 +45,14 @@ func UploadCmd(context echo.Context) error {
 		fpath = fpath[0 : (len(fpath) - len(".diff"))]
 		patchfile, err := ioutil.TempFile(os.TempDir(), "patch")
 		if err != nil {
-			//utils.ServiceError(context, http.StatusInternalServerError, "Cannot get temp file", err)
-			return fmt.Errorf("Cannot get temp file, error: %s", err.Error())
+        	return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot get temp file, error: %s", err.Error()))
 		} 
 		defer os.Remove(patchfile.Name())
 		patchfile.Close()
 
 		err = ioutil.WriteFile(patchfile.Name(), reqUpload.FileData, 0777)
 		if err != nil {
-			//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s", fpath), err)
-			return fmt.Errorf("Cannot write to file %s, error: %s", fpath, err.Error())
+        	return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s, error: %s", fpath, err.Error()))
 		} 
 
 		fpathold := fpath
@@ -66,16 +62,14 @@ func UploadCmd(context echo.Context) error {
 		
 		err = xdelta.DecodeDiff(fpathold, fpath, patchfile.Name())
 		if err != nil {
-			//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot apply patch to %s", fpath), err)
-			return fmt.Errorf("Cannot apply patch to %s, error: %s", fpath, err.Error())
+        	return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot apply patch to %s, error: %s", fpath, err.Error()))
 		} 
 
 	} else {
 
 		err = ioutil.WriteFile(fpath, reqUpload.FileData, 0777)
 		if err != nil {
-			//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s", fpath), err)
-			return fmt.Errorf("Cannot write to file %s, error: %s", fpath, err.Error())
+        	return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s, error: %s", fpath, err.Error()))
 		} 
 	}
 
@@ -90,8 +84,7 @@ func CompareHashCmd(context echo.Context) error {
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
     if err != nil {
-		//utils.ServiceError(context, http.StatusInternalServerError, err.Error(), nil)
-		return err
+        return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
     reqCmp := new(models.CompareHashCmd)
