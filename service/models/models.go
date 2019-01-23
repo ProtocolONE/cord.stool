@@ -21,7 +21,7 @@ type Configuration struct {
 type Authorization struct {
 	Username string `json:"username" form:"username"`
 	Password string `json:"password" form:"password"`
-	Storage string `json:"storage" form:"username"`
+	Storage string `json:"storage" form:"storage"`
 }
 
 type CreatedId struct {
@@ -57,4 +57,10 @@ type CompareHashCmd struct {
 
 type CompareHashCmdResult struct {
 	Equal bool   `json:equal`
+}
+
+type User struct {
+	Username string `bson:"username" json:"username"`
+	Password string `bson:"password" json:"password"`
+	Storage string `bson:"storage" json:"storage"`
 }

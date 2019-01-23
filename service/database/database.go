@@ -2,11 +2,11 @@ package database
 
 import (
     "cord.stool/service/config"
-    //migrate "github.com/xakep666/mongo-migrate"
-    //_ "management.api/migrations"
+    "cord.stool/service/models"
+
     mgo "gopkg.in/mgo.v2"
-    //"gopkg.in/mgo.v2/bson"
     "go.uber.org/zap"
+    "gopkg.in/mgo.v2/bson"
 )
 
 type DbConf struct {
@@ -37,28 +37,55 @@ func Init() (error) {
         zap.S().Fatal(err)
         return err
     }
-    //db := session.DB("")
-    //m := migrate.NewMigrate(db, migrate.Migration{
-    //    Version: 1,
-    //    Description: "Add user index",
-    //    Up: func(db *mgo.Database) error {
-    //        return db.C("users").EnsureIndex(mgo.Index{Name: "username", Key: []string{"username"}})
-    //    },
-    //    Down: func(db *mgo.Database) error {
-    //        return db.C("users").DropIndexName("username")
-    //    },
-    //})
-    //if err := m.Up(migrate.AllAvailable); err != nil {
-    //    zap.S().Fatal(err)
-    //    return err
-    //}
+
     dbConf.Dbs = session
     zap.S().Infof("Connected to DB: \"%s\" [u:\"%s\":p\"%s\"]", dbConf.Database, dbConf.Username, dbConf.Password)
     return nil
 }
 
-func Get(collection string) (*mgo.Collection) {
+type DBManager interface {
+	FindByName(string) (*models.User, error)
+    RemoveByName(string) error
+    Insert(*models.User) error
+}
+
+type UserManager struct {
+	collection *mgo.Collection
+}
+
+func GeUserManager() (*UserManager) {
     session := dbConf.Dbs.Copy()
     //defer session.Close()
-    return session.DB(dbConf.Database).C(collection)
+    return &UserManager{collection: session.DB(dbConf.Database).C("users")}
+}
+
+func (manager *UserManager) FindByName(name string) ([]*models.User, error) {
+
+    var dbUsers []*models.User
+    err := manager.collection.Find(bson.M{"username": name}).All(&dbUsers)
+    if err != nil {
+		return nil, err
+	}
+
+	return dbUsers, nil
+}
+
+func (manager *UserManager) RemoveByName(name string) error {
+
+    err := manager.collection.Remove(bson.M{"username": name})
+    if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *UserManager) Insert(user *models.User) error {
+
+    err := manager.collection.Insert(user)
+    if err != nil {
+		return err
+	}
+
+	return nil
 }

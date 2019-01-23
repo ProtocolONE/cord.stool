@@ -9,7 +9,6 @@ import (
     "cord.stool/service/core/utils"
 
     "golang.org/x/crypto/bcrypt"
-    "gopkg.in/mgo.v2/bson"
     "encoding/json"
     "net/http"
     //"go.uber.org/zap"
@@ -30,17 +29,27 @@ func CreateUser(context echo.Context) error {
     decoder := json.NewDecoder(context.Request().Body)
     decoder.Decode(&reqUser)
 
-    dbc := database.Get("users")
+    /*dbc := database.Get("users")
     usersWon, err := dbc.Find(bson.M{"username": reqUser.Username}).Count()
     if err != nil {
 		//utils.ServiceError(context, http.StatusInternalServerError, "Cannot read from database", err)
 		return fmt.Errorf("Cannot read from database, error: %s", err.Error())
-    } 
-
+    }
+    
     if usersWon != 0 {
 		//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("User %s already exists", reqUser.Username), nil)
 		return fmt.Errorf("User %s already exists", reqUser.Username)
+    } */
+
+    manager := database.GeUserManager()
+	users, err := manager.FindByName(reqUser.Username)
+    if err != nil {
+		return fmt.Errorf("Cannot read from database, error: %s", err.Error())
     } 
+
+    if len(users) != 0 {
+        return fmt.Errorf("User %s already exists", reqUser.Username)
+    }
 
     storage, err := getUserStorageName(reqUser.Username)
     if err != nil {
@@ -49,11 +58,17 @@ func CreateUser(context echo.Context) error {
     }
 
     hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(reqUser.Password), 10)
-    err = dbc.Insert(models.Authorization{reqUser.Username, string(hashedPassword), storage})
+    
+    /*err = dbc.Insert(models.Authorization{reqUser.Username, string(hashedPassword), storage})
     if err != nil {
     	//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot add user %s", reqUser.Username), err)
 		return fmt.Errorf("Cannot add user %s, error: %s", reqUser.Username, err.Error())
-    } 
+    }*/
+
+    err = manager.Insert(&models.User{reqUser.Username, string(hashedPassword), storage})
+    if err != nil {
+		return fmt.Errorf("Cannot add user %s, error: %s", reqUser.Username, err.Error())
+    }
     
     context.Echo().Logger.Info("Created new user %s.", reqUser.Username)
     if !login(context, reqUser) {
@@ -73,10 +88,16 @@ func DeleteUser(context echo.Context) error {
     decoder := json.NewDecoder(context.Request().Body)
     decoder.Decode(&reqUser)
     
-    dbc := database.Get("users")
+    /*dbc := database.Get("users")
     err := dbc.Remove(bson.M{"username": reqUser.Username})
     if err != nil {
     	//utils.ServiceError(context, http.StatusInternalServerError, fmt.Sprintf("Cannot delete user %s", reqUser.Username), err)
+		return fmt.Errorf("Cannot delete user %s, error: %s", reqUser.Username, err.Error())
+    }*/
+    
+    manager := database.GeUserManager()
+    err := manager.RemoveByName(reqUser.Username)
+    if err != nil {
 		return fmt.Errorf("Cannot delete user %s, error: %s", reqUser.Username, err.Error())
     }
         

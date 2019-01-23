@@ -4,7 +4,6 @@ import (
     "cord.stool/service/models"
     "cord.stool/service/config"
     "cord.stool/service/database"
-    "gopkg.in/mgo.v2/bson"
     "bufio"
     "crypto/rsa"
     "crypto/x509"
@@ -59,13 +58,20 @@ func (backend *JWTAuthenticationBackend) GenerateToken(clientID string , userUUI
 
 func (backend *JWTAuthenticationBackend) Authenticate(user *models.Authorization) bool {
 
-    dbc := database.Get("users")
+    /*dbc := database.Get("users")
     var dbUsers []models.Authorization
     err := dbc.Find(bson.M{"username": user.Username}).All(&dbUsers)
     if err != nil {
         return false
+    }*/
+
+	manager := database.GeUserManager()
+	users, err := manager.FindByName(user.Username)
+    if err != nil {
+        return false
     }
-    return len(dbUsers) == 1 && user.Username == dbUsers[0].Username && bcrypt.CompareHashAndPassword([]byte(dbUsers[0].Password), []byte(user.Password)) == nil
+
+    return len(users) == 1 && user.Username == users[0].Username && bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password)) == nil
 }
 
 func (backend *JWTAuthenticationBackend) getTokenRemainingValidity(timestamp interface{}) int {
