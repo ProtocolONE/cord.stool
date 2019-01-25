@@ -8,7 +8,6 @@ import (
     "cord.stool/service/config"
 
     "golang.org/x/crypto/bcrypt"
-    "encoding/json"
     "net/http"
     //"go.uber.org/zap"
     "strings"
@@ -24,11 +23,13 @@ import (
 
 func CreateUser(context echo.Context) error {
     
-    reqUser := new(models.Authorization)
-    decoder := json.NewDecoder(context.Request().Body)
-    decoder.Decode(&reqUser)
+    reqUser := &models.Authorization{}
+    err := context.Bind(reqUser)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: " + err.Error())
+	}
 
-    manager := database.GeUserManager()
+    manager := database.NewUserManager()
 	users, err := manager.FindByName(reqUser.Username)
     if err != nil {
         return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot read from database, error: %s", err.Error()))
@@ -47,11 +48,11 @@ func CreateUser(context echo.Context) error {
     
     err = manager.Insert(&models.User{reqUser.Username, string(hashedPassword), storage})
     if err != nil {
-        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot add user %s, error: %s", reqUser.Username, err.Error()))
+        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot create user %s, error: %s", reqUser.Username, err.Error()))
     }
     
     context.Echo().Logger.Info("Created new user %s.", reqUser.Username)
-    return context.NoContent(http.StatusOK)
+    return context.NoContent(http.StatusCreated)
 }
 
 func DeleteUser(context echo.Context) error {
@@ -60,12 +61,14 @@ func DeleteUser(context echo.Context) error {
 		return nil
 	}
 
-    reqUser := new(models.Authorization)
-    decoder := json.NewDecoder(context.Request().Body)
-    decoder.Decode(&reqUser)
-    
-    manager := database.GeUserManager()
-    err := manager.RemoveByName(reqUser.Username)
+    reqUser := &models.Authorization{}
+    err := context.Bind(reqUser)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: " + err.Error())
+	}
+
+    manager := database.NewUserManager()
+    err = manager.RemoveByName(reqUser.Username)
     if err != nil {
         return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot delete user %s, error: %s", reqUser.Username, err.Error()))
     }
@@ -76,9 +79,11 @@ func DeleteUser(context echo.Context) error {
 
 func Login(context echo.Context) error {
 
-    reqUser := new(models.Authorization)
-    decoder := json.NewDecoder(context.Request().Body)
-    decoder.Decode(&reqUser)
+    reqUser := &models.Authorization{}
+    err := context.Bind(reqUser)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: " + err.Error())
+	}
 
     context.Echo().Logger.Info("Login: username: %s; password: %s", reqUser.Username, reqUser.Password)
 
@@ -104,9 +109,11 @@ func RefreshToken(context echo.Context) error {
 		return nil
 	}
 
-    reqUser := new(models.Authorization)
-    decoder := json.NewDecoder(context.Request().Body)
-    decoder.Decode(&reqUser)
+    reqUser := &models.Authorization{}
+    err := context.Bind(reqUser)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: " + err.Error())
+	}
 
     authBackend := authentication.InitJWTAuthenticationBackend()
     uuid := uuid.New()
@@ -131,7 +138,7 @@ func Logout(context echo.Context) error {
     })
 
     if err != nil {
-        return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Logout failed, error: %s", err.Error()))
+        return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Logout failed, error: %s", err.Error()))
     }
 
     tokenString := context.Request().Header.Get("Authorization")

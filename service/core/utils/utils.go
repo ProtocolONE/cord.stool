@@ -8,7 +8,7 @@ import (
 
 func GetUserStorage(clientID string) (string, error) {
 
-	manager := database.GeUserManager()
+	manager := database.NewUserManager()
 	users, err := manager.FindByName(clientID)
     if err != nil {
 		return "", fmt.Errorf("Cannot find user %s, error: %s", clientID, err.Error())

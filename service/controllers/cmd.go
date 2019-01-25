@@ -7,7 +7,6 @@ import (
     "cord.stool/service/core/authentication"
 	utils2 "cord.stool/utils"
 
-	"encoding/json"
 	"net/http"
 	"path"
 	"os"
@@ -23,14 +22,16 @@ func UploadCmd(context echo.Context) error {
 		return nil
 	}
 
+    reqUpload := &models.UploadCmd{}
+    err := context.Bind(reqUpload)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: " + err.Error())
+	}
+
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
     if err != nil {
         return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	
-    reqUpload := new(models.UploadCmd)
-    decoder := json.NewDecoder(context.Request().Body)
-    decoder.Decode(&reqUpload)
 
 	fpath := path.Join(userRoot, reqUpload.FilePath)
 	err = os.MkdirAll(fpath, 0777)
@@ -82,14 +83,16 @@ func CompareHashCmd(context echo.Context) error {
 		return nil
 	}
 
+    reqCmp := &models.CompareHashCmd{}
+    err := context.Bind(reqCmp)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: " + err.Error())
+	}
+
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
     if err != nil {
         return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
-    reqCmp := new(models.CompareHashCmd)
-    decoder := json.NewDecoder(context.Request().Body)
-    decoder.Decode(&reqCmp)
 
 	fpath := path.Join(userRoot, reqCmp.FilePath)
 	fpath = path.Join(fpath, reqCmp.FileName)

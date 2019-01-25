@@ -9,6 +9,6 @@ import (
 
 func InitCmdRoutes(e *echo.Echo) {
 
-    e.POST("/api/v1/cmd/upload", controllers.UploadCmd)
-    e.POST("/api/v1/cmd/cmp-hash", controllers.CompareHashCmd)
+    e.POST("/api/v1/file/upload", controllers.UploadCmd)
+    e.POST("/api/v1/file/cmp-hash", controllers.CompareHashCmd)
 }

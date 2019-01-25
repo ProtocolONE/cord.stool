@@ -58,14 +58,7 @@ func (backend *JWTAuthenticationBackend) GenerateToken(clientID string , userUUI
 
 func (backend *JWTAuthenticationBackend) Authenticate(user *models.Authorization) bool {
 
-    /*dbc := database.Get("users")
-    var dbUsers []models.Authorization
-    err := dbc.Find(bson.M{"username": user.Username}).All(&dbUsers)
-    if err != nil {
-        return false
-    }*/
-
-	manager := database.GeUserManager()
+	manager := database.NewUserManager()
 	users, err := manager.FindByName(user.Username)
     if err != nil {
         return false

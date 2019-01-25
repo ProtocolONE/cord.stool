@@ -53,9 +53,8 @@ type UserManager struct {
 	collection *mgo.Collection
 }
 
-func GeUserManager() (*UserManager) {
+func NewUserManager() (*UserManager) {
     session := dbConf.Dbs.Copy()
-    //defer session.Close()
     return &UserManager{collection: session.DB(dbConf.Database).C("users")}
 }
 

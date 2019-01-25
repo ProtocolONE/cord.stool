@@ -26,7 +26,6 @@ func RequireTokenAuthentication(context echo.Context) bool {
 	context.Request().Header.Set("ClientID", clientID)
 
 	if err == nil && token.Valid && !authBackend.IsInBlacklist(context.Request().Header.Get("Authorization")) {
-		//context.Echo().Logger.Info("req token %s", req.Header.Get("Authorization"))
 		return true
 	} else {
 		context.Echo().Logger.Error(err.Error())
