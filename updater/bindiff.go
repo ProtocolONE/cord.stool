@@ -1,12 +1,12 @@
 package updater
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"path/filepath"
 
-	"cord.stool/xdelta"
 	"cord.stool/utils"
+	"cord.stool/xdelta"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
@@ -39,7 +39,7 @@ func CreateBinDiff(sourceOldDir string, sourceNewDir string, outputDiffDir strin
 	}
 
 	uiprogress.Start()
-	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal := uiprogress.AddBar(fc + 1).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize("Total progress", 35)
 	})
@@ -68,16 +68,16 @@ func CreateBinDiff(sourceOldDir string, sourceNewDir string, outputDiffDir strin
 		return strutil.Resize(*title, 35)
 	})
 
-	barTotal.Incr();
+	barTotal.Incr()
 
 	for pathNewFile := range f {
 
 		_, fn := filepath.Split(pathNewFile)
 		curTitle = fmt.Sprint("Patching file: ", fn)
 
-		barTotal.Incr();
-		bar.Set(0);
-		bar.Incr();
+		barTotal.Incr()
+		bar.Set(0)
+		bar.Incr()
 
 		relativePath, err := filepath.Rel(fullSourceNewDir, pathNewFile)
 		if err != nil {
@@ -101,12 +101,12 @@ func CreateBinDiff(sourceOldDir string, sourceNewDir string, outputDiffDir strin
 			}
 
 			if equal {
-				bar.Set(4);
+				bar.Set(4)
 				continue
 			}
 		}
 
-		bar.Incr();
+		bar.Incr()
 
 		pathDiff, _ := filepath.Split(pathDiffFile)
 		if _, err := os.Stat(pathDiff); os.IsNotExist(err) {
@@ -116,14 +116,14 @@ func CreateBinDiff(sourceOldDir string, sourceNewDir string, outputDiffDir strin
 			}
 		}
 
-		bar.Incr();
+		bar.Incr()
 
 		err = xdelta.EncodeDiff(pathOldFile, pathNewFile, pathDiffFile)
 		if err != nil {
 			return err
 		}
 
-		bar.Incr();
+		bar.Incr()
 	}
 
 	err = <-e

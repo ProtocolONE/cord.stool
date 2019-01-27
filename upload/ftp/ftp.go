@@ -3,22 +3,22 @@ package ftp
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"time"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"net/textproto"
 
 	"cord.stool/utils"
 	"github.com/gosuri/uiprogress"
-	"github.com/jlaffaye/ftp"
 	"github.com/gosuri/uiprogress/util/strutil"
+	"github.com/jlaffaye/ftp"
 )
 
 // UploadToFTP upload all files from sourceDir recursive
-// User, password and releative ftp path should be set in ftpUrl. 
+// User, password and releative ftp path should be set in ftpUrl.
 // ftp://ftpuser:ftppass@ftp.protocol.local:21/cordtest/
 func Upload(ftpUrl, sourceDir string) (cerr error) {
 
@@ -35,7 +35,7 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 	}
 
 	uiprogress.Start()
-	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal := uiprogress.AddBar(fc + 1).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize("Total progress", 35)
 	})
@@ -50,7 +50,7 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 		return errors.New("UploadToFTP: Invalid url scheme ")
 	}
 
-	conn, err := ftp.DialTimeout(u.Host, time.Second * 10) // TODO add timeout to config
+	conn, err := ftp.DialTimeout(u.Host, time.Second*10) // TODO add timeout to config
 	if err != nil {
 		return errors.Wrap(err, "UploadToFTP: Failed to coonect ftp")
 	}
@@ -91,7 +91,7 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 		return strutil.Resize(*title, 35)
 	})
 
-	barTotal.Incr();
+	barTotal.Incr()
 
 	var relativePath string
 	var file *os.File
@@ -101,9 +101,9 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 		_, fn := filepath.Split(path)
 		curTitle = fmt.Sprint("Uploading file: ", fn)
 
-		barTotal.Incr();
-		bar.Set(0);
-		bar.Incr();
+		barTotal.Incr()
+		bar.Set(0)
+		bar.Incr()
 
 		relativePath, cerr = filepath.Rel(fullSourceDir, path)
 		if cerr != nil {
@@ -112,10 +112,10 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 
 		ftpPath := filepath.Join(ftpRoot, relativePath)
 
-		ftpDir,_ := filepath.Split(ftpPath)
+		ftpDir, _ := filepath.Split(ftpPath)
 		cerr = mkdirRecursive(conn, ftpDir)
-		
-		bar.Incr();
+
+		bar.Incr()
 
 		if cerr != nil {
 			return
@@ -126,8 +126,8 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 			return
 		}
 		defer file.Close()
-		
-		bar.Incr();
+
+		bar.Incr()
 
 		cerr = conn.Stor(filepath.ToSlash(ftpPath), file)
 
@@ -135,7 +135,7 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 			return
 		}
 
-		bar.Incr();
+		bar.Incr()
 	}
 
 	cerr = <-e
@@ -159,17 +159,17 @@ func mkdirRecursive(conn *ftp.ServerConn, dir string) (err error) {
 
 	for _, d := range dirs {
 		if d == "" {
-			continue;
+			continue
 		}
 
 		tmpDir += d + "/"
 
 		terr := conn.MakeDir(tmpDir)
-		
+
 		if terr != nil {
 			code := terr.(*textproto.Error).Code
 			if code == 550 {
-				continue;
+				continue
 			}
 
 			return terr

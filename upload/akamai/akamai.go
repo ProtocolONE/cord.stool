@@ -9,8 +9,8 @@ import (
 
 	"cord.stool/utils"
 
-	"github.com/gosuri/uiprogress"
 	"github.com/akamai/netstoragekit-golang"
+	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 )
 
@@ -39,7 +39,7 @@ func Upload(args Args) error {
 	}
 
 	uiprogress.Start()
-	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal := uiprogress.AddBar(fc + 1).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize("Total progress", 35)
 	})
@@ -77,16 +77,16 @@ func Upload(args Args) error {
 		return strutil.Resize(*title, 35)
 	})
 
-	barTotal.Incr();
+	barTotal.Incr()
 
 	for path := range f {
 
 		_, fn := filepath.Split(path)
 		curTitle = fmt.Sprint("Uploading file: ", fn)
 
-		barTotal.Incr();
-		bar.Set(0);
-		bar.Incr();
+		barTotal.Incr()
+		bar.Set(0)
+		bar.Incr()
 
 		relativePath, err := filepath.Rel(fullSourceDir, path)
 		if err != nil {
@@ -109,7 +109,7 @@ func Upload(args Args) error {
 			}
 		}
 
-		bar.Incr();
+		bar.Incr()
 
 		res, _, err := ns.Upload(path, destPath)
 		if err != nil {
@@ -120,7 +120,7 @@ func Upload(args Args) error {
 			return errors.New("Akamai Upload failed")
 		}
 
-		bar.Incr();
+		bar.Incr()
 	}
 
 	err = <-e
@@ -149,7 +149,7 @@ func mkdirRecursive(ns *netstorage.Netstorage, root string, dir string) error {
 
 		tmpDir += d + "/"
 
-		path := filepath.Join(root , tmpDir)
+		path := filepath.Join(root, tmpDir)
 		path = strings.Replace(path, "\\", "/", -1)
 
 		res, _, err := ns.Mkdir(path)

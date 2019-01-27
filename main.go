@@ -1,6 +1,6 @@
 // To install goversioninfo run:
 // go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
-//go:generate goversioninfo -64 -icon=launcher.ico 
+//go:generate goversioninfo -64 -icon=launcher.ico
 
 package main
 

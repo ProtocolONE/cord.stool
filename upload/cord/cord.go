@@ -3,13 +3,13 @@ package cord
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 
-    "cord.stool/service/models"
-	"cord.stool/utils"
 	"cord.stool/cordapi"
+	"cord.stool/service/models"
+	"cord.stool/utils"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
@@ -18,13 +18,13 @@ import (
 var _bar *uiprogress.Bar
 
 type Args = struct {
-	Url    string
-	Login    string
-	Password    string
+	Url       string
+	Login     string
+	Password  string
 	SourceDir string
 	OutputDir string
-	Patch bool
-	Hash bool
+	Patch     bool
+	Hash      bool
 }
 
 // Upload ...
@@ -79,15 +79,15 @@ func Upload(args Args) error {
 		return strutil.Resize(*title, 35)
 	})
 
-	barTotal.Incr();
+	barTotal.Incr()
 
 	for path := range f {
 
 		_, fn := filepath.Split(path)
 		curTitle = fmt.Sprint("Uploading file: ", fn)
 
-		barTotal.Incr();
-		_bar.Set(0);
+		barTotal.Incr()
+		_bar.Set(0)
 
 		err := uploadFile(args, auth.Token, path, fullSourceDir)
 		if err != nil {
@@ -104,28 +104,28 @@ func Upload(args Args) error {
 	uiprogress.Stop()
 
 	fmt.Println("Upload completed.")
-	
+
 	return nil
 }
 
 func compareHash(url string, token string, path string, fpath string, fname string) (bool, error) {
-	
+
 	hash, err := utils.Md5(path)
 	if err != nil {
-        return false, errors.New("Hash calculating error: " + err.Error())
+		return false, errors.New("Hash calculating error: " + err.Error())
 	}
 
 	cmpRes, err := cordapi.CmpHash(url, token, &models.CompareHashCmd{FilePath: fpath, FileName: fname, FileHash: hash})
-    if err != nil {
-        return false, err
-	}	
+	if err != nil {
+		return false, err
+	}
 
 	return cmpRes.Equal, nil
 }
 
 func uploadFile(args Args, token string, path string, source string) error {
 
-	_bar.Incr();
+	_bar.Incr()
 
 	_, fname := filepath.Split(path)
 	relativePath, err := filepath.Rel(source, path)
@@ -138,16 +138,16 @@ func uploadFile(args Args, token string, path string, source string) error {
 	fpath = strings.TrimRight(fpath, "/\\")
 
 	if args.Hash {
-		
+
 		r, err := compareHash(args.Url, token, path, fpath, fname)
 		if err != nil {
 			return errors.New("Compare hash error: " + err.Error())
 		}
 
-		_bar.Incr();
+		_bar.Incr()
 
 		if r {
-			_bar.Incr();
+			_bar.Incr()
 			return nil // no need to upload
 		}
 	}
@@ -157,14 +157,14 @@ func uploadFile(args Args, token string, path string, source string) error {
 		return errors.New("Cannot read file: " + err.Error())
 	}
 
-	_bar.Incr();
+	_bar.Incr()
 
 	err = cordapi.Upload(args.Url, token, &models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch})
-    if err != nil {
-        return err
-	}	
+	if err != nil {
+		return err
+	}
 
-	_bar.Incr();
+	_bar.Incr()
 
 	return nil
 }

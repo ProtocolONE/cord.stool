@@ -10,17 +10,17 @@ import (
 )
 
 var args = struct {
-	SourceOldDir string
-	SourceNewDir string
+	SourceOldDir  string
+	SourceNewDir  string
 	OutputDiffDir string
 }{}
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        	"diff",
-		ShortName:		"d",
-		Usage:       	"Make patch",
-		Description:	"Generate the difference between files",
+		Name:        "diff",
+		ShortName:   "d",
+		Usage:       "Make patch",
+		Description: "Generate the difference between files",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -50,7 +50,7 @@ func Register(ctx *context.StoolContext) {
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	
+
 	if args.SourceOldDir == "" {
 		return fmt.Errorf("SourceOldDir value required")
 	} else if args.SourceNewDir == "" {

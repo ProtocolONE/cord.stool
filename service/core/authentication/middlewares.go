@@ -11,7 +11,7 @@ import (
 )
 
 func RequireTokenAuthentication(context echo.Context) bool {
-	
+
 	authBackend := InitJWTAuthenticationBackend()
 	token, err := request.ParseFromRequest(context.Request(), request.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
@@ -29,7 +29,7 @@ func RequireTokenAuthentication(context echo.Context) bool {
 		return true
 	} else {
 		context.Echo().Logger.Error(err.Error())
-    	context.NoContent(http.StatusUnauthorized)
+		context.NoContent(http.StatusUnauthorized)
 	}
 
 	return false

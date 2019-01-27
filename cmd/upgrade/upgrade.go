@@ -1,33 +1,33 @@
 package upgrade
 
 import (
-	"fmt"
-	"strings"
-	"strconv"
-	"path/filepath"
-	"os"
-	"time"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"archive/zip"
 	context2 "context"
 	"cord.stool/context"
 	"cord.stool/utils"
-	"github.com/urfave/cli"
+	"fmt"
 	"github.com/google/go-github/github"
+	"github.com/urfave/cli"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var args = struct {
-	force bool
-	check bool
-	list bool
-	version string
+	force    bool
+	check    bool
+	list     bool
+	version  string
 	fileList cli.StringSlice
 }{
 	force: false,
 	check: false,
-	list: false,
+	list:  false,
 }
 
 func Register(ctx *context.StoolContext) {
@@ -68,14 +68,14 @@ func Register(ctx *context.StoolContext) {
 	ctx.App.Commands = append(ctx.App.Commands, cmd)
 
 	cmd = cli.Command{
-		Name:       "upgrade_complete",
-		HideHelp:   true,
-		Hidden:     true,
+		Name:     "upgrade_complete",
+		HideHelp: true,
+		Hidden:   true,
 
 		Flags: []cli.Flag{
 			cli.StringSliceFlag{
-				Name:  "file, f",
-				Value: &args.fileList,
+				Name:   "file, f",
+				Value:  &args.fileList,
 				Hidden: true,
 			},
 		},
@@ -153,7 +153,7 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 			return err
 		}
 
-		if (release != nil) {
+		if release != nil {
 			if compareVersion(ctx.Version, *release.TagName) > 0 {
 				fmt.Println("There is a new version available:", *release.TagName)
 			} else {
@@ -174,10 +174,10 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 		return nil
 	}
 
-	if (args.check) {
+	if args.check {
 		return nil
 	}
-	
+
 	if ctx.Version == "" || ctx.Version == "develop" && !args.force {
 		fmt.Println("Use --force to upgrade self-built application")
 		return nil
@@ -188,7 +188,7 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	
+
 	fmt.Printf("Application is upgraded from %s to %s\n", ctx.Version, *release.TagName)
 
 	return nil
@@ -196,7 +196,7 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 
 func upgrade(client *github.Client, id int64) error {
 
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "p1-")	
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "p1-")
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func upgrade(client *github.Client, id int64) error {
 
 	fmt.Println("Extracting ...")
 
-	r, err:= zip.OpenReader(tmpfn)	
+	r, err := zip.OpenReader(tmpfn)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func upgrade(client *github.Client, id int64) error {
 		dest   string
 		backup string
 	}
-	
+
 	var backups []string
 	complete := func() {
 		utils.CompleteUpgrade(backups)
@@ -297,7 +297,7 @@ func getLatestRelease(client *github.Client) (*github.RepositoryRelease, error) 
 }
 
 func compareVersion(ver1 string, ver2 string) int {
-	
+
 	v1 := strings.Split(ver1, ".")
 	v2 := strings.Split(ver2, ".")
 
@@ -352,7 +352,7 @@ func getRelease(client *github.Client, ver string) (*github.RepositoryRelease, e
 	}
 
 	for _, release := range releases {
-		if ver == *release.TagName && len(release.Assets) > 0 && !*release.Prerelease { 
+		if ver == *release.TagName && len(release.Assets) > 0 && !*release.Prerelease {
 			return release, nil
 		}
 	}
@@ -396,9 +396,9 @@ func downloadLatestRelease(client *github.Client, id int64, pathfile string) err
 }
 
 func doComplete(ctx *context.StoolContext, c *cli.Context) error {
-	
+
 	time.Sleep(1 * time.Second)
-	
+
 	for _, f := range args.fileList {
 		os.Remove(f)
 	}

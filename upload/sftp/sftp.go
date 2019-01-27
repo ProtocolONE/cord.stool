@@ -1,11 +1,11 @@
 package sftp
 
 import (
+	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
-	"fmt"
-	"os"
 
 	"cord.stool/utils"
 
@@ -32,7 +32,7 @@ func Upload(sftpUrl, sourceDir string) error {
 	}
 
 	uiprogress.Start()
-	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal := uiprogress.AddBar(fc + 1).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize("Total progress", 35)
 	})
@@ -60,8 +60,8 @@ func Upload(sftpUrl, sourceDir string) error {
 	}
 
 	config := ssh.ClientConfig{
-		User: login,
-		Auth: auths,
+		User:            login,
+		Auth:            auths,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
@@ -105,16 +105,16 @@ func Upload(sftpUrl, sourceDir string) error {
 		return strutil.Resize(*title, 35)
 	})
 
-	barTotal.Incr();
+	barTotal.Incr()
 
 	for path := range f {
 
 		_, fn := filepath.Split(path)
 		curTitle = fmt.Sprint("Uploading file: ", fn)
 
-		barTotal.Incr();
-		bar.Set(0);
-		bar.Incr();
+		barTotal.Incr()
+		bar.Set(0)
+		bar.Incr()
 
 		relativePath, err := filepath.Rel(fullSourceDir, path)
 		if err != nil {
@@ -126,19 +126,19 @@ func Upload(sftpUrl, sourceDir string) error {
 			return errors.Wrap(err, "Cannot open file:")
 		}
 		defer file.Close()
-		
-		bar.Incr();
+
+		bar.Incr()
 
 		destPath := filepath.Join(sftpRoot, relativePath)
 		destPath = strings.Replace(destPath, "\\", "/", -1)
 
 		destDir, _ := filepath.Split(destPath)
-		err =  client.MkdirAll(destDir)
+		err = client.MkdirAll(destDir)
 		if err != nil {
 			return errors.Wrap(err, "Cannot create directory:")
 		}
 
-		bar.Incr();
+		bar.Incr()
 
 		w, err := client.Create(destPath)
 		if err != nil {
@@ -146,14 +146,14 @@ func Upload(sftpUrl, sourceDir string) error {
 		}
 		defer w.Close()
 
-		bar.Incr();
+		bar.Incr()
 
 		_, err = w.WriteTo(file)
 		if err != nil {
 			return errors.Wrap(err, "Write file failed:")
 		}
 
-		bar.Incr();
+		bar.Incr()
 	}
 
 	err = <-e

@@ -192,4 +192,3 @@ func FileCount(rootDir string) (res int, err error) {
 
 	return res, r
 }
-

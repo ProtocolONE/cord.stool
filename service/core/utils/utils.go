@@ -1,7 +1,7 @@
 package utils
 
 import (
-    "cord.stool/service/database"
+	"cord.stool/service/database"
 
 	"fmt"
 )
@@ -10,7 +10,7 @@ func GetUserStorage(clientID string) (string, error) {
 
 	manager := database.NewUserManager()
 	users, err := manager.FindByName(clientID)
-    if err != nil {
+	if err != nil {
 		return "", fmt.Errorf("Cannot find user %s, error: %s", clientID, err.Error())
 	}
 

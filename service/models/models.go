@@ -42,24 +42,24 @@ type Error struct {
 }
 
 type UploadCmd struct {
-	FilePath  string `json:"filepath"`
-	FileName  string `json:"filename"`
-	FileData []byte   `json:filedata`
-	Patch bool `json:patch`
+	FilePath string `json:"filepath"`
+	FileName string `json:"filename"`
+	FileData []byte `json:filedata`
+	Patch    bool   `json:patch`
 }
 
 type CompareHashCmd struct {
-	FilePath  string `json:"filepath"`
-	FileName  string `json:"filename"`
-	FileHash string   `json:filehash`
+	FilePath string `json:"filepath"`
+	FileName string `json:"filename"`
+	FileHash string `json:filehash`
 }
 
 type CompareHashCmdResult struct {
-	Equal bool   `json:equal`
+	Equal bool `json:equal`
 }
 
 type User struct {
 	Username string `bson:"username" json:"username"`
 	Password string `bson:"password" json:"password"`
-	Storage string `bson:"storage" json:"storage"`
+	Storage  string `bson:"storage" json:"storage"`
 }

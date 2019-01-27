@@ -12,13 +12,12 @@ var args = struct {
 	port: 8080,
 }
 
-
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        	"service",
-		ShortName:		"s",
-		Usage:       	"Service mode",
-		Description:	"Run the application as service",
+		Name:        "service",
+		ShortName:   "s",
+		Usage:       "Service mode",
+		Description: "Run the application as service",
 
 		Flags: []cli.Flag{
 			cli.UintFlag{
@@ -36,5 +35,5 @@ func Register(ctx *context.StoolContext) {
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	return service.Start(args.port);
+	return service.Start(args.port)
 }

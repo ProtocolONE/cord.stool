@@ -4,31 +4,31 @@ import (
 	"fmt"
 
 	"cord.stool/context"
-	"cord.stool/upload/ftp"
-	"cord.stool/upload/sftp"
-	"cord.stool/upload/s3"
 	"cord.stool/upload/akamai"
 	"cord.stool/upload/cord"
+	"cord.stool/upload/ftp"
+	"cord.stool/upload/s3"
+	"cord.stool/upload/sftp"
 
 	"github.com/urfave/cli"
 )
 
 var args = struct {
 	FtpUrl    string
-	SftpUrl    string
+	SftpUrl   string
 	SourceDir string
 	OutputDir string
-	s3Args s3.Args
-	akmArgs akamai.Args
-	cordArgs cord.Args
+	s3Args    s3.Args
+	akmArgs   akamai.Args
+	cordArgs  cord.Args
 }{}
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        	"push",
-		ShortName:		"p",
-		Usage:			"Upload update",
-		Description:	"Upload update app bundle to one of servers",
+		Name:        "push",
+		ShortName:   "p",
+		Usage:       "Upload update",
+		Description: "Upload update app bundle to one of servers",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -158,7 +158,7 @@ func Register(ctx *context.StoolContext) {
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	
+
 	if args.SourceDir == "" {
 		return fmt.Errorf("Path to game is required")
 	}
@@ -166,7 +166,7 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 	if args.FtpUrl == "" && args.SftpUrl == "" && args.s3Args.S3Bucket == "" && args.akmArgs.Hostname == "" && args.cordArgs.Url == "" {
 		return fmt.Errorf("Specify one of following flags: ftp, sftp, s3-bucket, akm-hostname, cord-url")
 	}
-	
+
 	if args.FtpUrl != "" {
 		err := ftp.Upload(args.FtpUrl, args.SourceDir)
 		if err != nil {
