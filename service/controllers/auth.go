@@ -57,10 +57,6 @@ func CreateUser(context echo.Context) error {
 
 func DeleteUser(context echo.Context) error {
 
-	if !authentication.RequireTokenAuthentication(context) {
-		return nil
-	}
-
 	reqUser := &models.Authorization{}
 	err := context.Bind(reqUser)
 	if err != nil {
@@ -105,10 +101,6 @@ func Login(context echo.Context) error {
 
 func RefreshToken(context echo.Context) error {
 
-	if !authentication.RequireTokenAuthentication(context) {
-		return nil
-	}
-
 	reqUser := &models.Authorization{}
 	err := context.Bind(reqUser)
 	if err != nil {
@@ -127,10 +119,6 @@ func RefreshToken(context echo.Context) error {
 }
 
 func Logout(context echo.Context) error {
-
-	if !authentication.RequireTokenAuthentication(context) {
-		return nil
-	}
 
 	authBackend := authentication.InitJWTAuthenticationBackend()
 	tokenRequest, err := request.ParseFromRequest(context.Request(), request.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {

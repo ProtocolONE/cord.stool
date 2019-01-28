@@ -10,27 +10,29 @@ import (
 	"github.com/labstack/echo"
 )
 
-func RequireTokenAuthentication(context echo.Context) bool {
+func RequireTokenAuthentication(next echo.HandlerFunc) echo.HandlerFunc {
 
-	authBackend := InitJWTAuthenticationBackend()
-	token, err := request.ParseFromRequest(context.Request(), request.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		} else {
-			return authBackend.PublicKey, nil
+	return func(context echo.Context) error {
+
+		authBackend := InitJWTAuthenticationBackend()
+		token, err := request.ParseFromRequest(context.Request(), request.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			} else {
+				return authBackend.PublicKey, nil
+			}
+		})
+
+		if err != nil || !token.Valid || authBackend.IsInBlacklist(context.Request().Header.Get("Authorization")) {
+
+			context.Echo().Logger.Error(err.Error())
+			return echo.NewHTTPError(http.StatusUnauthorized, "Authorization failed")
 		}
-	})
 
-	claims := token.Claims.(jwt.MapClaims)
-	clientID, _ := claims["client_id"].(string)
-	context.Request().Header.Set("ClientID", clientID)
+		claims := token.Claims.(jwt.MapClaims)
+		clientID, _ := claims["client_id"].(string)
+		context.Request().Header.Set("ClientID", clientID)
 
-	if err == nil && token.Valid && !authBackend.IsInBlacklist(context.Request().Header.Get("Authorization")) {
-		return true
-	} else {
-		context.Echo().Logger.Error(err.Error())
-		context.NoContent(http.StatusUnauthorized)
+		return next(context)
 	}
-
-	return false
 }

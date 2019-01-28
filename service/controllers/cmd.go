@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"cord.stool/service/core/authentication"
 	"cord.stool/service/core/utils"
 	"cord.stool/service/models"
 	utils2 "cord.stool/utils"
@@ -17,10 +16,6 @@ import (
 )
 
 func UploadCmd(context echo.Context) error {
-
-	if !authentication.RequireTokenAuthentication(context) {
-		return nil
-	}
 
 	reqUpload := &models.UploadCmd{}
 	err := context.Bind(reqUpload)
@@ -78,10 +73,6 @@ func UploadCmd(context echo.Context) error {
 }
 
 func CompareHashCmd(context echo.Context) error {
-
-	if !authentication.RequireTokenAuthentication(context) {
-		return nil
-	}
 
 	reqCmp := &models.CompareHashCmd{}
 	err := context.Bind(reqCmp)
