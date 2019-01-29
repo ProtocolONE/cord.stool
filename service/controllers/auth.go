@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"cord.stool/service/api/parameters"
 	"cord.stool/service/config"
 	"cord.stool/service/core/authentication"
 	"cord.stool/service/database"
@@ -88,34 +87,45 @@ func Login(context echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password")
 	}
 
-	uuid := uuid.New()
-	token, err := authBackend.GenerateToken(reqUser.Username, uuid)
+	userUUID := uuid.New()
+	token, err := authBackend.GenerateToken(reqUser.Username, userUUID, false)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate token for user %s", reqUser.Username))
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate access-token for user %s", reqUser.Username))
+	}
+
+	userUUID = uuid.New()
+	refreshToken, err := authBackend.GenerateToken(reqUser.Username, userUUID, true)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate refresh-token for user %s", reqUser.Username))
 	}
 
 	context.Echo().Logger.Info("token: \"%s\"", token)
 
-	return context.JSON(http.StatusOK, models.AuthToken{reqUser.Username, token})
+	return context.JSON(http.StatusOK, models.AuthToken{reqUser.Username, token, refreshToken})
 }
 
 func RefreshToken(context echo.Context) error {
 
-	reqUser := &models.Authorization{}
-	err := context.Bind(reqUser)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: "+err.Error())
+	username := context.Request().Header.Get("ClientID")
+	if username == "" {
+		return context.NoContent(http.StatusBadRequest)
 	}
 
 	authBackend := authentication.InitJWTAuthenticationBackend()
-	uuid := uuid.New()
 
-	token, err := authBackend.GenerateToken(reqUser.Username, uuid)
+	userUUID := uuid.New()
+	token, err := authBackend.GenerateToken(username, userUUID, false)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate token for user %s, error: %s", reqUser.Username, err.Error()))
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate access-token for user %s, error: %s", username, err.Error()))
 	}
 
-	return context.JSON(http.StatusOK, parameters.TokenAuthentication{token})
+	userUUID = uuid.New()
+	refreshToken, err := authBackend.GenerateToken(username, userUUID, true)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate refresh-token for user %s", username))
+	}
+
+	return context.JSON(http.StatusOK, models.AuthRefresh{token, refreshToken})
 }
 
 func Logout(context echo.Context) error {

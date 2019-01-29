@@ -38,21 +38,36 @@ func InitJWTAuthenticationBackend() *JWTAuthenticationBackend {
 	return authBackendInstance
 }
 
-func (backend *JWTAuthenticationBackend) GenerateToken(clientID string, userUUID string) (string, error) {
+func (backend *JWTAuthenticationBackend) GenerateToken(clientID string, userUUID string, refreshToken bool) (string, error) {
 
 	token := jwt.New(jwt.SigningMethodRS512)
 	cfg := config.Get().Service
-	token.Claims = jwt.MapClaims{
-		"exp":       time.Now().Add(time.Hour * time.Duration(cfg.JwtExpDelta)).Unix(),
-		"iat":       time.Now().Unix(),
-		"sub":       userUUID,
-		"client_id": clientID,
+
+	if refreshToken {
+
+		token.Claims = jwt.MapClaims{
+			"exp":       time.Now().Add(time.Hour * time.Duration(cfg.JwtRefExpDelta)).Unix(),
+			"iat":       time.Now().Unix(),
+			"sub":       userUUID,
+			"client_id": clientID,
+			"refresh":   true,
+		}
+	} else {
+
+		token.Claims = jwt.MapClaims{
+			"exp":       time.Now().Add(time.Second * time.Duration(cfg.JwtExpDelta)).Unix(),
+			"iat":       time.Now().Unix(),
+			"sub":       userUUID,
+			"client_id": clientID,
+			"access":    true,
+		}
 	}
 
 	tokenString, err := token.SignedString(backend.privateKey)
 	if err != nil {
 		return "", fmt.Errorf("Cannot generate token, error: %s", err)
 	}
+
 	return tokenString, nil
 }
 
@@ -67,16 +82,17 @@ func (backend *JWTAuthenticationBackend) Authenticate(user *models.Authorization
 	return len(users) == 1 && user.Username == users[0].Username && bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password)) == nil
 }
 
-func (backend *JWTAuthenticationBackend) getTokenRemainingValidity(timestamp interface{}) int {
+func (backend *JWTAuthenticationBackend) GetTokenRemainingValidity(token *jwt.Token) int64 {
 
-	if validity, ok := timestamp.(float64); ok {
-		tm := time.Unix(int64(validity), 0)
-		remainer := tm.Sub(time.Now())
-		if remainer > 0 {
-			return int(remainer.Seconds() + expireOffset)
-		}
+	claims := token.Claims.(jwt.MapClaims)
+	exp, _ := claims["exp"]
+
+	if validity, ok := exp.(float64); ok {
+
+		return int64(validity) - time.Now().Unix()
 	}
-	return expireOffset
+
+	return 0
 }
 
 func (backend *JWTAuthenticationBackend) Logout(tokenStr string, token *jwt.Token) error {

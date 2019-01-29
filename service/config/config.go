@@ -17,6 +17,7 @@ type ServiceCfg struct {
 	PrivateKeyPath  string `envconfig:"PRIVATE_KEY_PATH"`
 	PublicKeyPath   string `envconfig:"PUBLIC_KEY_PATH"`
 	JwtExpDelta     int    `envconfig:"JWT_EXPIRATION_DELTA"`
+	JwtRefExpDelta  int    `envconfig:"JWT_REFRESH_EXPIRATION_DELTA"`
 	StorageRootPath string `envconfig:"STORAGE_ROOT_PATH"`
 }
 

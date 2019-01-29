@@ -48,7 +48,8 @@ func Upload(args Args) error {
 		return strutil.Resize("Total progress", 35)
 	})
 
-	auth, err := cordapi.Login(args.Url, args.Login, args.Password)
+	api := cordapi.NewCordAPI(args.Url)
+	err = api.Login(args.Login, args.Password)
 	if err != nil {
 		return err
 	}
@@ -89,7 +90,7 @@ func Upload(args Args) error {
 		barTotal.Incr()
 		_bar.Set(0)
 
-		err := uploadFile(args, auth.Token, path, fullSourceDir)
+		err := uploadFile(api, args, path, fullSourceDir)
 		if err != nil {
 			return err
 		}
@@ -108,14 +109,14 @@ func Upload(args Args) error {
 	return nil
 }
 
-func compareHash(url string, token string, path string, fpath string, fname string) (bool, error) {
+func compareHash(api *cordapi.CordAPIManager, path string, fpath string, fname string) (bool, error) {
 
 	hash, err := utils.Md5(path)
 	if err != nil {
 		return false, errors.New("Hash calculating error: " + err.Error())
 	}
 
-	cmpRes, err := cordapi.CmpHash(url, token, &models.CompareHashCmd{FilePath: fpath, FileName: fname, FileHash: hash})
+	cmpRes, err := api.CmpHash(&models.CompareHashCmd{FilePath: fpath, FileName: fname, FileHash: hash})
 	if err != nil {
 		return false, err
 	}
@@ -123,7 +124,7 @@ func compareHash(url string, token string, path string, fpath string, fname stri
 	return cmpRes.Equal, nil
 }
 
-func uploadFile(args Args, token string, path string, source string) error {
+func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source string) error {
 
 	_bar.Incr()
 
@@ -139,7 +140,7 @@ func uploadFile(args Args, token string, path string, source string) error {
 
 	if args.Hash {
 
-		r, err := compareHash(args.Url, token, path, fpath, fname)
+		r, err := compareHash(api, path, fpath, fname)
 		if err != nil {
 			return errors.New("Compare hash error: " + err.Error())
 		}
@@ -159,7 +160,7 @@ func uploadFile(args Args, token string, path string, source string) error {
 
 	_bar.Incr()
 
-	err = cordapi.Upload(args.Url, token, &models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch})
+	err = api.Upload(&models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch})
 	if err != nil {
 		return err
 	}

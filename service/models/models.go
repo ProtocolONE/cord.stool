@@ -29,12 +29,14 @@ type CreatedId struct {
 }
 
 type AuthToken struct {
-	ClientId string `json:"client_id"`
-	Token    string `json:"token"`
+	ClientId     string `json:"client_id"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 type AuthRefresh struct {
-	ClientId string `json:"client_id"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 type Error struct {
