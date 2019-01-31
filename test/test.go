@@ -35,8 +35,6 @@ var IgnoredPaths = []string{
 	".itch",
 }
 
-// FilterPaths filters out known bad folder/files
-// which butler should just ignore
 func FilterPaths(fileInfo os.FileInfo) bool {
 	name := fileInfo.Name()
 	for _, pattern := range IgnoredPaths {
@@ -72,7 +70,6 @@ func Progress(alpha float64) {
 func Logl(level string, msg string) {
 }
 
-// Test ...
 func Test() {
 	
 	output := "D:\\Temp\\test.old"
