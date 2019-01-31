@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
-	//"go.uber.org/zap"
+	"go.uber.org/zap"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -50,7 +50,7 @@ func CreateUser(context echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot create user %s, error: %s", reqUser.Username, err.Error()))
 	}
 
-	context.Echo().Logger.Info("Created new user %s.", reqUser.Username)
+	zap.S().Infof("Created new user %s.", reqUser.Username)
 	return context.NoContent(http.StatusCreated)
 }
 
@@ -68,7 +68,7 @@ func DeleteUser(context echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot delete user %s, error: %s", reqUser.Username, err.Error()))
 	}
 
-	context.Echo().Logger.Info("Removed user %s", reqUser.Username)
+	zap.S().Infof("Removed user %s", reqUser.Username)
 	return context.NoContent(http.StatusOK)
 }
 
@@ -80,7 +80,7 @@ func Login(context echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: "+err.Error())
 	}
 
-	context.Echo().Logger.Info("Login: username: %s; password: %s", reqUser.Username, reqUser.Password)
+	zap.S().Infof("Login: username: %s; password: %s", reqUser.Username, reqUser.Password)
 
 	authBackend := authentication.InitJWTAuthenticationBackend()
 	if !authBackend.Authenticate(reqUser) {
@@ -99,7 +99,7 @@ func Login(context echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot generate refresh-token for user %s", reqUser.Username))
 	}
 
-	context.Echo().Logger.Info("token: \"%s\"", token)
+	zap.S().Info("token: \"%s\"", token)
 
 	return context.JSON(http.StatusOK, models.AuthToken{reqUser.Username, token, refreshToken})
 }

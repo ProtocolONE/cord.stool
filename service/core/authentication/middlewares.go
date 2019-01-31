@@ -8,6 +8,7 @@ import (
 	request "github.com/dgrijalva/jwt-go/request"
 
 	"github.com/labstack/echo"
+	"go.uber.org/zap"
 )
 
 func RequireTokenAuthentication(next echo.HandlerFunc) echo.HandlerFunc {
@@ -36,10 +37,10 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 		if err != nil || !token.Valid || authBackend.IsInBlacklist(context.Request().Header.Get("Authorization")) {
 
 			if err != nil {
-				context.Echo().Logger.Error(err.Error())
+				zap.S().Error(err.Error())
 				return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 			} else {
-				context.Echo().Logger.Error("Authorization failed")
+				zap.S().Error("Authorization failed")
 				return echo.NewHTTPError(http.StatusUnauthorized, "Authorization failed")
 			}
 		}
@@ -47,7 +48,7 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 		rem := authBackend.GetTokenRemainingValidity(token)
 		if rem <= 0 {
 
-			context.Echo().Logger.Error("Token is expired")
+			zap.S().Error("Token is expired")
 			return echo.NewHTTPError(http.StatusUnauthorized, "Token is expired")
 		}
 
@@ -58,7 +59,7 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 			refresh, ok := claims["refresh"].(bool)
 			if !ok || !refresh {
 
-				context.Echo().Logger.Error("Invalid refresh token")
+				zap.S().Error("Invalid refresh token")
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid refresh token")
 			}
 
@@ -67,7 +68,7 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 			access, ok := claims["access"].(bool)
 			if !ok || !access {
 
-				context.Echo().Logger.Error("Invalid access token")
+				zap.S().Error("Invalid access token")
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid access token")
 			}
 		}
@@ -75,7 +76,7 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 		clientID, ok := claims["client_id"].(string)
 		if !ok || clientID == "" {
 
-			context.Echo().Logger.Error("Invalid token")
+			zap.S().Error("Invalid token")
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid token")
 		}
 

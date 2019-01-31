@@ -9,9 +9,13 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"go.uber.org/zap"
 )
 
 func Start(port uint) error {
+
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
 
 	conf, err := config.Init()
 	if err != nil {
