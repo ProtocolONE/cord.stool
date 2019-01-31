@@ -64,6 +64,7 @@ func Progress(alpha float64) {
 func Logl(level string, msg string) {
 }
 
+// Test ...
 func Test() {
 	
 	output := "D:\\Temp\\test.old"
