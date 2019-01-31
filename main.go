@@ -10,12 +10,16 @@ import (
 
 	"cord.stool/cmd"
 	"cord.stool/context"
+
+	"cord.stool/test"
 )
 
 var version = "develop"
 
 func main() {
 
+	test.Test()
+	
 	ctx := context.NewContext(version)
 	cmd.RegisterCmdCommands(ctx)
 	err := ctx.Run(os.Args)
