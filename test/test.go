@@ -49,6 +49,14 @@ func FilterPaths(fileInfo os.FileInfo) bool {
 	return true
 }
 
+func CompressionSettings() pwr.CompressionSettings {
+
+	return pwr.CompressionSettings{
+		Algorithm: pwr.CompressionAlgorithm_GZIP,
+		Quality:   int32(5),
+	}
+}
+
 func ProgressLabel(label string) {
 }
 
@@ -92,16 +100,9 @@ func Test() {
 	rawSigWire := wire.NewWriteContext(signatureWriter)
 	rawSigWire.WriteMagic(pwr.SignatureMagic)
 
-	rawSigWire.WriteMessage(&pwr.SignatureHeader{
-		Compression: &pwr.CompressionSettings{
-		Algorithm: pwr.CompressionAlgorithm_GZIP,
-		Quality:   int32(5)}
-	)
+	rawSigWire.WriteMessage(&pwr.SignatureHeader{Compression: &CompressionSettings())
 
-	sigWire, err := pwr.CompressWire(rawSigWire, &pwr.CompressionSettings{
-		Algorithm: pwr.CompressionAlgorithm_GZIP,
-		Quality:   int32(5)}
-	)
+	sigWire, err := pwr.CompressWire(rawSigWire, &CompressionSettings())
 
 	if err != nil {
 		panic(fmt.Sprintf("setting up compression for signature file: %s", err.Error()))
