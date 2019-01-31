@@ -43,12 +43,6 @@ func Init() error {
 	return nil
 }
 
-type DBManager interface {
-	FindByName(string) (*models.User, error)
-	RemoveByName(string) error
-	Insert(*models.User) error
-}
-
 type UserManager struct {
 	collection *mgo.Collection
 }

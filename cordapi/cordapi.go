@@ -11,12 +11,6 @@ import (
 	"cord.stool/service/models"
 )
 
-type CordAPI interface {
-	Login(username string, password string) error
-	Upload(uploadReq *models.UploadCmd) error
-	CmpHash(cmpReq *models.CompareHashCmd) (*models.CompareHashCmdResult, error)
-}
-
 type CordAPIManager struct {
 	host      string
 	authToken *models.AuthToken
