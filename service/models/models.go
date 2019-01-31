@@ -1,5 +1,25 @@
 package models
 
+const (
+	ErrorInvalidJSONFormat = 1
+	ErrorReadDataBase = 2
+	ErrorUserAlreadyExists = 3
+	ErrorGenUserStorageName = 4
+	ErrorCreateUser = 5
+	ErrorDeleteUser = 6
+	ErrorInvalidUsernameOrPassword = 7
+	ErrorGenToken = 8
+	ErrorLogout = 9
+	ErrorGetUserStorage = 10
+	ErrorCreatePath = 11
+	ErrorGenTempFile = 12
+	ErrorWriteFile = 13
+	ErrorApplyPatch = 14
+	ErrorUnauthorized = 15
+	ErrorTokenExpired = 16
+	ErrorInvalidToken = 17
+)
+
 type AppKey struct {
 	PrivateKeyPath string `json:"private_key_path"`
 	PublicKeyPath  string `json:"public_key_path"`
@@ -40,6 +60,7 @@ type AuthRefresh struct {
 }
 
 type Error struct {
+	Code int `json:"code"`
 	Message string `json:"message"`
 }
 

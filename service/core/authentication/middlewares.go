@@ -9,6 +9,8 @@ import (
 
 	"github.com/labstack/echo"
 	"go.uber.org/zap"
+
+	"cord.stool/service/models"
 )
 
 func RequireTokenAuthentication(next echo.HandlerFunc) echo.HandlerFunc {
@@ -38,10 +40,11 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 
 			if err != nil {
 				zap.S().Error(err.Error())
-				return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+				return context.JSON(http.StatusUnauthorized, models.Error{models.ErrorUnauthorized, err.Error()})
+
 			} else {
 				zap.S().Error("Authorization failed")
-				return echo.NewHTTPError(http.StatusUnauthorized, "Authorization failed")
+				return context.JSON(http.StatusUnauthorized, models.Error{models.ErrorUnauthorized, "Authorization failed"})
 			}
 		}
 
@@ -49,7 +52,7 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 		if rem <= 0 {
 
 			zap.S().Error("Token is expired")
-			return echo.NewHTTPError(http.StatusUnauthorized, "Token is expired")
+			return context.JSON(http.StatusUnauthorized, models.Error{models.ErrorTokenExpired, "Token is expired"})
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
@@ -60,7 +63,7 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 			if !ok || !refresh {
 
 				zap.S().Error("Invalid refresh token")
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid refresh token")
+				return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidToken, "Invalid refresh token"})
 			}
 
 		} else {
@@ -69,7 +72,7 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 			if !ok || !access {
 
 				zap.S().Error("Invalid access token")
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid access token")
+				return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidToken, "Invalid access token"})
 			}
 		}
 
@@ -77,7 +80,7 @@ func requireTokenAuthentication(next echo.HandlerFunc, refreshToken bool) echo.H
 		if !ok || clientID == "" {
 
 			zap.S().Error("Invalid token")
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid token")
+			return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidToken, "Invalid token"})
 		}
 
 		context.Request().Header.Set("ClientID", clientID)

@@ -20,18 +20,18 @@ func UploadCmd(context echo.Context) error {
 	reqUpload := &models.UploadCmd{}
 	err := context.Bind(reqUpload)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: "+err.Error())
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: "+err.Error()})
 	}
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGetUserStorage, err.Error()})
 	}
 
 	fpath := path.Join(userRoot, reqUpload.FilePath)
 	err = os.MkdirAll(fpath, 0777)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot create path %s, error: %s", fpath, err.Error()))
+		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorCreatePath, fmt.Sprintf("Cannot create path %s, error: %s", fpath, err.Error())})
 	}
 
 	fpath = path.Join(fpath, reqUpload.FileName)
@@ -41,14 +41,14 @@ func UploadCmd(context echo.Context) error {
 		fpath = fpath[0:(len(fpath) - len(".diff"))]
 		patchfile, err := ioutil.TempFile(os.TempDir(), "patch")
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot get temp file, error: %s", err.Error()))
+			return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenTempFile, fmt.Sprintf("Cannot get temp file, error: %s", err.Error())})
 		}
 		defer os.Remove(patchfile.Name())
 		patchfile.Close()
 
 		err = ioutil.WriteFile(patchfile.Name(), reqUpload.FileData, 0777)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s, error: %s", fpath, err.Error()))
+			return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWriteFile, fmt.Sprintf("Cannot write to file %s, error: %s", fpath, err.Error())})
 		}
 
 		fpathold := fpath
@@ -58,14 +58,14 @@ func UploadCmd(context echo.Context) error {
 
 		err = xdelta.DecodeDiff(fpathold, fpath, patchfile.Name())
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot apply patch to %s, error: %s", fpath, err.Error()))
+			return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorApplyPatch, fmt.Sprintf("Cannot apply patch to %s, error: %s", fpath, err.Error())})
 		}
 
 	} else {
 
 		err = ioutil.WriteFile(fpath, reqUpload.FileData, 0777)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot write to file %s, error: %s", fpath, err.Error()))
+			return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWriteFile, fmt.Sprintf("Cannot write to file %s, error: %s", fpath, err.Error())})
 		}
 	}
 
@@ -77,12 +77,12 @@ func CompareHashCmd(context echo.Context) error {
 	reqCmp := &models.CompareHashCmd{}
 	err := context.Bind(reqCmp)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON format: "+err.Error())
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: "+err.Error()})
 	}
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGetUserStorage, err.Error()})
 	}
 
 	fpath := path.Join(userRoot, reqCmp.FilePath)

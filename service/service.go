@@ -16,7 +16,6 @@ func Start(port uint) error {
 
 	logger, _ := zap.NewProduction()
 	zap.ReplaceGlobals(logger)
-	
 	defer logger.Sync()
 
 	conf, err := config.Init()
