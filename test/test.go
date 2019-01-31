@@ -100,7 +100,7 @@ func Test() {
 	rawSigWire := wire.NewWriteContext(signatureWriter)
 	rawSigWire.WriteMagic(pwr.SignatureMagic)
 
-	rawSigWire.WriteMessage(&pwr.SignatureHeader{Compression: &CompressionSettings())
+	rawSigWire.WriteMessage(&pwr.SignatureHeader{Compression: &CompressionSettings()})
 
 	sigWire, err := pwr.CompressWire(rawSigWire, &CompressionSettings())
 
