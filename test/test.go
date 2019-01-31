@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"context"
 	"os"
-	//"errors"
-	//"time"
-	//"github.com/aristanetworks/goarista/monotime"
+	"path/filepath"
 
 	"github.com/itchio/wharf/pools"
 	"github.com/itchio/wharf/pwr"
@@ -24,6 +22,31 @@ func newStateConsumer() *state.Consumer {
 		OnResumeProgress: ResumeProgress,
 		OnMessage:        Logl,
 	}
+}
+
+var IgnoredPaths = []string{
+	".git",
+	".hg",
+	".svn",
+	".DS_Store",
+	"__MACOSX",
+	"._*",
+	"Thumbs.db",
+	".itch",
+}
+
+// FilterPaths filters out known bad folder/files
+// which butler should just ignore
+func FilterPaths(fileInfo os.FileInfo) bool {
+	name := fileInfo.Name()
+	for _, pattern := range IgnoredPaths {
+		match, _ := filepath.Match(pattern, name)
+		if match {
+			return false
+		}
+	}
+
+	return true
 }
 
 func ProgressLabel(label string) {
@@ -49,19 +72,19 @@ func Test() {
 	//monotime.Now()
 	fmt.Println("Test")
 
-	container, err := tlc.WalkAny(output, &tlc.WalkOpts{Filter: filtering.FilterPaths})
+	container, err := tlc.WalkAny(output, &tlc.WalkOpts{Filter: FilterPaths})
 	if err != nil {
-		panic(fmt.Srintf("walking directory to sign: %s", err.Error()))
+		panic(fmt.Sprintf("walking directory to sign: %s", err.Error()))
 	}
 
 	pool, err := pools.New(container, output)
 	if err != nil {
-		panic(fmt.Srintf("creating pool for directory to sign: %s", err.Error()))
+		panic(fmt.Sprintf("creating pool for directory to sign: %s", err.Error()))
 	}
 
 	signatureWriter, err := os.Create(signature)
 	if err != nil {
-		panic(fmt.Srintf("creating signature file: %s", err.Error()))
+		panic(fmt.Sprintf("creating signature file: %s", err.Error()))
 	}
 	defer signatureWriter.Close()
 
@@ -69,12 +92,12 @@ func Test() {
 	rawSigWire.WriteMagic(pwr.SignatureMagic)
 
 	rawSigWire.WriteMessage(&pwr.SignatureHeader{
-		Compression: &compression,
+		Compression: &pwr.CompressionAlgorithm_GZIP,
 	})
 
-	sigWire, err := pwr.CompressWire(rawSigWire, &compression)
+	sigWire, err := pwr.CompressWire(rawSigWire, &pwr.CompressionAlgorithm_GZIP)
 	if err != nil {
-		panic(fmt.Srintf("setting up compression for signature file: %s", err.Error()))
+		panic(fmt.Sprintf("setting up compression for signature file: %s", err.Error()))
 	}
 	sigWire.WriteMessage(container)
 
@@ -86,11 +109,11 @@ func Test() {
 	})
 	
 	if err != nil {
-		panic(fmt.Srintf("computing signature: %s", err.Error()))
+		panic(fmt.Sprintf("computing signature: %s", err.Error()))
 	}
 
 	err = sigWire.Close()
 	if err != nil {
-		panic(fmt.Srintf("finalizing signature file: %s", err.Error()))
+		panic(fmt.Sprintf("finalizing signature file: %s", err.Error()))
 	}
 }
