@@ -50,7 +50,8 @@ func CreateUser(context echo.Context) error {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorCreateUser, fmt.Sprintf("Cannot create user %s, error: %s", reqUser.Username, err.Error())})
 	}
 
-	zap.S().Infof("Created new user %s.", reqUser.Username)
+	zap.S().Infow("Created new user", zap.String("username", reqUser.Username))
+
 	return context.NoContent(http.StatusCreated)
 }
 
@@ -68,7 +69,7 @@ func DeleteUser(context echo.Context) error {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorDeleteUser, fmt.Sprintf("Cannot delete user %s, error: %s", reqUser.Username, err.Error())})
 	}
 
-	zap.S().Infof("Removed user %s", reqUser.Username)
+	zap.S().Infow("Removed user", zap.String("username", reqUser.Username))
 	return context.NoContent(http.StatusOK)
 }
 
@@ -80,7 +81,7 @@ func Login(context echo.Context) error {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
 	}
 
-	zap.S().Infof("Login: username: %s; password: %s", reqUser.Username, reqUser.Password)
+	zap.S().Infow("Login", zap.String("username", reqUser.Username), zap.String("password", reqUser.Password))
 
 	authBackend := authentication.InitJWTAuthenticationBackend()
 	if !authBackend.Authenticate(reqUser) {
@@ -99,8 +100,7 @@ func Login(context echo.Context) error {
 		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenToken, fmt.Sprintf("Cannot generate refresh-token for user %s, error: %s", reqUser.Username, err.Error())})
 	}
 
-	zap.S().Info("token: \"%s\"", token)
-
+	zap.S().Infow("Login", zap.String("token", token))
 	return context.JSON(http.StatusOK, models.AuthToken{reqUser.Username, token, refreshToken})
 }
 

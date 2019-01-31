@@ -30,7 +30,7 @@ func Start(port uint) error {
 
 	e := echo.New()
 
-	zap.S().Info(fmt.Sprintf("Create service. Scheme: %s, port: %d", conf.Service.HttpScheme, conf.Service.ServicePort))
+	zap.S().Infow("Create service", zap.String("Scheme", conf.Service.HttpScheme), zap.Int("port", conf.Service.ServicePort))
 
 	// Middleware
 	e.Use(middleware.Logger())
