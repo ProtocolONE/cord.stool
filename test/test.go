@@ -93,10 +93,16 @@ func Test() {
 	rawSigWire.WriteMagic(pwr.SignatureMagic)
 
 	rawSigWire.WriteMessage(&pwr.SignatureHeader{
-		Compression: &pwr.CompressionAlgorithm_GZIP,
+		Compression: &pwr.CompressionSettings{
+		Algorithm: pwr.CompressionAlgorithm_GZIP,
+		Quality:   int32(5),
 	})
 
-	sigWire, err := pwr.CompressWire(rawSigWire, &pwr.CompressionAlgorithm_GZIP)
+	sigWire, err := pwr.CompressWire(rawSigWire, &pwr.CompressionSettings{
+		Algorithm: pwr.CompressionAlgorithm_GZIP,
+		Quality:   int32(5),
+	})
+
 	if err != nil {
 		panic(fmt.Sprintf("setting up compression for signature file: %s", err.Error()))
 	}
