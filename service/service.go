@@ -15,6 +15,8 @@ import (
 func Start(port uint) error {
 
 	logger, _ := zap.NewProduction()
+	zap.ReplaceGlobals(logger)
+	
 	defer logger.Sync()
 
 	conf, err := config.Init()
@@ -29,7 +31,7 @@ func Start(port uint) error {
 
 	e := echo.New()
 
-	e.Logger.Info("Create service. Scheme: \"%s\", port: \"%d\"", conf.Service.HttpScheme, conf.Service.ServicePort)
+	zap.S().Info(fmt.Sprintf("Create service. Scheme: %s, port: %d", conf.Service.HttpScheme, conf.Service.ServicePort))
 
 	// Middleware
 	e.Use(middleware.Logger())
@@ -39,7 +41,7 @@ func Start(port uint) error {
 	routers.InitRoutes(e)
 
 	// Start server
-	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", conf.Service.ServicePort)))
+	zap.S().Fatal(e.Start(fmt.Sprintf(":%d", conf.Service.ServicePort)))
 
 	return nil
 }
