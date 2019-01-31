@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"io"
 	"net/http"
 
 	"cord.stool/service/models"
@@ -107,15 +108,7 @@ func login(host string, username string, password string) (*models.AuthToken, er
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-
-		errorRes := new(models.Error)
-		decoder := json.NewDecoder(res.Body)
-		if decoder.Decode(&errorRes) == nil {
-			return nil, errors.New(errorRes.Message)
-		}
-
-		message, _ := ioutil.ReadAll(res.Body)
-		return nil, errors.New(string(message))
+		return nil, buldError(res.Body)
 	}
 
 	authRes := new(models.AuthToken)
@@ -134,15 +127,7 @@ func refreshToken(host string, token string) (*models.AuthRefresh, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-
-		errorRes := new(models.Error)
-		decoder := json.NewDecoder(res.Body)
-		if decoder.Decode(&errorRes) == nil {
-			return nil, errors.New(errorRes.Message)
-		}
-
-		message, _ := ioutil.ReadAll(res.Body)
-		return nil, errors.New(string(message))
+		return nil, buldError(res.Body)
 	}
 
 	refreshRes := new(models.AuthRefresh)
@@ -161,15 +146,7 @@ func upload(host string, token string, uploadReq *models.UploadCmd) (int, error)
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-
-		errorRes := new(models.Error)
-		decoder := json.NewDecoder(res.Body)
-		if decoder.Decode(&errorRes) == nil {
-			return res.StatusCode, errors.New(errorRes.Message)
-		}
-
-		message, _ := ioutil.ReadAll(res.Body)
-		return res.StatusCode, errors.New(string(message))
+		return res.StatusCode, buldError(res.Body)
 	}
 
 	return res.StatusCode, nil
@@ -184,15 +161,7 @@ func cmpHash(host string, token string, cmpReq *models.CompareHashCmd) (*models.
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-
-		errorRes := new(models.Error)
-		decoder := json.NewDecoder(res.Body)
-		if decoder.Decode(&errorRes) == nil {
-			return nil, res.StatusCode, errors.New(errorRes.Message)
-		}
-
-		message, _ := ioutil.ReadAll(res.Body)
-		return nil, res.StatusCode, errors.New(string(message))
+		return nil, res.StatusCode, buldError(res.Body)
 	}
 
 	cmpRes := new(models.CompareHashCmdResult)
@@ -227,4 +196,16 @@ func httpRequest(method string, url string, token string, contentType string, ob
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Add("Authorization", token)
 	return client.Do(req)
+}
+
+func buldError(r io.Reader) error {
+
+	errorRes := new(models.Error)
+	decoder := json.NewDecoder(r)
+	if decoder.Decode(&errorRes) == nil {
+		return errors.New(errorRes.Message)
+	}
+
+	message, _ := ioutil.ReadAll(r)
+	return errors.New(string(message))
 }
