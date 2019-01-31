@@ -20,7 +20,7 @@ func UploadCmd(context echo.Context) error {
 	reqUpload := &models.UploadCmd{}
 	err := context.Bind(reqUpload)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: "+err.Error()})
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
 	}
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
@@ -77,7 +77,7 @@ func CompareHashCmd(context echo.Context) error {
 	reqCmp := &models.CompareHashCmd{}
 	err := context.Bind(reqCmp)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: "+err.Error()})
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
 	}
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))

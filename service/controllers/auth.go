@@ -6,11 +6,11 @@ import (
 	"cord.stool/service/database"
 	"cord.stool/service/models"
 
-	"golang.org/x/crypto/bcrypt"
-	"net/http"
-	"go.uber.org/zap"
 	"fmt"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
+	"net/http"
 	"strings"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -25,7 +25,7 @@ func CreateUser(context echo.Context) error {
 	reqUser := &models.Authorization{}
 	err := context.Bind(reqUser)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: "+err.Error()})
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
 	}
 
 	manager := database.NewUserManager()
@@ -59,7 +59,7 @@ func DeleteUser(context echo.Context) error {
 	reqUser := &models.Authorization{}
 	err := context.Bind(reqUser)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: "+err.Error()})
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
 	}
 
 	manager := database.NewUserManager()
@@ -77,7 +77,7 @@ func Login(context echo.Context) error {
 	reqUser := &models.Authorization{}
 	err := context.Bind(reqUser)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: "+err.Error()})
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
 	}
 
 	zap.S().Infof("Login: username: %s; password: %s", reqUser.Username, reqUser.Password)
