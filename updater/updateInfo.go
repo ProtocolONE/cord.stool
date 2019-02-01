@@ -131,8 +131,8 @@ LOOP:
 
 			_, fn := filepath.Split(path)
 			curProgressTitle = fmt.Sprint("Calcing hash for ", fn)
-			progrssBar.Incr();
-		
+			progrssBar.Incr()
+
 			relativePath, err = filepath.Rel(sourceDir, path)
 
 			if err != nil {
@@ -161,7 +161,7 @@ LOOP:
 
 			if useArchive {
 
-				progrssBar.Incr();
+				progrssBar.Incr()
 				curProgressTitle = fmt.Sprint("Compressing file: ", fn)
 
 				fullDst += ".zip"
@@ -187,7 +187,7 @@ LOOP:
 				ufi.ArchiveLength = ufi.RawLength
 			}
 
-			progrssBar.Incr();
+			progrssBar.Incr()
 
 		case <-stopCh:
 			break LOOP
@@ -219,8 +219,8 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 	}
 
 	uiprogress.Start()
-	progrssBar = uiprogress.AddBar(len(files) * pbIndex + 3).AppendCompleted().PrependElapsed()
- 
+	progrssBar = uiprogress.AddBar(len(files)*pbIndex + 3).AppendCompleted().PrependElapsed()
+
 	var title *string
 	title = &curProgressTitle
 	curProgressTitle = "Preparing ..."
@@ -249,7 +249,7 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return nil
 	})
 
-	progrssBar.Incr();
+	progrssBar.Incr()
 
 	wg := &sync.WaitGroup{}
 	fiCh := make(chan FileInfo)
@@ -300,7 +300,7 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return
 	}
 
-	progrssBar.Incr();
+	progrssBar.Incr()
 
 	crcPath := filepath.Join(outputDir, "update.crc")
 	crcPathArc := filepath.Join(outputDir, "update.crc.zip")
@@ -309,14 +309,14 @@ func PrepairDistr(inputDir string, outputDir string, useArchive bool) (result Up
 		return
 	}
 
-	progrssBar.Incr();
+	progrssBar.Incr()
 	curProgressTitle = "Compressing update.crc ..."
 	title = &curProgressTitle
 
 	zip.CompressFile(crcPath, crcPathArc)
 	err = os.Remove(crcPath)
 
-	progrssBar.Incr();
+	progrssBar.Incr()
 
 	curProgressTitle = "Finished"
 	title = &curProgressTitle

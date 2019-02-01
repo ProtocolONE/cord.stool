@@ -4,42 +4,37 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"path/filepath"
+	"strings"
 
 	"cord.stool/utils"
-	"github.com/gosuri/uiprogress"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 )
 
 var _bar *uiprogress.Bar
 
 type Args = struct {
-	SourceDir string
-	OutputDir string
-	AWSRegion string
-	AWSCredentials string
-	AWSProfile string
-	AWSID string
-	AWSKey string
-	AWSToken string
-	S3Bucket string
-}
-
-type enumDirCallbackS3 struct {
-	sess            *session.Session
-	continueOnError bool
+	SourceDir   string
+	OutputDir   string
+	Region      string
+	Credentials string
+	Profile     string
+	ID          string
+	Key         string
+	Token       string
+	S3Bucket    string
 }
 
 // Upload ...
 func Upload(args Args) error {
 
 	fmt.Println("Uploading to Amazon S3 Bucket ...")
-	
+
 	fullSourceDir, err := filepath.Abs(args.SourceDir)
 	if err != nil {
 		return err
@@ -51,7 +46,7 @@ func Upload(args Args) error {
 	}
 
 	uiprogress.Start()
-	barTotal := uiprogress.AddBar(fc + 1 ).AppendCompleted().PrependElapsed()
+	barTotal := uiprogress.AddBar(fc + 1).AppendCompleted().PrependElapsed()
 	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize("Total progress", 35)
 	})
@@ -83,15 +78,15 @@ func Upload(args Args) error {
 		return strutil.Resize(*title, 35)
 	})
 
-	barTotal.Incr();
+	barTotal.Incr()
 
 	for path := range f {
 
 		_, fn := filepath.Split(path)
 		curTitle = fmt.Sprint("Uploading file: ", fn)
 
-		barTotal.Incr();
-		_bar.Set(0);
+		barTotal.Incr()
+		_bar.Set(0)
 
 		err := uploadFile(sess, args.OutputDir, path, fullSourceDir, args.S3Bucket)
 		if err != nil {
@@ -108,21 +103,21 @@ func Upload(args Args) error {
 	uiprogress.Stop()
 
 	fmt.Println("Upload completed.")
-	
+
 	return nil
 }
 
 func initAWS(args Args) (*session.Session, error) {
 
 	var cred *credentials.Credentials
-	if len(args.AWSCredentials) > 0 {
-		cred = credentials.NewSharedCredentials(args.AWSCredentials, args.AWSProfile)
+	if len(args.Credentials) > 0 {
+		cred = credentials.NewSharedCredentials(args.Credentials, args.Profile)
 	} else {
-		cred = credentials.NewStaticCredentials(args.AWSID, args.AWSKey, args.AWSToken)
+		cred = credentials.NewStaticCredentials(args.ID, args.Key, args.Token)
 	}
 
 	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(args.AWSRegion),
+		Region:      aws.String(args.Region),
 		Credentials: cred,
 	})
 
@@ -140,7 +135,7 @@ func initAWS(args Args) (*session.Session, error) {
 
 func uploadFile(sess *session.Session, root string, path string, source string, bucket string) error {
 
-	_bar.Incr();
+	_bar.Incr()
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -148,7 +143,7 @@ func uploadFile(sess *session.Session, root string, path string, source string, 
 	}
 	defer file.Close()
 
-	_bar.Incr();
+	_bar.Incr()
 
 	fname := path[len(source)+1 : len(path)]
 	fname = filepath.Join(root, fname)
@@ -165,7 +160,7 @@ func uploadFile(sess *session.Session, root string, path string, source string, 
 		return errors.New("Cannot upload file: " + err.Error())
 	}
 
-	_bar.Incr();
+	_bar.Incr()
 
 	return nil
 }

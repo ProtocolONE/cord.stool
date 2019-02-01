@@ -12,12 +12,12 @@ import (
 	"cord.stool/context"
 	"cord.stool/utils"
 
-	"github.com/urfave/cli"
 	"github.com/anacrolix/missinggo/slices"
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/anacrolix/torrent/metainfo"
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
+	"github.com/urfave/cli"
 )
 
 var args = struct {
@@ -33,10 +33,10 @@ var curProgressTitle string
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        	"torrent",
-		ShortName:		"t",
-		Usage:       	"Create torrent",
-		Description: 	"Create torrent file",
+		Name:        "torrent",
+		ShortName:   "t",
+		Usage:       "Create torrent",
+		Description: "Create torrent file",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -92,11 +92,11 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 		Files:       nil,
 	}
 
-	progrssBar.Incr();
+	progrssBar.Incr()
 	curProgressTitle = "Getting files info ..."
 
 	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
-		
+
 		if err != nil {
 			return err
 		}
@@ -129,7 +129,7 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 		return
 	}
 
-	progrssBar.Incr();
+	progrssBar.Incr()
 	curProgressTitle = "Generating pieces ..."
 
 	slices.Sort(info.Files, func(l, r metainfo.FileInfo) bool {
@@ -137,7 +137,7 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 	})
 
 	err = info.GeneratePieces(func(fi metainfo.FileInfo) (io.ReadCloser, error) {
-		progrssBar.Incr();
+		progrssBar.Incr()
 		return os.Open(filepath.Join(root, strings.Join(fi.Path, string(filepath.Separator))))
 	})
 
@@ -159,7 +159,7 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 
 	uiprogress.Start()
 	progrssBar = uiprogress.AddBar(fc + 4).AppendCompleted().PrependElapsed()
- 
+
 	var title *string
 	title = &curProgressTitle
 	curProgressTitle = "Getting metainfo ..."
@@ -192,7 +192,7 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 		return
 	}
 
-	progrssBar.Incr();
+	progrssBar.Incr()
 	curProgressTitle = "Creating torrent file ..."
 
 	mi.InfoBytes, err = bencode.Marshal(info)
@@ -208,7 +208,7 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 	defer f.Close()
 	err = mi.Write(f)
 
-	progrssBar.Incr();
+	progrssBar.Incr()
 	curProgressTitle = "Finished"
 	title = &curProgressTitle
 	uiprogress.Stop()

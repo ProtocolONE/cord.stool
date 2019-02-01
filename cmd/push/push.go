@@ -4,29 +4,31 @@ import (
 	"fmt"
 
 	"cord.stool/context"
-	"cord.stool/upload/ftp"
-	"cord.stool/upload/sftp"
-	"cord.stool/upload/s3"
 	"cord.stool/upload/akamai"
+	"cord.stool/upload/cord"
+	"cord.stool/upload/ftp"
+	"cord.stool/upload/s3"
+	"cord.stool/upload/sftp"
 
 	"github.com/urfave/cli"
 )
 
 var args = struct {
 	FtpUrl    string
-	SftpUrl    string
+	SftpUrl   string
 	SourceDir string
 	OutputDir string
-	s3Args s3.Args
-	akmArgs akamai.Args
+	s3Args    s3.Args
+	akmArgs   akamai.Args
+	cordArgs  cord.Args
 }{}
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        	"push",
-		ShortName:		"p",
-		Usage:			"Upload update",
-		Description:	"Upload update app bundle to one of servers",
+		Name:        "push",
+		ShortName:   "p",
+		Usage:       "Upload update",
+		Description: "Upload update app bundle to one of servers",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -57,37 +59,37 @@ func Register(ctx *context.StoolContext) {
 				Name:        "aws-region",
 				Usage:       "AWS region name",
 				Value:       "",
-				Destination: &args.s3Args.AWSRegion,
+				Destination: &args.s3Args.Region,
 			},
 			cli.StringFlag{
 				Name:        "aws-credentials",
 				Usage:       "Path to AWS credentials file",
 				Value:       "",
-				Destination: &args.s3Args.AWSCredentials,
+				Destination: &args.s3Args.Credentials,
 			},
 			cli.StringFlag{
 				Name:        "aws-profile",
 				Usage:       "AWS profile name",
 				Value:       "",
-				Destination: &args.s3Args.AWSProfile,
+				Destination: &args.s3Args.Profile,
 			},
 			cli.StringFlag{
 				Name:        "aws-id",
 				Usage:       "AWS access key id",
 				Value:       "",
-				Destination: &args.s3Args.AWSID,
+				Destination: &args.s3Args.ID,
 			},
 			cli.StringFlag{
 				Name:        "aws-key",
 				Usage:       "AWS secret access key",
 				Value:       "",
-				Destination: &args.s3Args.AWSKey,
+				Destination: &args.s3Args.Key,
 			},
 			cli.StringFlag{
 				Name:        "aws-token",
 				Usage:       "AWS session token",
 				Value:       "",
-				Destination: &args.s3Args.AWSToken,
+				Destination: &args.s3Args.Token,
 			},
 			cli.StringFlag{
 				Name:        "s3-bucket",
@@ -119,6 +121,34 @@ func Register(ctx *context.StoolContext) {
 				Value:       "",
 				Destination: &args.akmArgs.Code,
 			},
+			cli.StringFlag{
+				Name:        "cord-url",
+				Usage:       "Cord Server url",
+				Value:       "",
+				Destination: &args.cordArgs.Url,
+			},
+			cli.StringFlag{
+				Name:        "cord-login",
+				Usage:       "Cord user login",
+				Value:       "",
+				Destination: &args.cordArgs.Login,
+			},
+			cli.StringFlag{
+				Name:        "cord-password",
+				Usage:       "Cord user password",
+				Value:       "",
+				Destination: &args.cordArgs.Password,
+			},
+			cli.BoolFlag{
+				Name:        "cord-patch",
+				Usage:       "Upload the difference between files",
+				Destination: &args.cordArgs.Patch,
+			},
+			cli.BoolFlag{
+				Name:        "cord-hash",
+				Usage:       "Upload changed only files",
+				Destination: &args.cordArgs.Hash,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			return do(ctx, c)
@@ -128,15 +158,15 @@ func Register(ctx *context.StoolContext) {
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	
+
 	if args.SourceDir == "" {
 		return fmt.Errorf("Path to game is required")
 	}
 
-	if args.FtpUrl == "" && args.SftpUrl == "" && args.s3Args.S3Bucket == "" && args.akmArgs.Hostname == "" {
-		return fmt.Errorf("Specify one of following flags: ftp, sftp, s3-bucket, akm-hostname")
+	if args.FtpUrl == "" && args.SftpUrl == "" && args.s3Args.S3Bucket == "" && args.akmArgs.Hostname == "" && args.cordArgs.Url == "" {
+		return fmt.Errorf("Specify one of following flags: ftp, sftp, s3-bucket, akm-hostname, cord-url")
 	}
-	
+
 	if args.FtpUrl != "" {
 		err := ftp.Upload(args.FtpUrl, args.SourceDir)
 		if err != nil {
@@ -164,6 +194,15 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 		args.akmArgs.SourceDir = args.SourceDir
 		args.akmArgs.OutputDir = args.OutputDir
 		err := akamai.Upload(args.akmArgs)
+		if err != nil {
+			return err
+		}
+	}
+
+	if args.cordArgs.Url != "" {
+		args.cordArgs.SourceDir = args.SourceDir
+		args.cordArgs.OutputDir = args.OutputDir
+		err := cord.Upload(args.cordArgs)
 		if err != nil {
 			return err
 		}
