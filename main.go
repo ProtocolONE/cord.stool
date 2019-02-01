@@ -11,14 +11,14 @@ import (
 	"cord.stool/cmd"
 	"cord.stool/context"
 
-	"cord.stool/test"
+	"cord.stool/cord_wharf"
 )
 
 var version = "develop"
 
 func main() {
 
-	test.Test()
+	cord_wharf.Test()
 	
 	ctx := context.NewContext(version)
 	cmd.RegisterCmdCommands(ctx)
