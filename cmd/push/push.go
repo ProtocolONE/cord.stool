@@ -125,7 +125,7 @@ func Register(ctx *context.StoolContext) {
 			},
 			cli.StringFlag{
 				Name:        "cord-url",
-				Usage:       "Cord Server url",
+				Usage:       "Cord server url",
 				Value:       "",
 				Destination: &args.cordArgs.Url,
 			},
@@ -143,7 +143,7 @@ func Register(ctx *context.StoolContext) {
 			},
 			cli.BoolFlag{
 				Name:        "cord-patch",
-				Usage:       "Upload the difference between files",
+				Usage:       "Upload the difference between files using xdelta algorithm",
 				Destination: &args.cordArgs.Patch,
 			},
 			cli.BoolFlag{

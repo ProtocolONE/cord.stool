@@ -23,6 +23,12 @@
    --akm-keyname value       Akamai keyname
    --akm-key value           Akamai key
    --akm-code value          Akamai code
+   --cord-url value          Cord server url
+   --cord-login value        Cord user login
+   --cord-password value     Cord user password
+   --cord-patch              Upload the difference between files using xdelta algorithm
+   --cord-hash               Upload changed files only
+   --cord-wsync              Upload changed files only using Wharf protocol that enables incremental uploads   
 ```
 
 ## Description
@@ -44,3 +50,10 @@
    Use option **--akm-keyname** to specify Akamai keyname.</br>
    Use option **--akm-key** to specify Akamai key.</br>
    Use option **--akm-code** to specify Akamai code.</br>
+#### Cord Server
+   Use option **--cord-** to specify Cord server hostname.</br>
+   Use option **--cord-login** to specify Cord server login.</br>
+   Use option **--cord-password** to specify Cord server password.</br>
+   Use option **--cord-patch** to specify to upload the difference between files only. It uses xdelta algorithm.</br>
+   Use option **--cord-hash** to specify to upload changed files only. It uses files hash to find out changed files.</br>
+   Use option **--cord-wsync** to specify to upload changed files only. It uses Wharf protocol that enables incremental uploads.</br>
