@@ -3,6 +3,7 @@ package push
 import (
 	"fmt"
 
+	"cord.stool/compressor/gzip"
 	"cord.stool/context"
 	"cord.stool/upload/akamai"
 	"cord.stool/upload/cord"
@@ -24,6 +25,7 @@ var args = struct {
 }{}
 
 func Register(ctx *context.StoolContext) {
+
 	cmd := cli.Command{
 		Name:        "push",
 		ShortName:   "p",
@@ -146,8 +148,13 @@ func Register(ctx *context.StoolContext) {
 			},
 			cli.BoolFlag{
 				Name:        "cord-hash",
-				Usage:       "Upload changed only files",
+				Usage:       "Upload changed files only",
 				Destination: &args.cordArgs.Hash,
+			},
+			cli.BoolFlag{
+				Name:        "cord-wsync",
+				Usage:       "Upload changed files only using Wharf protocol that enables incremental uploads",
+				Destination: &args.cordArgs.Wharf,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -155,6 +162,8 @@ func Register(ctx *context.StoolContext) {
 		},
 	}
 	ctx.App.Commands = append(ctx.App.Commands, cmd)
+
+	gzip.Init()
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {

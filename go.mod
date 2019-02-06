@@ -24,6 +24,7 @@ require (
 	github.com/getlantern/hex v0.0.0-20160523043825-083fba3033ad // indirect
 	github.com/getlantern/hidden v0.0.0-20160523043807-d52a649ab33a // indirect
 	github.com/getlantern/idletiming v0.0.0-20181129121317-d6af7c708ed5 // indirect
+	github.com/getlantern/mtime v0.0.0-20170117193331-ba114e4a82b0 // indirect
 	github.com/getlantern/netx v0.0.0-20190110220209-9912de6f94fd // indirect
 	github.com/getlantern/ops v0.0.0-20170904182230-37353306c908 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
@@ -43,7 +44,7 @@ require (
 	github.com/itchio/arkive v0.0.0-20180910214514-fc46d4d216ca // indirect
 	github.com/itchio/httpkit v0.0.0-20181130212316-f3f5abea4913 // indirect
 	github.com/itchio/kompress v0.0.0-20180114163554-a19876f8c9b7 // indirect
-	github.com/itchio/savior v0.0.0-20190110031307-fa53ef6e9562 // indirect
+	github.com/itchio/savior v0.0.0-20190110031307-fa53ef6e9562
 	github.com/itchio/wharf v0.0.0-20181213155255-5c074d8f87a4
 	github.com/jgallagher/gosaca v0.0.0-20130226042358-754749770f08 // indirect
 	github.com/jlaffaye/ftp v0.0.0-20181101112434-47f21d10f0ee
@@ -76,7 +77,7 @@ require (
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1
 	golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9
-	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a // indirect
+	golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3 // indirect
 	golang.org/x/sys v0.0.0-20181122145206-62eef0e2fa9b // indirect
 	golang.org/x/text v0.3.0 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
