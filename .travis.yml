@@ -18,7 +18,8 @@ notifications:
   email: false
 
 install:
-- travis_wait env GO111MODULE=on go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+#- travis_wait env GO111MODULE=on go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+- travis_wait env GO111MODULE=on go get github.com/josephspurrier/goversioninfo
 - travis_wait env GO111MODULE=on go get -u
 
 script:
