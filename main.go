@@ -18,6 +18,7 @@ func main() {
 
 	ctx := context.NewContext(version)
 	cmd.RegisterCmdCommands(ctx)
+
 	err := ctx.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)

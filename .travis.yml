@@ -22,7 +22,6 @@ install:
 - travis_wait env GO111MODULE=on go get -u
 
 script:
-#- travis_wait env GO111MODULE=on goversioninfo -64
 - travis_wait env GO111MODULE=on go generate 
 - travis_wait env GO111MODULE=on go build -ldflags "-X main.version=`echo $TRAVIS_TAG | sed -r 's/[vV]?([0-9]*)\.([0-9]*)\.([0-9]*)/\1.\2.\3/'`"
 - travis_wait env GO111MODULE=on go test -v -race ./...
