@@ -87,6 +87,62 @@ func (manager *CordAPIManager) CmpHash(cmpReq *models.CompareHashCmd) (*models.C
 	return res, nil
 }
 
+func (manager *CordAPIManager) AddTorrent(torrentReq *models.TorrentCmd) error {
+
+	sc, err := addTorrent(manager.host, manager.authToken.Token, torrentReq)
+	if err != nil {
+
+		if sc == http.StatusUnauthorized {
+
+			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
+			if err != nil {
+				return err
+			}
+
+			manager.authToken.Token = refreshToken.Token
+			manager.authToken.RefreshToken = refreshToken.RefreshToken
+
+			_, err = addTorrent(manager.host, manager.authToken.Token, torrentReq)
+			if err != nil {
+				return err
+			}
+
+		} else {
+
+			return err
+		}
+	}
+	return nil
+}
+
+func (manager *CordAPIManager) RemoveTorrent(torrentReq *models.TorrentCmd) error {
+
+	sc, err := removeTorrent(manager.host, manager.authToken.Token, torrentReq)
+	if err != nil {
+
+		if sc == http.StatusUnauthorized {
+
+			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
+			if err != nil {
+				return err
+			}
+
+			manager.authToken.Token = refreshToken.Token
+			manager.authToken.RefreshToken = refreshToken.RefreshToken
+
+			_, err = removeTorrent(manager.host, manager.authToken.Token, torrentReq)
+			if err != nil {
+				return err
+			}
+
+		} else {
+
+			return err
+		}
+	}
+	return nil
+}
+
 func login(host string, username string, password string) (*models.AuthToken, error) {
 
 	authReq := &models.Authorization{Username: username, Password: password}
@@ -165,6 +221,36 @@ func cmpHash(host string, token string, cmpReq *models.CompareHashCmd) (*models.
 	return cmpRes, res.StatusCode, nil
 }
 
+func addTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, error) {
+
+	res, err := post(host+"/api/v1/tracker/torrent", token, "application/json", cmdTorrent)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return res.StatusCode, buldError(res.Body)
+	}
+
+	return res.StatusCode, nil
+}
+
+func removeTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, error) {
+
+	res, err := delete(host+"/api/v1/tracker/torrent", token, "application/json", cmdTorrent)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return res.StatusCode, buldError(res.Body)
+	}
+
+	return res.StatusCode, nil
+}
+
 func get(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
 
 	return httpRequest("GET", url, token, contentType, obj)
@@ -173,6 +259,11 @@ func get(url string, token string, contentType string, obj interface{}) (resp *h
 func post(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
 
 	return httpRequest("POST", url, token, contentType, obj)
+}
+
+func delete(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
+
+	return httpRequest("DELETE", url, token, contentType, obj)
 }
 
 func httpRequest(method string, url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {

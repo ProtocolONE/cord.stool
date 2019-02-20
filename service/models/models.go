@@ -18,6 +18,9 @@ const (
 	ErrorUnauthorized              = 15
 	ErrorTokenExpired              = 16
 	ErrorInvalidToken              = 17
+	ErrorLoginTracker              = 18
+	ErrorAddTracker                = 19
+	ErrorDeleteTracker             = 20
 )
 
 type AppKey struct {
@@ -85,4 +88,8 @@ type User struct {
 	Username string `bson:"username" json:"username"`
 	Password string `bson:"password" json:"password"`
 	Storage  string `bson:"storage" json:"storage"`
+}
+
+type TorrentCmd struct {
+	InfoHash string `bson:"info_hash" json:"info_hash"`
 }
