@@ -21,9 +21,16 @@ type ServiceCfg struct {
 	StorageRootPath string `envconfig:"STORAGE_ROOT_PATH"`
 }
 
+type TrackerCfg struct {
+	Url     string `envconfig:"TRACKER_URL"`
+	User     string `envconfig:"TRACKER_USER"`
+	Password string `envconfig:"TRACKER_PASSWORD"`
+}
+
 type Config struct {
 	Database DatabaseCfg
 	Service  ServiceCfg
+	Tracker  TrackerCfg
 }
 
 var cfg *Config
