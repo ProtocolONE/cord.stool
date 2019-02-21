@@ -42,7 +42,7 @@ func Register(ctx *context.StoolContext) {
 		Name:        "torrent",
 		ShortName:   "t",
 		Usage:       "Create torrent",
-		Description: "Create torrent file and add it to Torrent Tracker if needed it",
+		Description: "Create torrent file and adding it to Torrent Tracker if needed it",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -75,7 +75,7 @@ func Register(ctx *context.StoolContext) {
 			},
 			cli.StringFlag{
 				Name:        "cord-url",
-				Usage:       "Cord Server url",
+				Usage:       "Cord server url",
 				Value:       "",
 				Destination: &args.Url,
 			},
