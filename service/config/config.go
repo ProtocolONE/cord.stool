@@ -22,7 +22,7 @@ type ServiceCfg struct {
 }
 
 type TrackerCfg struct {
-	Url     string `envconfig:"TRACKER_URL"`
+	Url      string `envconfig:"TRACKER_URL"`
 	User     string `envconfig:"TRACKER_USER"`
 	Password string `envconfig:"TRACKER_PASSWORD"`
 }

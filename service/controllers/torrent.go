@@ -1,19 +1,19 @@
 package controllers
 
 import (
-	"cord.stool/service/models"
-	"cord.stool/service/config"
 	"cord.stool/cordapi"
+	"cord.stool/service/config"
+	"cord.stool/service/models"
 
 	"fmt"
-	"net/http"
 	"go.uber.org/zap"
+	"net/http"
 
 	"github.com/labstack/echo"
 )
 
 func AddTorrent(context echo.Context) error {
-	
+
 	reqTorrent := &models.TorrentCmd{}
 	err := context.Bind(reqTorrent)
 	if err != nil {

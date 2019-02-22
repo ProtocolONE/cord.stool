@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"cord.stool/context"
-	"cord.stool/utils"
 	"cord.stool/cordapi"
 	"cord.stool/service/models"
+	"cord.stool/utils"
 
 	"github.com/anacrolix/missinggo/slices"
 	"github.com/anacrolix/torrent/bencode"
@@ -28,16 +28,16 @@ var args = struct {
 	WebSeeds     cli.StringSlice
 	AnnounceList cli.StringSlice
 	PieceLength  int64
-	Url       string
-	Login     string
-	Password  string
+	Url          string
+	Login        string
+	Password     string
 }{}
 
 var progrssBar *uiprogress.Bar
 var curProgressTitle string
 
 func Register(ctx *context.StoolContext) {
-	
+
 	cmd := cli.Command{
 		Name:        "torrent",
 		ShortName:   "t",
@@ -110,7 +110,7 @@ var (
 // This is a helper that sets Files and Pieces from a root path and its
 // children.
 func buildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainfo.Info, err error) {
-	
+
 	info = metainfo.Info{
 		PieceLength: args.PieceLength * 1024,
 		Name:        "live",
@@ -244,7 +244,7 @@ func createTorrent(rootDir string, targetFile string, announceList []string, url
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	
+
 	if args.TargetFile == "" {
 		return fmt.Errorf("Path to torrent file is required")
 	}
@@ -255,7 +255,7 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 
 	if args.SourceDir != "" {
 
-		err :=  createTorrent(
+		err := createTorrent(
 			args.SourceDir,
 			args.TargetFile,
 			args.AnnounceList,
@@ -279,7 +279,7 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 }
 
 func addTorrent(url, login, password, torrent string) error {
-	
+
 	fmt.Println("Adding torrent to Cord Server ...")
 
 	uiprogress.Start()
