@@ -44,8 +44,8 @@ func DeleteTorrent(context echo.Context) error {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
 	}
 
-	api := cordapi.NewCordAPI("http://127.0.0.1:5002")
-	err = api.Login("admin", "123456")
+	api := cordapi.NewCordAPI(config.Get().Tracker.Url)
+	err = api.Login(config.Get().Tracker.User, config.Get().Tracker.Password)
 	if err != nil {
 		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorLoginTracker, fmt.Sprintf("Login to tracker failed, error: %s", err.Error())})
 	}

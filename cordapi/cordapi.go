@@ -89,7 +89,9 @@ func (manager *CordAPIManager) CmpHash(cmpReq *models.CompareHashCmd) (*models.C
 
 func (manager *CordAPIManager) AddTorrent(torrentReq *models.TorrentCmd) error {
 
-	sc, err := addTorrent(manager.host, manager.authToken.Token, torrentReq)
+	return manager.torrent(torrentReq, true)
+
+	/*sc, err := addTorrent(manager.host, manager.authToken.Token, torrentReq)
 	if err != nil {
 
 		if sc == http.StatusUnauthorized {
@@ -112,12 +114,14 @@ func (manager *CordAPIManager) AddTorrent(torrentReq *models.TorrentCmd) error {
 			return err
 		}
 	}
-	return nil
+	return nil*/
 }
 
 func (manager *CordAPIManager) RemoveTorrent(torrentReq *models.TorrentCmd) error {
 
-	sc, err := removeTorrent(manager.host, manager.authToken.Token, torrentReq)
+	return manager.torrent(torrentReq, false)
+
+	/*sc, err := removeTorrent(manager.host, manager.authToken.Token, torrentReq)
 	if err != nil {
 
 		if sc == http.StatusUnauthorized {
@@ -131,6 +135,47 @@ func (manager *CordAPIManager) RemoveTorrent(torrentReq *models.TorrentCmd) erro
 			manager.authToken.RefreshToken = refreshToken.RefreshToken
 
 			_, err = removeTorrent(manager.host, manager.authToken.Token, torrentReq)
+			if err != nil {
+				return err
+			}
+
+		} else {
+
+			return err
+		}
+	}
+	return nil*/
+}
+
+func (manager *CordAPIManager) torrent(torrentReq *models.TorrentCmd, add bool) error {
+
+	var sc int
+	var err error
+
+	if add {
+		sc, err = addTorrent(manager.host, manager.authToken.Token, torrentReq)
+	} else {
+		sc, err = removeTorrent(manager.host, manager.authToken.Token, torrentReq)
+	}
+
+	if err != nil {
+
+		if sc == http.StatusUnauthorized {
+
+			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
+			if err != nil {
+				return err
+			}
+
+			manager.authToken.Token = refreshToken.Token
+			manager.authToken.RefreshToken = refreshToken.RefreshToken
+
+			if add {
+				_, err = addTorrent(manager.host, manager.authToken.Token, torrentReq)
+			} else {
+				_, err = removeTorrent(manager.host, manager.authToken.Token, torrentReq)
+			}
+
 			if err != nil {
 				return err
 			}
