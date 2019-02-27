@@ -165,7 +165,7 @@ typedef ULONGLONG      uint64_t;
 #define _FILE_OFFSET_BITS 64
 #endif
 
-#define SIZEOF_SIZE_T 4//(sizeof(size_t))
+#define SIZEOF_SIZE_T 8 //sizeof(size_t)
 
 /* Set a xoff_t typedef and the "Q" printf insert. */
 #if defined(_WIN32)
