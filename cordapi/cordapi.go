@@ -34,112 +34,105 @@ func (manager *CordAPIManager) Login(username string, password string) error {
 func (manager *CordAPIManager) Upload(uploadReq *models.UploadCmd) error {
 
 	sc, err := upload(manager.host, manager.authToken.Token, uploadReq)
-	if err != nil {
+	if sc == http.StatusUnauthorized{
 
-		if sc == http.StatusUnauthorized {
-
-			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
-			if err != nil {
-				return err
-			}
-
-			manager.authToken.Token = refreshToken.Token
-			manager.authToken.RefreshToken = refreshToken.RefreshToken
-
-			_, err = upload(manager.host, manager.authToken.Token, uploadReq)
-			if err != nil {
-				return err
-			}
-
-		} else {
-
+		err = manager.RefreshToken()
+		if err != nil {
 			return err
 		}
+		
+		_, err = upload(manager.host, manager.authToken.Token, uploadReq)
+		if err != nil {
+			return err
+		}
+
+	} else if err != nil {
+
+		return err
 	}
+
 	return nil
 }
 
 func (manager *CordAPIManager) CmpHash(cmpReq *models.CompareHashCmd) (*models.CompareHashCmdResult, error) {
 
 	res, sc, err := cmpHash(manager.host, manager.authToken.Token, cmpReq)
-	if err != nil {
+	if sc == http.StatusUnauthorized{
 
-		if sc == http.StatusUnauthorized {
-
-			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
-			if err != nil {
-				return nil, err
-			}
-
-			manager.authToken.Token = refreshToken.Token
-			manager.authToken.RefreshToken = refreshToken.RefreshToken
-
-			res, _, err = cmpHash(manager.host, manager.authToken.Token, cmpReq)
-			if err != nil {
-				return nil, err
-			}
-
-		} else {
-
+		err = manager.RefreshToken()
+		if err != nil {
 			return nil, err
 		}
+		
+		res, _, err = cmpHash(manager.host, manager.authToken.Token, cmpReq)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
 	}
+
 	return res, nil
 }
 
 func (manager *CordAPIManager) GetSignature(path string) (*models.SignatureCmdResult, error) {
 
 	res, sc, err := getSignature(manager.host, manager.authToken.Token, path)
-	if err != nil {
+	if sc == http.StatusUnauthorized{
 
-		if sc == http.StatusUnauthorized {
-
-			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
-			if err != nil {
-				return nil, err
-			}
-
-			manager.authToken.Token = refreshToken.Token
-			manager.authToken.RefreshToken = refreshToken.RefreshToken
-
-			res, _, err = getSignature(manager.host, manager.authToken.Token, path)
-			if err != nil {
-				return nil, err
-			}
-
-		} else {
-
+		err = manager.RefreshToken()
+		if err != nil {
 			return nil, err
 		}
+		
+		res, _, err = getSignature(manager.host, manager.authToken.Token, path)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
 	}
+
 	return res, nil
 }
 
 func (manager *CordAPIManager) ApplyPatch(applyReq *models.ApplyPatchCmd) error {
 
 	sc, err := applyPatch(manager.host, manager.authToken.Token, applyReq)
-	if err != nil {
+	if sc == http.StatusUnauthorized{
 
-		if sc == http.StatusUnauthorized {
-
-			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
-			if err != nil {
-				return err
-			}
-
-			manager.authToken.Token = refreshToken.Token
-			manager.authToken.RefreshToken = refreshToken.RefreshToken
-
-			_, err = applyPatch(manager.host, manager.authToken.Token, applyReq)
-			if err != nil {
-				return err
-			}
-
-		} else {
-
+		err = manager.RefreshToken()
+		if err != nil {
 			return err
 		}
+		
+		_, err = applyPatch(manager.host, manager.authToken.Token, applyReq)
+		if err != nil {
+			return err
+		}
+
+	} else if err != nil {
+
+		return err
 	}
+
+	return nil
+}
+
+func (manager *CordAPIManager) RefreshToken() error {
+
+	refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
+	if err != nil {
+		return err
+	}
+
+	manager.authToken.Token = refreshToken.Token
+	manager.authToken.RefreshToken = refreshToken.RefreshToken
+
 	return nil
 }
 
