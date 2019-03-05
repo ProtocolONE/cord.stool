@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export MONGO_HOST="127.0.0.1:27017"
-export MONGO_DB="management"
+export MONGO_DB="cord_stool"
 export MONGO_USER=""
 export MONGO_PASSWORD=""
 export HTTP_SCHEME="http"

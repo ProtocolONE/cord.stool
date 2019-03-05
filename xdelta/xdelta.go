@@ -32,7 +32,7 @@ func EncodeDiff(from string, to string, diff string) error {
 	}
 	defer filediff.Close()
 
-	ret := C.encodeDiff(_Ctype_uint(fileFrom.Fd()), _Ctype_uint(fileTo.Fd()), _Ctype_uint(filediff.Fd()))
+	ret := C.encodeDiff(C.uint(fileFrom.Fd()), C.uint(fileTo.Fd()), C.uint(filediff.Fd()))
 	if ret != 0 {
 		return errors.New("xdelta error: " + strconv.Itoa(int(ret)))
 	}
@@ -61,7 +61,7 @@ func DecodeDiff(from string, to string, diff string) error {
 	}
 	defer filediff.Close()
 
-	ret := C.decodeDiff(_Ctype_uint(fileFrom.Fd()), _Ctype_uint(fileTo.Fd()), _Ctype_uint(filediff.Fd()))
+	ret := C.decodeDiff(C.uint(fileFrom.Fd()), C.uint(fileTo.Fd()), C.uint(filediff.Fd()))
 	if ret != 0 {
 		return errors.New("xdelta error: " + strconv.Itoa(int(ret)))
 	}
