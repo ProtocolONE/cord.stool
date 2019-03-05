@@ -33,7 +33,6 @@ var ignoredPaths = []string{
 	"__MACOSX",
 	"._*",
 	"Thumbs.db",
-	".itch",
 }
 
 func filterPaths(fileInfo os.FileInfo) bool {
