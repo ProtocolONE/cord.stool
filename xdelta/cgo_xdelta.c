@@ -1,10 +1,20 @@
 #include <stdio.h>
 #include <sys/stat.h>
-#include <io.h>
-#include <Fcntl.h>
+#include <fcntl.h>
 
 #include "xdelta3.h"
 #include "cgo_xdelta.h"
+
+#ifndef O_BINARY
+#define O_BINARY 0 
+#endif
+
+#ifndef _WIN32
+inline int _open_osfhandle (size_t osfhandle, int flags)
+{
+  return osfhandle;
+}
+#endif
 
 int code(
   int encode,
@@ -33,7 +43,7 @@ int code(
 
   if (SrcFile)
   {
-    r = fstat(_fileno(SrcFile), &statbuf);
+    r = fstat(fileno(SrcFile), &statbuf);
     if (r)
       return r;
 
@@ -136,7 +146,7 @@ int encodeDiff(unsigned int from, unsigned int to, unsigned int diff)
 {
   int result = 0;
 
-  int fdfrom = _open_osfhandle(from, _O_RDONLY|_O_BINARY);
+  int fdfrom = _open_osfhandle(from, O_RDONLY|O_BINARY);
   if (-1 == fdfrom) {
     result = CGO_XD3_FROM_FILE_OPEN_FAILED;
     goto cleanup;
@@ -148,7 +158,7 @@ int encodeDiff(unsigned int from, unsigned int to, unsigned int diff)
     goto cleanup;
   }
 
-  int fdTo = _open_osfhandle(to, _O_RDONLY|_O_BINARY);
+  int fdTo = _open_osfhandle(to, O_RDONLY|O_BINARY);
   if (-1 == fdTo) {
     result = CGO_XD3_TO_FILE_OPEN_FAILED;
     goto cleanup;
@@ -160,7 +170,7 @@ int encodeDiff(unsigned int from, unsigned int to, unsigned int diff)
     goto cleanup;
   }
 
-  int fdDiff = _open_osfhandle(diff, _O_CREAT|_O_WRONLY|_O_BINARY);
+  int fdDiff = _open_osfhandle(diff, O_CREAT|O_WRONLY|O_BINARY);
   if (-1 == fdDiff) {
     result = CGO_XD3_DIFF_FILE_CREATE_FAILED;
     goto cleanup;
@@ -186,7 +196,7 @@ int decodeDiff(unsigned int from, unsigned int to, unsigned int diff)
 {
   int result = 0;
 
-  int fdfrom = _open_osfhandle(from, _O_RDONLY|_O_BINARY);
+  int fdfrom = _open_osfhandle(from, O_RDONLY|O_BINARY);
   if (-1 == fdfrom) {
     result = CGO_XD3_FROM_FILE_OPEN_FAILED;
     goto cleanup;
@@ -198,7 +208,7 @@ int decodeDiff(unsigned int from, unsigned int to, unsigned int diff)
     return result;
   }
 
-  int fdTo = _open_osfhandle(to, _O_CREAT|_O_WRONLY|_O_BINARY);
+  int fdTo = _open_osfhandle(to, O_CREAT|O_WRONLY|O_BINARY);
   if (-1 == fdTo) {
     result = CGO_XD3_TO_FILE_CREATE_FAILED;
     goto cleanup;
@@ -210,7 +220,7 @@ int decodeDiff(unsigned int from, unsigned int to, unsigned int diff)
     return result;
   }
 
-  int fdDiff = _open_osfhandle(diff, _O_RDONLY|_O_BINARY);
+  int fdDiff = _open_osfhandle(diff, O_RDONLY|O_BINARY);
   if (-1 == fdDiff) {
     result = CGO_XD3_DIFF_FILE_OPEN_FAILED;
     goto cleanup;
