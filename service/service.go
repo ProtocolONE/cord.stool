@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 
+	"cord.stool/compressor/gzip"
 	"cord.stool/service/config"
 	"cord.stool/service/database"
 	"cord.stool/service/routers"
@@ -38,6 +39,8 @@ func Start(port uint) error {
 
 	// Routes
 	routers.InitRoutes(e)
+
+	gzip.Init()
 
 	// Start server
 	zap.S().Fatal(e.Start(fmt.Sprintf(":%d", conf.Service.ServicePort)))

@@ -16,6 +16,9 @@ import (
 )
 
 var _bar *uiprogress.Bar
+var _barTotal *uiprogress.Bar
+var _curTitle string
+var _title *string
 
 type Args = struct {
 	Url       string
@@ -25,6 +28,7 @@ type Args = struct {
 	OutputDir string
 	Patch     bool
 	Hash      bool
+	Wharf     bool
 }
 
 // Upload ...
@@ -37,14 +41,23 @@ func Upload(args Args) error {
 		return err
 	}
 
-	fc, err := utils.FileCount(fullSourceDir)
-	if err != nil {
-		return err
+	var barCount int
+
+	if args.Wharf {
+
+		barCount = 10
+	} else {
+
+		fc, err := utils.FileCount(fullSourceDir)
+		if err != nil {
+			return err
+		}
+		barCount = fc + 1
 	}
 
 	uiprogress.Start()
-	barTotal := uiprogress.AddBar(fc + 1).AppendCompleted().PrependElapsed()
-	barTotal.PrependFunc(func(b *uiprogress.Bar) string {
+	_barTotal = uiprogress.AddBar(barCount).AppendCompleted().PrependElapsed()
+	_barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize("Total progress", 35)
 	})
 
@@ -53,6 +66,33 @@ func Upload(args Args) error {
 	if err != nil {
 		return err
 	}
+
+	if args.Wharf {
+
+		err = uploadWharf(api, fullSourceDir, args.OutputDir)
+		if err != nil {
+			return err
+		}
+
+	} else {
+
+		err = upload(api, args, fullSourceDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	_curTitle = "Finished"
+	uiprogress.Stop()
+
+	fmt.Println("Upload completed.")
+
+	return nil
+}
+
+func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string) error {
+
+	var err error
 
 	stopCh := make(chan struct{})
 	defer func() {
@@ -72,22 +112,20 @@ func Upload(args Args) error {
 		_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
 	}
 
-	var curTitle string
-	var title *string
-	title = &curTitle
+	_title = &_curTitle
 
 	_bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize(*title, 35)
+		return strutil.Resize(*_title, 35)
 	})
 
-	barTotal.Incr()
+	_barTotal.Incr()
 
 	for path := range f {
 
 		_, fn := filepath.Split(path)
-		curTitle = fmt.Sprint("Uploading file: ", fn)
+		_curTitle = fmt.Sprint("Uploading file: ", fn)
 
-		barTotal.Incr()
+		_barTotal.Incr()
 		_bar.Set(0)
 
 		err := uploadFile(api, args, path, fullSourceDir)
@@ -100,11 +138,6 @@ func Upload(args Args) error {
 	if err != nil {
 		return err
 	}
-
-	curTitle = "Finished"
-	uiprogress.Stop()
-
-	fmt.Println("Upload completed.")
 
 	return nil
 }

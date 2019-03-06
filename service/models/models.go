@@ -18,6 +18,11 @@ const (
 	ErrorUnauthorized              = 15
 	ErrorTokenExpired              = 16
 	ErrorInvalidToken              = 17
+	ErrorWharfLibrary              = 18
+	ErrorCreateFile                = 19
+	ErrorReadFile                  = 20
+	ErrorOpenFile                  = 21
+	ErrorInvalidRequest            = 22
 )
 
 type AppKey struct {
@@ -79,6 +84,19 @@ type CompareHashCmd struct {
 
 type CompareHashCmdResult struct {
 	Equal bool `json:equal`
+}
+
+type SignatureCmd struct {
+	Path string `json:"path"`
+}
+
+type SignatureCmdResult struct {
+	FileData []byte `json:filedata`
+}
+
+type ApplyPatchCmd struct {
+	Path     string `json:"path"`
+	FileData []byte `json:filedata`
 }
 
 type User struct {
