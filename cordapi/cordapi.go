@@ -100,6 +100,57 @@ func (manager *CordAPIManager) GetSignature(path string) (*models.SignatureCmdRe
 	return res, nil
 }
 
+func (manager *CordAPIManager) AddTorrent(torrentReq *models.TorrentCmd) error {
+
+	return manager.torrent(torrentReq, true)
+}
+
+func (manager *CordAPIManager) RemoveTorrent(torrentReq *models.TorrentCmd) error {
+
+	return manager.torrent(torrentReq, false)
+}
+
+func (manager *CordAPIManager) torrent(torrentReq *models.TorrentCmd, add bool) error {
+
+	var sc int
+	var err error
+
+	if add {
+		sc, err = addTorrent(manager.host, manager.authToken.Token, torrentReq)
+	} else {
+		sc, err = removeTorrent(manager.host, manager.authToken.Token, torrentReq)
+	}
+
+	if err != nil {
+
+		if sc == http.StatusUnauthorized {
+
+			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
+			if err != nil {
+				return err
+			}
+
+			manager.authToken.Token = refreshToken.Token
+			manager.authToken.RefreshToken = refreshToken.RefreshToken
+
+			if add {
+				_, err = addTorrent(manager.host, manager.authToken.Token, torrentReq)
+			} else {
+				_, err = removeTorrent(manager.host, manager.authToken.Token, torrentReq)
+			}
+
+			if err != nil {
+				return err
+			}
+
+		} else {
+
+			return err
+		}
+	}
+	return nil
+}
+
 func (manager *CordAPIManager) ApplyPatch(applyReq *models.ApplyPatchCmd) error {
 
 	sc, err := applyPatch(manager.host, manager.authToken.Token, applyReq)
@@ -163,7 +214,7 @@ func login(host string, username string, password string) (*models.AuthToken, er
 
 func refreshToken(host string, token string) (*models.AuthRefresh, error) {
 
-	res, err := get(host+"/api/v1/auth/refresh-token", token)
+	res, err := get(host+"/api/v1/auth/refresh-token", token, "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -214,9 +265,39 @@ func cmpHash(host string, token string, cmpReq *models.CompareHashCmd) (*models.
 	return cmpRes, res.StatusCode, nil
 }
 
+func addTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, error) {
+
+	res, err := post(host+"/api/v1/tracker/torrent", token, "application/json", cmdTorrent)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return res.StatusCode, buldError(res.Body)
+	}
+
+	return res.StatusCode, nil
+}
+
+func removeTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, error) {
+
+	res, err := delete(host+"/api/v1/tracker/torrent", token, "application/json", cmdTorrent)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return res.StatusCode, buldError(res.Body)
+	}
+
+	return res.StatusCode, nil
+}
+
 func getSignature(host string, token string, path string) (*models.SignatureCmdResult, int, error) {
 
-	res, err := get(host+"/api/v1/file/signature?path="+path, token)
+	res, err := get(host+"/api/v1/file/signature?path="+path, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -248,9 +329,9 @@ func applyPatch(host string, token string, applyReq *models.ApplyPatchCmd) (int,
 	return res.StatusCode, nil
 }
 
-func get(url string, token string) (resp *http.Response, err error) {
+func get(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
 
-	return httpRequest("GET", url, token, "", nil)
+	return httpRequest("GET", url, token, contentType, obj)
 }
 
 func post(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
@@ -258,32 +339,25 @@ func post(url string, token string, contentType string, obj interface{}) (resp *
 	return httpRequest("POST", url, token, contentType, obj)
 }
 
-func httpRequest(method string, url string, token string, contentType string, obj interface{}) (*http.Response, error) {
+func delete(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
 
-	var buffer io.Reader
-	buffer = nil
-	client := &http.Client{}
+	return httpRequest("DELETE", url, token, contentType, obj)
+}
 
-	if method == "POST" {
+func httpRequest(method string, url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
 
-		data, err := json.Marshal(obj)
-		if err != nil {
-			return nil, err
-		}
-		buffer = bytes.NewBuffer(data)
-	}
-
-	req, err := http.NewRequest(method, url, buffer)
+	data, err := json.Marshal(obj)
 	if err != nil {
 		return nil, err
 	}
 
-	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
 	}
-
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Add("Authorization", token)
-
 	return client.Do(req)
 }
 

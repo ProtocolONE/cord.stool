@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export TRACKER_URL="http://127.0.0.1:5002"
+export TRACKER_USER="admin"
+export TRACKER_PASSWORD="123456"
 export MONGO_HOST="127.0.0.1:27017"
 export MONGO_DB="cord_stool"
 export MONGO_USER=""

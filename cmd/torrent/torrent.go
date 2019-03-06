@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"cord.stool/context"
+	"cord.stool/cordapi"
+	"cord.stool/service/models"
 	"cord.stool/utils"
 
 	"github.com/anacrolix/missinggo/slices"
@@ -26,17 +28,21 @@ var args = struct {
 	WebSeeds     cli.StringSlice
 	AnnounceList cli.StringSlice
 	PieceLength  int64
+	Url          string
+	Login        string
+	Password     string
 }{}
 
 var progrssBar *uiprogress.Bar
 var curProgressTitle string
 
 func Register(ctx *context.StoolContext) {
+
 	cmd := cli.Command{
 		Name:        "torrent",
 		ShortName:   "t",
 		Usage:       "Create torrent",
-		Description: "Create torrent file",
+		Description: "Create torrent file and adding it to Torrent Tracker if needed it",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -46,8 +52,8 @@ func Register(ctx *context.StoolContext) {
 				Destination: &args.SourceDir,
 			},
 			cli.StringFlag{
-				Name:        "target, t",
-				Usage:       "Path for new torrent file",
+				Name:        "file, f",
+				Usage:       "Path to torrent file",
 				Value:       "",
 				Destination: &args.TargetFile,
 			},
@@ -67,6 +73,24 @@ func Register(ctx *context.StoolContext) {
 				Value:       512,
 				Destination: &args.PieceLength,
 			},
+			cli.StringFlag{
+				Name:        "cord-url",
+				Usage:       "Cord server url",
+				Value:       "",
+				Destination: &args.Url,
+			},
+			cli.StringFlag{
+				Name:        "cord-login",
+				Usage:       "Cord user login",
+				Value:       "",
+				Destination: &args.Login,
+			},
+			cli.StringFlag{
+				Name:        "cord-password",
+				Usage:       "Cord user password",
+				Value:       "",
+				Destination: &args.Password,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			return do(ctx, c)
@@ -85,7 +109,8 @@ var (
 
 // This is a helper that sets Files and Pieces from a root path and its
 // children.
-func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainfo.Info, err error) {
+func buildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainfo.Info, err error) {
+
 	info = metainfo.Info{
 		PieceLength: args.PieceLength * 1024,
 		Name:        "live",
@@ -148,7 +173,7 @@ func BuildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 	return
 }
 
-func CreateTorrent(rootDir string, targetFile string, announceList []string, urlList []string) (err error) {
+func createTorrent(rootDir string, targetFile string, announceList []string, urlList []string) (err error) {
 
 	fmt.Println("Creating torrent file ...")
 
@@ -187,7 +212,7 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 		"update.crc":     true,
 	}
 
-	info, err := BuildFromFilePathEx(rootDir, ignoreFiles)
+	info, err := buildFromFilePathEx(rootDir, ignoreFiles)
 	if err != nil {
 		return
 	}
@@ -219,9 +244,86 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
-	return CreateTorrent(
-		args.SourceDir,
-		args.TargetFile,
-		args.AnnounceList,
-		args.WebSeeds)
+
+	if args.TargetFile == "" {
+		return fmt.Errorf("Path to torrent file is required")
+	}
+
+	if args.SourceDir == "" && args.Url == "" {
+		return fmt.Errorf("Specify one of following flags: source or cord-url")
+	}
+
+	if args.SourceDir != "" {
+
+		err := createTorrent(
+			args.SourceDir,
+			args.TargetFile,
+			args.AnnounceList,
+			args.WebSeeds)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	if args.Url != "" {
+
+		err := addTorrent(args.Url, args.Login, args.Password, args.TargetFile)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+func addTorrent(url, login, password, torrent string) error {
+
+	fmt.Println("Adding torrent to Cord Server ...")
+
+	uiprogress.Start()
+	progrssBar := uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
+
+	var title *string
+	title = &curProgressTitle
+	curProgressTitle = "Getting metainfo from torent file..."
+
+	progrssBar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(*title, 35)
+	})
+
+	mi, err := metainfo.LoadFromFile(torrent)
+	if err != nil {
+		return err
+	}
+
+	hash := metainfo.HashBytes(mi.InfoBytes)
+	infoHash := hash.String()
+
+	progrssBar.Incr()
+	curProgressTitle = "Login to Torrent Tracker"
+
+	api := cordapi.NewCordAPI(url)
+	err = api.Login(login, password)
+	if err != nil {
+		return err
+	}
+
+	progrssBar.Incr()
+	curProgressTitle = "Adding torrent to Torrent Tracker"
+
+	err = api.AddTorrent(&models.TorrentCmd{infoHash})
+	if err != nil {
+		return err
+	}
+
+	progrssBar.Incr()
+	curProgressTitle = "Finished"
+	title = &curProgressTitle
+	uiprogress.Stop()
+
+	fmt.Println("Torrent is added to Torrent Tracker.")
+
+	return nil
 }
