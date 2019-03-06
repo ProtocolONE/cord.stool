@@ -214,7 +214,7 @@ func login(host string, username string, password string) (*models.AuthToken, er
 
 func refreshToken(host string, token string) (*models.AuthRefresh, error) {
 
-	res, err := get(host+"/api/v1/auth/refresh-token", token)
+	res, err := get(host+"/api/v1/auth/refresh-token", token, "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +297,7 @@ func removeTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (in
 
 func getSignature(host string, token string, path string) (*models.SignatureCmdResult, int, error) {
 
-	res, err := get(host+"/api/v1/file/signature?path="+path, token)
+	res, err := get(host+"/api/v1/file/signature?path="+path, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
