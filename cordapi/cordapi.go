@@ -34,56 +34,69 @@ func (manager *CordAPIManager) Login(username string, password string) error {
 func (manager *CordAPIManager) Upload(uploadReq *models.UploadCmd) error {
 
 	sc, err := upload(manager.host, manager.authToken.Token, uploadReq)
-	if err != nil {
+	if sc == http.StatusUnauthorized{
 
-		if sc == http.StatusUnauthorized {
-
-			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
-			if err != nil {
-				return err
-			}
-
-			manager.authToken.Token = refreshToken.Token
-			manager.authToken.RefreshToken = refreshToken.RefreshToken
-
-			_, err = upload(manager.host, manager.authToken.Token, uploadReq)
-			if err != nil {
-				return err
-			}
-
-		} else {
-
+		err = manager.RefreshToken()
+		if err != nil {
 			return err
 		}
+		
+		_, err = upload(manager.host, manager.authToken.Token, uploadReq)
+		if err != nil {
+			return err
+		}
+
+	} else if err != nil {
+
+		return err
 	}
+
 	return nil
 }
 
 func (manager *CordAPIManager) CmpHash(cmpReq *models.CompareHashCmd) (*models.CompareHashCmdResult, error) {
 
 	res, sc, err := cmpHash(manager.host, manager.authToken.Token, cmpReq)
-	if err != nil {
+	if sc == http.StatusUnauthorized{
 
-		if sc == http.StatusUnauthorized {
-
-			refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
-			if err != nil {
-				return nil, err
-			}
-
-			manager.authToken.Token = refreshToken.Token
-			manager.authToken.RefreshToken = refreshToken.RefreshToken
-
-			res, _, err = cmpHash(manager.host, manager.authToken.Token, cmpReq)
-			if err != nil {
-				return nil, err
-			}
-
-		} else {
-
+		err = manager.RefreshToken()
+		if err != nil {
 			return nil, err
 		}
+		
+		res, _, err = cmpHash(manager.host, manager.authToken.Token, cmpReq)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
 	}
+
+	return res, nil
+}
+
+func (manager *CordAPIManager) GetSignature(path string) (*models.SignatureCmdResult, error) {
+
+	res, sc, err := getSignature(manager.host, manager.authToken.Token, path)
+	if sc == http.StatusUnauthorized{
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+		
+		res, _, err = getSignature(manager.host, manager.authToken.Token, path)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
 	return res, nil
 }
 
@@ -138,6 +151,42 @@ func (manager *CordAPIManager) torrent(torrentReq *models.TorrentCmd, add bool) 
 	return nil
 }
 
+func (manager *CordAPIManager) ApplyPatch(applyReq *models.ApplyPatchCmd) error {
+
+	sc, err := applyPatch(manager.host, manager.authToken.Token, applyReq)
+	if sc == http.StatusUnauthorized{
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return err
+		}
+		
+		_, err = applyPatch(manager.host, manager.authToken.Token, applyReq)
+		if err != nil {
+			return err
+		}
+
+	} else if err != nil {
+
+		return err
+	}
+
+	return nil
+}
+
+func (manager *CordAPIManager) RefreshToken() error {
+
+	refreshToken, err := refreshToken(manager.host, manager.authToken.RefreshToken)
+	if err != nil {
+		return err
+	}
+
+	manager.authToken.Token = refreshToken.Token
+	manager.authToken.RefreshToken = refreshToken.RefreshToken
+
+	return nil
+}
+
 func login(host string, username string, password string) (*models.AuthToken, error) {
 
 	authReq := &models.Authorization{Username: username, Password: password}
@@ -165,7 +214,7 @@ func login(host string, username string, password string) (*models.AuthToken, er
 
 func refreshToken(host string, token string) (*models.AuthRefresh, error) {
 
-	res, err := get(host+"/api/v1/auth/refresh-token", token, "application/json", nil)
+	res, err := get(host+"/api/v1/auth/refresh-token", token)
 	if err != nil {
 		return nil, err
 	}
@@ -234,6 +283,40 @@ func addTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, 
 func removeTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, error) {
 
 	res, err := delete(host+"/api/v1/tracker/torrent", token, "application/json", cmdTorrent)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return res.StatusCode, buldError(res.Body)
+	}
+
+	return res.StatusCode, nil
+}
+
+func getSignature(host string, token string, path string) (*models.SignatureCmdResult, int, error) {
+
+	res, err := get(host+"/api/v1/file/signature?path="+path, token)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, buldError(res.Body)
+	}
+
+	cmpRes := new(models.SignatureCmdResult)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&cmpRes)
+
+	return cmpRes, res.StatusCode, nil
+}
+
+func applyPatch(host string, token string, applyReq *models.ApplyPatchCmd) (int, error) {
+
+	res, err := post(host+"/api/v1/file/patch", token, "application/json", applyReq)
 	if err != nil {
 		return 0, err
 	}

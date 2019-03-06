@@ -21,6 +21,11 @@ const (
 	ErrorLoginTracker              = 18
 	ErrorAddTracker                = 19
 	ErrorDeleteTracker             = 20
+	ErrorWharfLibrary              = 21
+	ErrorCreateFile                = 22
+	ErrorReadFile                  = 23
+	ErrorOpenFile                  = 24
+	ErrorInvalidRequest            = 25
 )
 
 type AppKey struct {
@@ -82,6 +87,19 @@ type CompareHashCmd struct {
 
 type CompareHashCmdResult struct {
 	Equal bool `json:equal`
+}
+
+type SignatureCmd struct {
+	Path string `json:"path"`
+}
+
+type SignatureCmdResult struct {
+	FileData []byte `json:filedata`
+}
+
+type ApplyPatchCmd struct {
+	Path     string `json:"path"`
+	FileData []byte `json:filedata`
 }
 
 type User struct {
