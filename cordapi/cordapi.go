@@ -34,13 +34,13 @@ func (manager *CordAPIManager) Login(username string, password string) error {
 func (manager *CordAPIManager) Upload(uploadReq *models.UploadCmd) error {
 
 	sc, err := upload(manager.host, manager.authToken.Token, uploadReq)
-	if sc == http.StatusUnauthorized{
+	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
 		if err != nil {
 			return err
 		}
-		
+
 		_, err = upload(manager.host, manager.authToken.Token, uploadReq)
 		if err != nil {
 			return err
@@ -57,13 +57,13 @@ func (manager *CordAPIManager) Upload(uploadReq *models.UploadCmd) error {
 func (manager *CordAPIManager) CmpHash(cmpReq *models.CompareHashCmd) (*models.CompareHashCmdResult, error) {
 
 	res, sc, err := cmpHash(manager.host, manager.authToken.Token, cmpReq)
-	if sc == http.StatusUnauthorized{
+	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
 		if err != nil {
 			return nil, err
 		}
-		
+
 		res, _, err = cmpHash(manager.host, manager.authToken.Token, cmpReq)
 		if err != nil {
 			return nil, err
@@ -80,13 +80,13 @@ func (manager *CordAPIManager) CmpHash(cmpReq *models.CompareHashCmd) (*models.C
 func (manager *CordAPIManager) GetSignature(path string) (*models.SignatureCmdResult, error) {
 
 	res, sc, err := getSignature(manager.host, manager.authToken.Token, path)
-	if sc == http.StatusUnauthorized{
+	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
 		if err != nil {
 			return nil, err
 		}
-		
+
 		res, _, err = getSignature(manager.host, manager.authToken.Token, path)
 		if err != nil {
 			return nil, err
@@ -154,13 +154,13 @@ func (manager *CordAPIManager) torrent(torrentReq *models.TorrentCmd, add bool) 
 func (manager *CordAPIManager) ApplyPatch(applyReq *models.ApplyPatchCmd) error {
 
 	sc, err := applyPatch(manager.host, manager.authToken.Token, applyReq)
-	if sc == http.StatusUnauthorized{
+	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
 		if err != nil {
 			return err
 		}
-		
+
 		_, err = applyPatch(manager.host, manager.authToken.Token, applyReq)
 		if err != nil {
 			return err
