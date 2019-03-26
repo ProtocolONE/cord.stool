@@ -17,6 +17,7 @@ require (
 	github.com/getlantern/mtime v0.0.0-20170117193331-ba114e4a82b0 // indirect
 	github.com/getlantern/netx v0.0.0-20190110220209-9912de6f94fd // indirect
 	github.com/getlantern/ops v0.0.0-20170904182230-37353306c908 // indirect
+	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogits/chardet v0.0.0-20150115103509-2404f7772561 // indirect
 	github.com/golang/protobuf v1.3.0 // indirect
