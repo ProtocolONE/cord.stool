@@ -46,7 +46,7 @@ func Register(ctx *context.StoolContext) {
 			},
 			cli.StringFlag{
 				Name:        "import-locations, il",
-				Usage:       "Imports the location details by city file, import-locations <file>",
+				Usage:       "Imports the location details file, import-locations <file>",
 				Value:       "",
 				Destination: &args.locations,
 			},
