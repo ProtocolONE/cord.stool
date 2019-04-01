@@ -42,11 +42,6 @@ func (client *GeoClient) ImportLocations(fname string) error {
 
 func (client *GeoClient) LookupLocation(ip string) (string, error) {
 
-	/*ips := []string{ "91.78.44.23", "91.78.40.24", "91.78.80.18", "91.77.248.21", "91.79.205.128", "91.79.205.12", "91.80.0.17", "91.80.130.24", 
-			"91.80.152.23", "91.78.224.24", "91.78.148.22", "91.78.144.24", "91.76.40.21", "91.75.168.21", "91.75.165.24" }
-	res, _ := client.SelectIPByRadius(ip, ips, 5000)
-	fmt.Println(res)*/
-
 	fmt.Printf("Looking up the geo data for %s ...\n", ip)
 	return lookupLocation(client.client, ip)
 }
@@ -54,8 +49,17 @@ func (client *GeoClient) LookupLocation(ip string) (string, error) {
 func (client *GeoClient) SelectIPByRadius(targetIP string, IPs []string, radius float64) ([]string, error) {
 
 	fmt.Printf("Looking up all IPs in specified radius: %f <km> for %s ...\n", radius, targetIP)
-
 	return selectIPByRadius(client.client, targetIP, IPs, radius)
+}
+
+func (client *GeoClient) IsIPInRadius(targetIP string, IP string, radius float64) bool {
+
+	res, err := selectIPByRadius(client.client, targetIP, []string{IP}, radius)
+	if err != nil {
+		return false
+	}
+
+	return len(res) > 0
 }
 
 func iPv4ToUint32(iPv4 string) uint32 {
@@ -81,32 +85,32 @@ func uInt32ToIPv4(iPuInt32 uint32) (iP string) {
 }
 
 func CIDRRangeToIPv4Range(CIDRs []string) (ipStart string, ipEnd string, err error) {
-  
-	var ip uint32        // ip address
-  var ipS uint32     // Start IP address range
-  var ipE uint32         // End IP address range
 
-  for _, CIDR := range CIDRs {
-     cidrParts := strings.Split(CIDR, "/")
+	var ip uint32  // ip address
+	var ipS uint32 // Start IP address range
+	var ipE uint32 // End IP address range
 
-     ip = iPv4ToUint32(cidrParts[0])
-     bits, _ := strconv.ParseUint(cidrParts[1], 10, 32)
+	for _, CIDR := range CIDRs {
+		cidrParts := strings.Split(CIDR, "/")
 
-     if ipS == 0 || ipS > ip {
-        ipS = ip
-     }
+		ip = iPv4ToUint32(cidrParts[0])
+		bits, _ := strconv.ParseUint(cidrParts[1], 10, 32)
 
-     ip = ip | (0xFFFFFFFF >> bits)
+		if ipS == 0 || ipS > ip {
+			ipS = ip
+		}
 
-     if ipE < ip {
-        ipE = ip
-     }
-  }
+		ip = ip | (0xFFFFFFFF >> bits)
 
-  ipStart = uInt32ToIPv4(ipS)
-  ipEnd = uInt32ToIPv4(ipE)
+		if ipE < ip {
+			ipE = ip
+		}
+	}
 
-  return ipStart, ipEnd, err
+	ipStart = uInt32ToIPv4(ipS)
+	ipEnd = uInt32ToIPv4(ipE)
+
+	return ipStart, ipEnd, err
 }
 
 func isDigit(str string) bool {
@@ -126,7 +130,7 @@ func ipToScore(ip string, cidr bool) int {
 		if err != nil {
 			return 0
 		}
-	} 
+	}
 
 	for _, v := range strings.Split(ip, ".") {
 
@@ -165,7 +169,7 @@ func importBlocks(client *redis.Client, filename string) error {
 		} else {
 			continue
 		}
-		
+
 		// Add IP to City info
 		cityID := record[1] + "_" + strconv.Itoa(i)
 		_, err = client.ZAdd("ip2cityid", redis.Z{
@@ -248,11 +252,11 @@ func importLocations(client *redis.Client, filename string) error {
 func addGeo(client *redis.Client, key string, ip string, longitude, latitude float64) error {
 
 	_, err := client.GeoAdd(key, &redis.GeoLocation{
-		Name: ip,
+		Name:      ip,
 		Longitude: longitude,
-		Latitude: latitude,
+		Latitude:  latitude,
 	}).Result()
-	
+
 	return err
 }
 
@@ -330,7 +334,7 @@ func lookupLocation(client *redis.Client, ip string) (string, error) {
 }
 
 func selectIPByRadius(client *redis.Client, targetIP string, IPs []string, radius float64) ([]string, error) {
-	
+
 	var result []string
 
 	targetLongitude, targetLatitude, err := getCord(client, "ip2location", targetIP)
@@ -338,7 +342,7 @@ func selectIPByRadius(client *redis.Client, targetIP string, IPs []string, radiu
 		return result, err
 	}
 
-	redisKey  := uuid.New()
+	redisKey := uuid.New()
 
 	for _, ip := range IPs {
 
@@ -358,7 +362,7 @@ func selectIPByRadius(client *redis.Client, targetIP string, IPs []string, radiu
 	defer client.Del(redisKey)
 
 	geolocs, err := client.GeoRadius(redisKey, targetLongitude, targetLatitude, &redis.GeoRadiusQuery{
-		Radius: radius,
+		Radius:   radius,
 		WithDist: true,
 	}).Result()
 
