@@ -18,12 +18,12 @@ type GeoClient struct {
 	client *redis.Client
 }
 
-func NewGeoClient(host string, port string) *GeoClient {
+func NewGeoClient(host string, port string, password string, db int) *GeoClient {
 
 	client := redis.NewClient(&redis.Options{
 		Addr:     host + ":" + port,
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Password: password,
+		DB:       db,
 	})
 
 	return &GeoClient{client: client}
@@ -33,18 +33,6 @@ func (client *GeoClient) ImportBlocks(fname string) error {
 
 	fmt.Printf("Importing the location blocks from %s ...\n", fname)
 	return importBlocks(client.client, fname)
-}
-
-func (client *GeoClient) ImportLocations(fname string) error {
-
-	fmt.Printf("Importing the location details from %s ...\n", fname)
-	return importLocations(client.client, fname)
-}
-
-func (client *GeoClient) LookupLocation(ip string) (string, error) {
-
-	fmt.Printf("Looking up the geo data for %s ...\n", ip)
-	return lookupLocation(client.client, ip)
 }
 
 func (client *GeoClient) SelectIPByRadius(targetIP string, IPs []string, radius float64) ([]string, error) {
@@ -104,7 +92,52 @@ func ipRange(str string) (net.IP, net.IP, error) {
 	return first, second, nil
 }
 
-func ipToScore(ip string, cidr bool) uint64 {
+func IPv6ToString2(ip net.IP) string {
+
+	const IPv6len = 16
+	var part uint16
+
+	result := ""
+
+	for i := 0; i < IPv6len; i += 2 {
+
+		if i > 0 {
+			result += ":"
+		}
+
+		part = uint16(ip[i])
+		part = part << 8
+		part = part | uint16(ip[i+1])
+
+		result += fmt.Sprintf("%04X", part)
+	}
+
+	return result
+}
+
+func IPv6ToValue(ip string, cidr bool) string {
+
+	ipv6 := ""
+
+	if cidr {
+
+		startIP, _, err := ipRange(ip)
+		if err != nil {
+			return ""
+		}
+
+		ipv6 = IPv6ToString2(startIP)
+
+	} else {
+
+		ip6 := net.ParseIP(ip)
+		ipv6 = IPv6ToString2(ip6)
+	}
+
+	return ipv6
+}
+
+func IPv4ToScore(ip string, cidr bool) uint64 {
 
 	var score uint64
 	score = 0
@@ -119,18 +152,10 @@ func ipToScore(ip string, cidr bool) uint64 {
 		ip = startIP.String()
 	}
 
-	if strings.Index(ip, ".") != -1 {
+	for _, v := range strings.Split(ip, ".") {
 
-		// IPv4
-		for _, v := range strings.Split(ip, ".") {
-
-			n, _ := strconv.Atoi(v)
-			score = score*256 + uint64(n)
-		}
-
-	} else if strings.Index(ip, ":") != -1 {
-
-		//IPv6 is not supported
+		n, _ := strconv.Atoi(v)
+		score = score*256 + uint64(n)
 	}
 
 	return score
@@ -154,90 +179,54 @@ func importBlocks(client *redis.Client, filename string) error {
 			return err
 		}
 
-		var cityIP uint64
+		var cityIPv4 uint64
+		var cityIPv6 string
+
 		startIP := record[0]
 
 		if strings.Index(startIP, ".") != -1 {
-			cityIP = ipToScore(startIP, true) // CIDR or IP
+			cityIPv4 = IPv4ToScore(startIP, true) // CIDR or IPv4
+		} else if strings.Index(startIP, ":") != -1 {
+			cityIPv6 = IPv6ToValue(startIP, true) // CIDR or IPv6
 		} else if isDigit(startIP) {
-			cityIP, _ = strconv.ParseUint(startIP, 10, 64) // Integer score
+			cityIPv4, _ = strconv.ParseUint(startIP, 10, 64) // Integer score of IPv4
 		} else {
 			continue
 		}
 
-		// Add IP to City info
-		cityID := record[1] + "_" + strconv.Itoa(i)
-		_, err = client.ZAdd("ip2cityid", redis.Z{
-			Score:  float64(cityIP),
-			Member: cityID,
-		}).Result()
-
-		if err != nil {
-			return err
-		}
-
 		// Add IP to locatiom
-		data, err := json.Marshal([]string{
+		data, _ := json.Marshal([]string{
 			strconv.Itoa(i),
 			record[8],
 			record[7],
 		})
 
-		_, err = client.ZAdd("ip2location", redis.Z{
-			Score:  float64(cityIP),
-			Member: data,
-		}).Result()
+		if len(cityIPv6) > 0 {
 
-		if err != nil {
-			return err
-		}
-	}
+			_, err = client.ZAdd("ipv6_location", redis.Z{
+				Score:  0,
+				Member: cityIPv6,
+			}).Result()
 
-	return nil
-}
+			if err != nil {
+				return err
+			}
 
-func importLocations(client *redis.Client, filename string) error {
+			_, err = client.HSet("ipv6_location_info", cityIPv6, data).Result()
+			if err != nil {
+				return err
+			}
 
-	f, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
+		} else {
 
-	r := csv.NewReader(f)
-	for i := 0; ; i++ {
+			_, err = client.ZAdd("ipv4_location", redis.Z{
+				Score:  float64(cityIPv4),
+				Member: data,
+			}).Result()
 
-		record, err := r.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-
-		if len(record) < 14 || !isDigit(record[0]) {
-			continue
-		}
-
-		cityID := record[0]
-
-		data, err := json.Marshal([]string{
-			record[1],
-			record[2],
-			record[3],
-			record[4],
-			record[5],
-			record[6],
-			record[7],
-			record[8],
-			record[9],
-			record[10],
-			record[11],
-			record[12],
-			record[13],
-		})
-
-		_, err = client.HSet("cityid2city", cityID, data).Result()
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -255,23 +244,60 @@ func addGeo(client *redis.Client, key string, ip string, longitude, latitude flo
 	return err
 }
 
-func getCord(client *redis.Client, key string, ip string) (float64, float64, error) {
+func getCord(client *redis.Client, keyV4 string, keyV6 string, ip string) (float64, float64, error) {
 
+	var err error
+	var vals []string
 	var longitude, latitude float64
 	longitude = 0
 	latitude = 0
 
-	IpId := ipToScore(ip, false)
+	var IPv4ID uint64
+	var IPv6ID string
 
-	vals, err := client.ZRevRangeByScore(key, redis.ZRangeBy{
-		Min:    "0",
-		Max:    strconv.FormatUint(IpId, 10),
-		Offset: 0,
-		Count:  1,
-	}).Result()
+	if strings.Index(ip, ".") != -1 {
+		IPv4ID = IPv4ToScore(ip, false)
+	} else if strings.Index(ip, ":") != -1 {
+		IPv6ID = IPv6ToValue(ip, false)
+	} else {
+		return longitude, latitude, nil
+	}
 
-	if err != nil {
-		return longitude, latitude, err
+	if len(IPv6ID) > 0 {
+
+		vals, err = client.ZRevRangeByLex(keyV6, redis.ZRangeBy{
+			Max:    "[" + IPv6ID,
+			Min:    "-",
+			Offset: 0,
+			Count:  1,
+		}).Result()
+
+		if err != nil {
+			return longitude, latitude, err
+		}
+
+		if len(vals) > 0 {
+
+			val, err := client.HGet("ipv6_location_info", vals[0]).Result()
+			if err != nil {
+				return longitude, latitude, err
+			}
+
+			vals[0] = val
+		}
+
+	} else {
+
+		vals, err = client.ZRevRangeByScore(keyV4, redis.ZRangeBy{
+			Min:    "0",
+			Max:    strconv.FormatUint(IPv4ID, 10),
+			Offset: 0,
+			Count:  1,
+		}).Result()
+
+		if err != nil {
+			return longitude, latitude, err
+		}
 	}
 
 	var cord []string
@@ -297,42 +323,11 @@ func getCord(client *redis.Client, key string, ip string) (float64, float64, err
 	return longitude, latitude, nil
 }
 
-func lookupLocation(client *redis.Client, ip string) (string, error) {
-
-	cityIP := ipToScore(ip, false)
-
-	vals, err := client.ZRevRangeByScore("ip2cityid", redis.ZRangeBy{
-		Min:    "0",
-		Max:    strconv.FormatUint(cityIP, 10),
-		Offset: 0,
-		Count:  1,
-	}).Result()
-
-	if err != nil {
-		return "", err
-	}
-
-	city := ""
-	if len(vals) != 0 {
-		cityID := strings.Split(vals[0], "_")[0]
-		city = client.HGet("cityid2city", cityID).Val()
-	}
-
-	longitude, latitude, err := getCord(client, "ip2location", ip)
-	if err != nil {
-		return "", err
-	}
-
-	loc := fmt.Sprintf(", [%f, %f]\n", longitude, latitude)
-
-	return city + loc, nil
-}
-
 func selectIPByRadius(client *redis.Client, targetIP string, IPs []string, radius float64) ([]string, error) {
 
 	var result []string
 
-	targetLongitude, targetLatitude, err := getCord(client, "ip2location", targetIP)
+	targetLongitude, targetLatitude, err := getCord(client, "ipv4_location", "ipv6_location", targetIP)
 	if err != nil {
 		return result, err
 	}
@@ -341,7 +336,7 @@ func selectIPByRadius(client *redis.Client, targetIP string, IPs []string, radiu
 
 	for _, ip := range IPs {
 
-		longitude, latitude, err := getCord(client, "ip2location", ip)
+		longitude, latitude, err := getCord(client, "ipv4_location", "ipv6_location", ip)
 		if err != nil {
 			client.Del(redisKey)
 			return result, err

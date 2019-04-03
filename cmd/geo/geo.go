@@ -10,11 +10,11 @@ import (
 )
 
 var args = struct {
-	host      string
-	port      string
-	blocks    string
-	locations string
-	ip        string
+	host     string
+	port     string
+	password string
+	db       int
+	blocks   string
 }{}
 
 func Register(ctx *context.StoolContext) {
@@ -39,22 +39,22 @@ func Register(ctx *context.StoolContext) {
 				Destination: &args.port,
 			},
 			cli.StringFlag{
+				Name:        "password, p",
+				Usage:       "Redis password",
+				Value:       "",
+				Destination: &args.password,
+			},
+			cli.IntFlag{
+				Name:        "db",
+				Usage:       "DB index",
+				Value:       0,
+				Destination: &args.db,
+			},
+			cli.StringFlag{
 				Name:        "import-blocks, ib",
 				Usage:       "Imports the location blocks file, import-blocks <file>.",
 				Value:       "",
 				Destination: &args.blocks,
-			},
-			cli.StringFlag{
-				Name:        "import-locations, il",
-				Usage:       "Imports the location details file, import-locations <file>",
-				Value:       "",
-				Destination: &args.locations,
-			},
-			cli.StringFlag{
-				Name:        "lookup, l",
-				Usage:       "Looks up the geo data for the IP, lookup <ip>",
-				Value:       "",
-				Destination: &args.ip,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -70,32 +70,17 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Specify redis host and port")
 	}
 
-	if args.blocks == "" && args.locations == "" && args.ip == "" {
-		return fmt.Errorf("Specify one of following flags: import-blocks, import-locations, lookup")
+	if args.blocks == "" {
+		return fmt.Errorf("Specify one of following flags: import-blocks")
 	}
 
-	client := geo.NewGeoClient(args.host, args.port)
+	client := geo.NewGeoClient(args.host, args.port, args.password, args.db)
 
 	if args.blocks != "" {
 		err := client.ImportBlocks(args.blocks)
 		if err != nil {
 			return err
 		}
-	}
-
-	if args.locations != "" {
-		err := client.ImportLocations(args.locations)
-		if err != nil {
-			return err
-		}
-	}
-
-	if args.ip != "" {
-		loc, err := client.LookupLocation(args.ip)
-		if err != nil {
-			return err
-		}
-		fmt.Println(loc)
 	}
 
 	return nil
