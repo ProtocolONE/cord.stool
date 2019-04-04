@@ -92,7 +92,7 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 	}
 
 	if args.keyIPv4 == "" || args.keyIPv6 == "" || args.keyIPv6Info == "" {
-		return fmt.Errorf("Specify the following flags: ip4 or ip6 and ip6i")
+		return fmt.Errorf("Specify the following flags: ip4, ip6 and ip6i")
 	}
 
 	if args.blocks == "" {
