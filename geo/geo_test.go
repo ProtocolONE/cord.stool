@@ -7,9 +7,9 @@ import (
 func TestIsIPInRadius(t *testing.T) {
 
 	ip := "2001:0db8:1111:000a:00b0:0000:9000:0200"
-	radius := 1000.0
+	radius := 10000.0
 
-	client := NewGeoClient("localhost", "6379", "", 0)
+	client := NewGeoClient("localhost", 6379, "", 0, "ipv4_location", "ipv6_location", "ipv6_location_info")
 
 	res := client.IsIPInRadius(ip, "2001:0db8:0000:0000:abcd:0000:0000:1234", radius) // true
 	t.Logf("target IP: %s, IP: %s, radius: %f, result %t", ip, "2001:0db8:0000:0000:abcd:0000:0000:1234", radius, res)

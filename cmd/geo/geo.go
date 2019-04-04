@@ -10,11 +10,14 @@ import (
 )
 
 var args = struct {
-	host     string
-	port     string
-	password string
-	db       int
-	blocks   string
+	host        string
+	port        int
+	password    string
+	db          int
+	keyIPv4     string
+	keyIPv6     string
+	keyIPv6Info string
+	blocks      string
 }{}
 
 func Register(ctx *context.StoolContext) {
@@ -29,13 +32,13 @@ func Register(ctx *context.StoolContext) {
 			cli.StringFlag{
 				Name:        "host",
 				Usage:       "Redis host",
-				Value:       "",
+				Value:       "localhost",
 				Destination: &args.host,
 			},
-			cli.StringFlag{
+			cli.IntFlag{
 				Name:        "port",
 				Usage:       "Redis port",
-				Value:       "",
+				Value:       6379,
 				Destination: &args.port,
 			},
 			cli.StringFlag{
@@ -49,6 +52,24 @@ func Register(ctx *context.StoolContext) {
 				Usage:       "DB index",
 				Value:       0,
 				Destination: &args.db,
+			},
+			cli.StringFlag{
+				Name:        "ip4",
+				Usage:       "IPv4 redis key for IPv4 location",
+				Value:       "",
+				Destination: &args.keyIPv4,
+			},
+			cli.StringFlag{
+				Name:        "ip6",
+				Usage:       "IPvr redis key for IPv6 location",
+				Value:       "",
+				Destination: &args.keyIPv6,
+			},
+			cli.StringFlag{
+				Name:        "ip6i",
+				Usage:       "IPv6 info redis key for IPv6 location",
+				Value:       "",
+				Destination: &args.keyIPv6Info,
 			},
 			cli.StringFlag{
 				Name:        "import-blocks, ib",
@@ -66,15 +87,19 @@ func Register(ctx *context.StoolContext) {
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
 
-	if args.host == "" || args.port == "" {
+	if args.host == "" || args.port == 0 {
 		return fmt.Errorf("Specify redis host and port")
+	}
+
+	if args.keyIPv4 == "" || args.keyIPv6 == "" || args.keyIPv6Info == "" {
+		return fmt.Errorf("Specify the following flags: ip4 or ip6 and ip6i")
 	}
 
 	if args.blocks == "" {
 		return fmt.Errorf("Specify one of following flags: import-blocks")
 	}
 
-	client := geo.NewGeoClient(args.host, args.port, args.password, args.db)
+	client := geo.NewGeoClient(args.host, args.port, args.password, args.db, args.keyIPv4, args.keyIPv6, args.keyIPv6Info)
 
 	if args.blocks != "" {
 		err := client.ImportBlocks(args.blocks)
