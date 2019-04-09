@@ -3,7 +3,6 @@ package cmd
 import (
 	"cord.stool/cmd/create"
 	"cord.stool/cmd/diff"
-	"cord.stool/cmd/geo"
 	"cord.stool/cmd/push"
 	"cord.stool/cmd/service"
 	"cord.stool/cmd/torrent"
@@ -16,7 +15,6 @@ func RegisterCmdCommands(ctx *context.StoolContext) {
 	push.Register(ctx)
 	torrent.Register(ctx)
 	diff.Register(ctx)
-	geo.Register(ctx)
 	upgrade.Register(ctx)
 	service.Register(ctx)
 }
