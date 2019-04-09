@@ -1,11 +1,20 @@
 package branch
 
-type BranchClient struct {
-	client      *redis.Client
-	keyIPv4     string
-	keyIPv6     string
-	keyIPv6Info string
-}
+import (
+	"cord.stool/service/core/utils"
+	"cord.stool/service/models"
+	utils2 "cord.stool/utils"
+	"cord.stool/xdelta"
+
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path"
+
+	"github.com/labstack/echo"
+)
+
 func CreateBranch() error {
 
 	return nil

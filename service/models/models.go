@@ -111,3 +111,22 @@ type User struct {
 type TorrentCmd struct {
 	InfoHash string `bson:"info_hash" json:"info_hash"`
 }
+
+type CreateBranchCmd struct {
+	GameID     string `json:"game_id"`
+	NameOrID []byte `json:name_or_id`
+}
+
+type DeleteBranchCmd struct {
+	GameID     string `json:"game_id"`
+	NameOrID []byte `json:name_or_id`
+}
+
+type ListBranchCmd struct {
+	GameID     string `json:"game_id"`
+}
+
+type ShallowBranchCmd struct {
+	SourceNameOrID []byte `json:source_name_or_id`
+	TargetNameOrID []byte `json:target_name_or_id`
+}
