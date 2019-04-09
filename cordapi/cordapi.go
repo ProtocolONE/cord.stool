@@ -372,3 +372,171 @@ func buldError(r io.Reader) error {
 	message, _ := ioutil.ReadAll(r)
 	return errors.New(string(message))
 }
+
+func (manager *CordAPIManager) CreateBranch(branchReq *models.BranchInfoCmd) (*models.BranchInfoCmd, error) {
+
+	res, sc, err := createBranch(manager.host, manager.authToken.Token, branchReq)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = createBranch(manager.host, manager.authToken.Token, branchReq)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func createBranch(host string, token string, branchReq *models.BranchInfoCmd) (*models.BranchInfoCmd, int, error) {
+
+	res, err := post(host+"/api/v1/branch", token, "application/json", branchReq)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, buldError(res.Body)
+	}
+
+	branchRes := new(models.BranchInfoCmd)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&branchRes)
+
+	return branchRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) DeleteBranch(branchReq *models.BranchInfoCmd) (*models.BranchInfoCmd, error) {
+
+	res, sc, err := deleteBranch(manager.host, manager.authToken.Token, branchReq)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = deleteBranch(manager.host, manager.authToken.Token, branchReq)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func deleteBranch(host string, token string, branchReq *models.BranchInfoCmd) (*models.BranchInfoCmd, int, error) {
+
+	res, err := delete(host+"/api/v1/branch", token, "application/json", branchReq)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, buldError(res.Body)
+	}
+
+	branchRes := new(models.BranchInfoCmd)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&branchRes)
+
+	return branchRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) ListBranch(branchReq *models.ListBranchCmd) (*models.ListBranchCmdResult, error) {
+
+	res, sc, err := listBranch(manager.host, manager.authToken.Token, branchReq)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = listBranch(manager.host, manager.authToken.Token, branchReq)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func listBranch(host string, token string, branchReq *models.ListBranchCmd) (*models.ListBranchCmdResult, int, error) {
+
+	res, err := get(host+"/api/v1/branch/list", token, "application/json", branchReq)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, buldError(res.Body)
+	}
+
+	branchRes := new(models.ListBranchCmdResult)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&branchRes)
+
+	return branchRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) ShallowBranch(branchReq *models.ShallowBranchCmd) (*models.ShallowBranchCmdResult, error) {
+
+	res, sc, err := shallowBranch(manager.host, manager.authToken.Token, branchReq)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = shallowBranch(manager.host, manager.authToken.Token, branchReq)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func shallowBranch(host string, token string, branchReq *models.ShallowBranchCmd) (*models.ShallowBranchCmdResult, int, error) {
+
+	res, err := post(host+"/api/v1/branch/shallow", token, "application/json", branchReq)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, buldError(res.Body)
+	}
+
+	branchRes := new(models.ShallowBranchCmdResult)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&branchRes)
+
+	return branchRes, res.StatusCode, nil
+}

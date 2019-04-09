@@ -1,5 +1,9 @@
 package models
 
+import (
+	"time"
+)
+
 const (
 	ErrorInvalidJSONFormat         = 1
 	ErrorReadDataBase              = 2
@@ -112,21 +116,36 @@ type TorrentCmd struct {
 	InfoHash string `bson:"info_hash" json:"info_hash"`
 }
 
-type CreateBranchCmd struct {
-	GameID     string `json:"game_id"`
-	NameOrID []byte `json:name_or_id`
-}
-
-type DeleteBranchCmd struct {
-	GameID     string `json:"game_id"`
-	NameOrID []byte `json:name_or_id`
+type BranchInfoCmd struct {
+	ID     string `json:id`
+	Name   string `json:name`
+	GameID string `json:"game_id"`
 }
 
 type ListBranchCmd struct {
-	GameID     string `json:"game_id"`
+	GameID string `json:"game_id"`
+}
+
+type Branch struct {
+	ID          string    `json:id`
+	Name        string    `json:name`
+	GameID      string    `json:"game_id"`
+	LiveBuildID string    `json:live_build_id`
+	Created     time.Time `json:created`
+}
+
+type ListBranchCmdResult struct {
+	List []*Branch `json:"list"`
 }
 
 type ShallowBranchCmd struct {
-	SourceNameOrID []byte `json:source_name_or_id`
-	TargetNameOrID []byte `json:target_name_or_id`
+	SourceNameOrID string `json:source_name_or_id`
+	TargetNameOrID string `json:target_name_or_id`
+}
+
+type ShallowBranchCmdResult struct {
+	SourceID   string `json:source_id`
+	SourceName string `json:source_name`
+	TargetID   string `json:target_id`
+	TargetName string `json:target_name`
 }

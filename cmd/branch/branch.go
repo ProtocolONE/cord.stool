@@ -3,18 +3,19 @@ package branch
 import (
 	"fmt"
 
+	"cord.stool/branch"
 	"cord.stool/context"
 	"github.com/urfave/cli"
 )
 
 var args = struct {
-	nameOrID        string
-	gameID        string
-	sNameOrID        string
-	tNameOrID        string
-	url string
-	login string
-	password string
+	nameOrID  string
+	gameID    string
+	sNameOrID string
+	tNameOrID string
+	url       string
+	login     string
+	password  string
 }{}
 
 func Register(ctx *context.StoolContext) {
@@ -143,8 +144,7 @@ func doCreate(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Cord server url is required")
 	}
 
-	fmt.Printf("Sub Command: %s, agrs: %s, %s", "create", args.nameOrID, args.gameID)
-	return nil
+	return branch.CreateBranch(args.url, args.login, args.password, args.gameID, args.nameOrID)
 }
 
 func doDelete(ctx *context.StoolContext, c *cli.Context) error {
@@ -153,8 +153,7 @@ func doDelete(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Cord server url is required")
 	}
 
-	fmt.Printf("Sub Command: %s, agrs: %s, %s", "delete", args.nameOrID, args.gameID)
-	return nil
+	return branch.DeleteBranch(args.url, args.login, args.password, args.gameID, args.nameOrID)
 }
 
 func doList(ctx *context.StoolContext, c *cli.Context) error {
@@ -163,8 +162,7 @@ func doList(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Cord server url is required")
 	}
 
-	fmt.Printf("Sub Command: %s, agrs: %s", "list", args.gameID)
-	return nil
+	return branch.ListBranch(args.url, args.login, args.password, args.gameID)
 }
 
 func doShallow(ctx *context.StoolContext, c *cli.Context) error {
@@ -173,6 +171,5 @@ func doShallow(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Cord server url is required")
 	}
 
-	fmt.Printf("Sub Command: %s, agrs: %s, %s", "delete", args.sNameOrID, args.tNameOrID)
-	return nil
+	return branch.ShallowBranch(args.url, args.login, args.password, args.sNameOrID, args.tNameOrID)
 }

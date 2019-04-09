@@ -1,36 +1,78 @@
 package branch
 
 import (
-	"cord.stool/service/core/utils"
+	"cord.stool/cordapi"
 	"cord.stool/service/models"
-	utils2 "cord.stool/utils"
-	"cord.stool/xdelta"
-
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"path"
-
-	"github.com/labstack/echo"
 )
 
-func CreateBranch() error {
+func CreateBranch(url string, login string, password string, gameID string, name string) error {
+
+	api := cordapi.NewCordAPI(url)
+	err := api.Login(login, password)
+	if err != nil {
+		return err
+	}
+
+	result, err := api.CreateBranch(&models.BranchInfoCmd{"", name, gameID})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(result)
+	return nil
+}
+
+func DeleteBranch(url string, login string, password string, gameID string, nameOrID string) error {
+
+	api := cordapi.NewCordAPI(url)
+	err := api.Login(login, password)
+	if err != nil {
+		return err
+	}
+
+	result, err := api.DeleteBranch(&models.BranchInfoCmd{nameOrID, nameOrID, gameID})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(result)
 
 	return nil
 }
 
-func DeleteBranch() error {
+func ListBranch(url string, login string, password string, gameID string) error {
+
+	api := cordapi.NewCordAPI(url)
+	err := api.Login(login, password)
+	if err != nil {
+		return err
+	}
+
+	result, err := api.ListBranch(&models.ListBranchCmd{gameID})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(result)
 
 	return nil
 }
 
-func ListBranch() error {
+func ShallowBranch(url string, login string, password string, sNameOrID string, tNameOrID string) error {
 
-	return nil
-}
+	api := cordapi.NewCordAPI(url)
+	err := api.Login(login, password)
+	if err != nil {
+		return err
+	}
 
-func ShallowBranch() error {
+	result, err := api.ShallowBranch(&models.ShallowBranchCmd{sNameOrID, tNameOrID})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(result)
 
 	return nil
 }
