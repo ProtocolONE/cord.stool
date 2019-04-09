@@ -7,6 +7,7 @@ import (
 	"cord.stool/cmd/service"
 	"cord.stool/cmd/torrent"
 	"cord.stool/cmd/upgrade"
+	"cord.stool/cmd/branch"
 	"cord.stool/context"
 )
 
@@ -17,4 +18,5 @@ func RegisterCmdCommands(ctx *context.StoolContext) {
 	diff.Register(ctx)
 	upgrade.Register(ctx)
 	service.Register(ctx)
+	branch.Register(ctx)
 }
