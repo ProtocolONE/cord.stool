@@ -135,7 +135,7 @@ type Branch struct {
 }
 
 type ListBranchCmdResult struct {
-	List []*Branch `json:"list"`
+	List []Branch `json:"list"`
 }
 
 type ShallowBranchCmd struct {

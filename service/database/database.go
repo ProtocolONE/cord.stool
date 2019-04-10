@@ -150,6 +150,23 @@ func (manager *BranchManager) FindByName(name string) (*models.Branch, error) {
 	return dbBranch, nil
 }
 
+func (manager *BranchManager) FindByIDOrName(idOrName string) (*models.Branch, error) {
+
+	dbBranch, err := manager.findByFieldSingle("id", idOrName)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbBranch == nil {
+		dbBranch, err = manager.findByFieldSingle("name", idOrName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return dbBranch, nil
+}
+
 func (manager *BranchManager) Insert(branch *models.Branch) error {
 
 	err := manager.collection.Insert(branch)
@@ -179,10 +196,4 @@ func (manager *BranchManager) List(gameID string) ([]*models.Branch, error) {
 	}
 
 	return dbBranch, nil
-}
-
-func (manager *BranchManager) Shallow(sourceNameOrID string, targetNameOrID string) ([]*models.Branch, error) {
-
-	// TODO
-	return nil, nil
 }

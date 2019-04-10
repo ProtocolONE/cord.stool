@@ -9,9 +9,18 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"time"
+	"strings"
 
 	"github.com/labstack/echo"
 )
+
+func genBranchID() string {
+
+	id := uuid.New()
+	id = strings.Replace(id, "-", "", -1)
+	id = strings.ToUpper(id)
+	return id
+}
 
 func CreateBranchCmd(context echo.Context) error {
 
@@ -31,7 +40,7 @@ func CreateBranchCmd(context echo.Context) error {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorUserAlreadyExists, fmt.Sprintf("Branch %s already exists", reqBranch.Name)})
 	}
 
-	branchID := uuid.New()
+	branchID := genBranchID()
 	err = manager.Insert(&models.Branch{branchID, reqBranch.Name, reqBranch.GameID, "", time.Now()})
 	if err != nil {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorCreateUser, fmt.Sprintf("Cannot create branch %s, error: %s", reqBranch.Name, err.Error())})
@@ -50,16 +59,9 @@ func DeleteBranchCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBranchManager()
-	result, err := manager.FindByID(reqBranch.ID)
+	result, err := manager.FindByIDOrName(reqBranch.ID)
 	if err != nil {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
-	}
-
-	if result == nil {
-		result, err = manager.FindByName(reqBranch.Name)
-		if err != nil {
-			return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
-		}
 	}
 
 	err = manager.RemoveByID(result.ID)
@@ -68,7 +70,6 @@ func DeleteBranchCmd(context echo.Context) error {
 	}
 
 	zap.S().Infow("Removed branch", zap.String("branch id", result.ID))
-
 	return context.JSON(http.StatusOK, models.BranchInfoCmd{result.ID, result.Name, result.GameID})
 }
 
@@ -86,7 +87,12 @@ func ListBranchCmd(context echo.Context) error {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
 	}
 
-	return context.JSON(http.StatusOK, models.ListBranchCmdResult{branches})
+	var result models.ListBranchCmdResult
+	for _, b := range branches {
+        result.List = append(result.List, *b)
+    }
+
+	return context.JSON(http.StatusOK, result)
 }
 
 func ShallowBranchCmd(context echo.Context) error {
@@ -98,10 +104,17 @@ func ShallowBranchCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBranchManager()
-	branches, err := manager.Shallow(reqBranch.SourceNameOrID, reqBranch.TargetNameOrID)
+	sourceBranch, err := manager.FindByIDOrName(reqBranch.SourceNameOrID)
 	if err != nil {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
 	}
 
-	return context.JSON(http.StatusOK, models.ShallowBranchCmdResult{branches[0].ID, branches[0].Name, branches[1].ID, branches[1].Name})
+	targetBranch, err := manager.FindByIDOrName(reqBranch.TargetNameOrID)
+	if err != nil {
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
+	}
+
+	// TO DO the shallow
+
+	return context.JSON(http.StatusOK, models.ShallowBranchCmdResult{sourceBranch.ID, sourceBranch.Name, targetBranch.ID, targetBranch.Name})
 }
