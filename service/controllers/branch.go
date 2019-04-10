@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"net/http"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo"
 )
@@ -89,8 +89,8 @@ func ListBranchCmd(context echo.Context) error {
 
 	var result models.ListBranchCmdResult
 	for _, b := range branches {
-        result.List = append(result.List, *b)
-    }
+		result.List = append(result.List, *b)
+	}
 
 	return context.JSON(http.StatusOK, result)
 }
