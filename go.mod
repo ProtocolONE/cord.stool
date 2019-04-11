@@ -51,7 +51,7 @@ require (
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1
 	golang.org/x/crypto v0.0.0-20190228161510-8dd112bcdc25
-	golang.org/x/text v0.3.0 // indirect
+	golang.org/x/text v0.3.0
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )

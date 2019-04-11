@@ -4,6 +4,7 @@ import (
 	"cord.stool/service/config"
 	"cord.stool/service/models"
 
+	"fmt"
 	"go.uber.org/zap"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -89,4 +90,92 @@ func (manager *UserManager) Insert(user *models.User) error {
 	}
 
 	return nil
+}
+
+type BranchManager struct {
+	collection *mgo.Collection
+}
+
+func NewBranchManager() *BranchManager {
+	session := dbConf.Dbs.Copy()
+	return &BranchManager{collection: session.DB(dbConf.Database).C("branches")}
+}
+
+func (manager *BranchManager) FindByID(id string) (*models.Branch, error) {
+
+	var dbBranch []*models.Branch
+	err := manager.collection.Find(bson.M{"_id": id}).All(&dbBranch)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbBranch == nil {
+		return nil, nil
+	}
+
+	if len(dbBranch) > 1 {
+		return nil, fmt.Errorf("Database integrity error")
+	}
+
+	return dbBranch[0], nil
+}
+
+func (manager *BranchManager) FindByName(name string, gid string) (*models.Branch, error) {
+
+	var dbBranch []*models.Branch
+	err := manager.collection.Find(bson.M{"name": name, "gameid": gid}).All(&dbBranch)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbBranch == nil {
+		return nil, nil
+	}
+
+	if len(dbBranch) > 1 {
+		return nil, fmt.Errorf("Database integrity error")
+	}
+
+	return dbBranch[0], nil
+}
+
+func (manager *BranchManager) Insert(branch *models.Branch) error {
+
+	err := manager.collection.Insert(branch)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *BranchManager) Update(branch *models.Branch) error {
+
+	err := manager.collection.UpdateId(branch.ID, branch)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *BranchManager) RemoveByID(id string) error {
+
+	err := manager.collection.Remove(bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *BranchManager) List(gameID string) ([]*models.Branch, error) {
+
+	var dbBranch []*models.Branch
+	err := manager.collection.Find(bson.M{"gameid": gameID}).All(&dbBranch)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbBranch, nil
 }

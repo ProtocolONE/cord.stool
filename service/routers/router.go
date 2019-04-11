@@ -8,4 +8,5 @@ func InitRoutes(e *echo.Echo) {
 
 	InitAuthRoutes(e)
 	InitCmdRoutes(e)
+	InitBranchCmdRoutes(e)
 }

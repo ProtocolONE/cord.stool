@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cord.stool/cmd/branch"
 	"cord.stool/cmd/create"
 	"cord.stool/cmd/diff"
 	"cord.stool/cmd/push"
@@ -17,4 +18,5 @@ func RegisterCmdCommands(ctx *context.StoolContext) {
 	diff.Register(ctx)
 	upgrade.Register(ctx)
 	service.Register(ctx)
+	branch.Register(ctx)
 }
