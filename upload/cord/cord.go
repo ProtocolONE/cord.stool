@@ -13,6 +13,7 @@ import (
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
+	"github.com/pborman/uuid"
 )
 
 var _bar *uiprogress.Bar
@@ -21,14 +22,17 @@ var _curTitle string
 var _title *string
 
 type Args = struct {
-	Url       string
-	Login     string
-	Password  string
-	SourceDir string
-	OutputDir string
-	Patch     bool
-	Hash      bool
-	Wharf     bool
+	Url        string
+	Login      string
+	Password   string
+	BranchID   string
+	BranchName string
+	GameID     string
+	SourceDir  string
+	OutputDir  string
+	Patch      bool
+	Hash       bool
+	Wharf      bool
 }
 
 // Upload ...
@@ -53,6 +57,10 @@ func Upload(args Args) error {
 			return err
 		}
 		barCount = fc + 1
+	}
+
+	if args.BranchID != "" || (args.BranchName != "" && args.GameID != "") {
+		barCount += 2
 	}
 
 	uiprogress.Start()
@@ -80,6 +88,33 @@ func Upload(args Args) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if args.BranchID != "" || (args.BranchName != "" && args.GameID != "") {
+
+		_curTitle = fmt.Sprint("Updating branch")
+		_bar = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
+		_bar.Set(0)
+
+		branch, err := api.GetBranch(args.BranchID, args.BranchName, args.GameID)
+		if err != nil {
+			return err
+		}
+
+		_bar.Incr()
+		_barTotal.Incr()
+
+		branch.BuildID = uuid.New()
+		branch.BuildID = strings.Replace(branch.BuildID, "-", "", -1)
+		branch.BuildID = strings.ToUpper(branch.BuildID)
+
+		err = api.UpdateBranch(branch)
+		if err != nil {
+			return err
+		}
+
+		_bar.Incr()
+		_barTotal.Incr()
 	}
 
 	_curTitle = "Finished"

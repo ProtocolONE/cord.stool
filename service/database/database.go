@@ -101,20 +101,10 @@ func NewBranchManager() *BranchManager {
 	return &BranchManager{collection: session.DB(dbConf.Database).C("branches")}
 }
 
-func (manager *BranchManager) findByFieldMulti(field string, value string) ([]*models.Branch, error) {
+func (manager *BranchManager) FindByID(id string) (*models.Branch, error) {
 
 	var dbBranch []*models.Branch
-	err := manager.collection.Find(bson.M{field: value}).All(&dbBranch)
-	if err != nil {
-		return nil, err
-	}
-
-	return dbBranch, nil
-}
-
-func (manager *BranchManager) findByFieldSingle(field string, value string) (*models.Branch, error) {
-
-	dbBranch, err := manager.findByFieldMulti(field, value)
+	err := manager.collection.Find(bson.M{"_id": id}).All(&dbBranch)
 	if err != nil {
 		return nil, err
 	}
@@ -130,41 +120,23 @@ func (manager *BranchManager) findByFieldSingle(field string, value string) (*mo
 	return dbBranch[0], nil
 }
 
-func (manager *BranchManager) FindByID(id string) (*models.Branch, error) {
+func (manager *BranchManager) FindByName(name string, gid string) (*models.Branch, error) {
 
-	dbBranch, err := manager.findByFieldSingle("id", id)
-	if err != nil {
-		return nil, err
-	}
-
-	return dbBranch, nil
-}
-
-func (manager *BranchManager) FindByName(name string) (*models.Branch, error) {
-
-	dbBranch, err := manager.findByFieldSingle("name", name)
-	if err != nil {
-		return nil, err
-	}
-
-	return dbBranch, nil
-}
-
-func (manager *BranchManager) FindByIDOrName(idOrName string) (*models.Branch, error) {
-
-	dbBranch, err := manager.findByFieldSingle("id", idOrName)
+	var dbBranch []*models.Branch
+	err := manager.collection.Find(bson.M{"name": name, "gameid": gid}).All(&dbBranch)
 	if err != nil {
 		return nil, err
 	}
 
 	if dbBranch == nil {
-		dbBranch, err = manager.findByFieldSingle("name", idOrName)
-		if err != nil {
-			return nil, err
-		}
+		return nil, nil
 	}
 
-	return dbBranch, nil
+	if len(dbBranch) > 1 {
+		return nil, fmt.Errorf("Database integrity error")
+	}
+
+	return dbBranch[0], nil
 }
 
 func (manager *BranchManager) Insert(branch *models.Branch) error {
@@ -177,9 +149,19 @@ func (manager *BranchManager) Insert(branch *models.Branch) error {
 	return nil
 }
 
+func (manager *BranchManager) Update(branch *models.Branch) error {
+
+	err := manager.collection.UpdateId(branch.ID, branch)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (manager *BranchManager) RemoveByID(id string) error {
 
-	err := manager.collection.Remove(bson.M{"id": id})
+	err := manager.collection.Remove(bson.M{"_id": id})
 	if err != nil {
 		return err
 	}

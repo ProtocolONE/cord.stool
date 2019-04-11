@@ -9,13 +9,16 @@ import (
 )
 
 var args = struct {
-	nameOrID  string
-	gameID    string
-	sNameOrID string
-	tNameOrID string
-	url       string
-	login     string
-	password  string
+	id       string
+	name     string
+	gameID   string
+	sID      string
+	tID      string
+	sName    string
+	tName    string
+	url      string
+	login    string
+	password string
 }{}
 
 func Register(ctx *context.StoolContext) {
@@ -35,9 +38,9 @@ func Register(ctx *context.StoolContext) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:        "name, n",
-						Usage:       "Branch name or branch ID",
+						Usage:       "Branch name",
 						Value:       "",
-						Destination: &args.nameOrID,
+						Destination: &args.name,
 					},
 					cli.StringFlag{
 						Name:        "game-id, gid",
@@ -57,14 +60,20 @@ func Register(ctx *context.StoolContext) {
 				Description: "Deletes branch",
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:        "name, n",
-						Usage:       "Branch name or branch ID",
+						Name:        "id",
+						Usage:       "Branch ID",
 						Value:       "",
-						Destination: &args.nameOrID,
+						Destination: &args.id,
+					},
+					cli.StringFlag{
+						Name:        "name, n",
+						Usage:       "Branch name. Should be specified with game id",
+						Value:       "",
+						Destination: &args.name,
 					},
 					cli.StringFlag{
 						Name:        "game-id, gid",
-						Usage:       "Game ID",
+						Usage:       "Game ID. Should be specified with branch name",
 						Value:       "",
 						Destination: &args.gameID,
 					},
@@ -76,8 +85,8 @@ func Register(ctx *context.StoolContext) {
 			cli.Command{
 				Name:        "list",
 				ShortName:   "l",
-				Usage:       "Shows branch",
-				Description: "Shows branch",
+				Usage:       "Shows branch list",
+				Description: "Shows branch list",
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:        "game-id, gid",
@@ -97,16 +106,34 @@ func Register(ctx *context.StoolContext) {
 				Description: "Shallows branch",
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:        "sname, sn",
-						Usage:       "Source branch name or branch ID",
+						Name:        "source-id, sid",
+						Usage:       "Source branch ID",
 						Value:       "",
-						Destination: &args.sNameOrID,
+						Destination: &args.sID,
 					},
 					cli.StringFlag{
-						Name:        "tname, tn",
-						Usage:       "Target branch name or branch ID",
+						Name:        "target-id, tid",
+						Usage:       "Target branch ID",
 						Value:       "",
-						Destination: &args.tNameOrID,
+						Destination: &args.tID,
+					},
+					cli.StringFlag{
+						Name:        "source-name, sn",
+						Usage:       "Source branch name. Should be specified with game id",
+						Value:       "",
+						Destination: &args.sName,
+					},
+					cli.StringFlag{
+						Name:        "target-name, tn",
+						Usage:       "Target branch name. Should be specified with game id",
+						Value:       "",
+						Destination: &args.tName,
+					},
+					cli.StringFlag{
+						Name:        "game-id, gid",
+						Usage:       "Game ID. Should be specified with branch names",
+						Value:       "",
+						Destination: &args.gameID,
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -144,7 +171,7 @@ func doCreate(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Cord server url is required")
 	}
 
-	return branch.CreateBranch(args.url, args.login, args.password, args.gameID, args.nameOrID)
+	return branch.CreateBranch(args.url, args.login, args.password, args.name, args.gameID)
 }
 
 func doDelete(ctx *context.StoolContext, c *cli.Context) error {
@@ -153,7 +180,7 @@ func doDelete(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Cord server url is required")
 	}
 
-	return branch.DeleteBranch(args.url, args.login, args.password, args.gameID, args.nameOrID)
+	return branch.DeleteBranch(args.url, args.login, args.password, args.id, args.name, args.gameID)
 }
 
 func doList(ctx *context.StoolContext, c *cli.Context) error {
@@ -171,5 +198,5 @@ func doShallow(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Cord server url is required")
 	}
 
-	return branch.ShallowBranch(args.url, args.login, args.password, args.sNameOrID, args.tNameOrID)
+	return branch.ShallowBranch(args.url, args.login, args.password, args.sID, args.sName, args.tID, args.tName, args.gameID)
 }

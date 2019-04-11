@@ -4,9 +4,10 @@ import (
 	"cord.stool/cordapi"
 	"cord.stool/service/models"
 	"fmt"
+	"time"
 )
 
-func CreateBranch(url string, login string, password string, gameID string, name string) error {
+func CreateBranch(url string, login string, password string, name string, gameID string) error {
 
 	fmt.Printf("Creating branch ...\n")
 
@@ -16,7 +17,7 @@ func CreateBranch(url string, login string, password string, gameID string, name
 		return err
 	}
 
-	result, err := api.CreateBranch(&models.BranchInfoCmd{"", name, gameID})
+	result, err := api.CreateBranch(&models.Branch{"", name, gameID, "", time.Time{}, time.Time{}})
 	if err != nil {
 		return err
 	}
@@ -25,7 +26,7 @@ func CreateBranch(url string, login string, password string, gameID string, name
 	return nil
 }
 
-func DeleteBranch(url string, login string, password string, gameID string, nameOrID string) error {
+func DeleteBranch(url string, login string, password string, id string, name string, gameID string) error {
 
 	fmt.Printf("Deleting branch ...\n")
 
@@ -35,7 +36,7 @@ func DeleteBranch(url string, login string, password string, gameID string, name
 		return err
 	}
 
-	result, err := api.DeleteBranch(&models.BranchInfoCmd{nameOrID, nameOrID, gameID})
+	result, err := api.DeleteBranch(id, name, gameID)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func ListBranch(url string, login string, password string, gameID string) error 
 		return err
 	}
 
-	result, err := api.ListBranch(&models.ListBranchCmd{gameID})
+	result, err := api.ListBranch(gameID)
 	if err != nil {
 		return err
 	}
@@ -63,14 +64,14 @@ func ListBranch(url string, login string, password string, gameID string) error 
 	fmt.Printf("|          APPLICATION ID          |            BRANCH ID             |               NAME               |           LIVE BUILD ID          |         CREATED AT        |\n")
 	fmt.Printf("| -------------------------------- | -------------------------------- | -------------------------------- | -------------------------------- | ------------------------- |\n")
 	for _, b := range result.List {
-		fmt.Printf("| %32s | %32s | %32s | %32s | %24s |\n", b.GameID, b.ID, b.Name, b.LiveBuildID, b.Created.Format("2006-01-02 15:04:05 -0700"))
+		fmt.Printf("| %32s | %32s | %32s | %32s | %24s |\n", b.GameID, b.ID, b.Name, b.BuildID, b.Created.Format("2006-01-02 15:04:05 -0700"))
 	}
 	fmt.Printf("\n")
 
 	return nil
 }
 
-func ShallowBranch(url string, login string, password string, sNameOrID string, tNameOrID string) error {
+func ShallowBranch(url string, login string, password string, sid string, sname string, tid string, tname string, gameID string) error {
 
 	fmt.Printf("Shallowing branch ...\n")
 
@@ -80,7 +81,7 @@ func ShallowBranch(url string, login string, password string, sNameOrID string, 
 		return err
 	}
 
-	result, err := api.ShallowBranch(&models.ShallowBranchCmd{sNameOrID, tNameOrID})
+	result, err := api.ShallowBranch(sid, sname, tid, tname, gameID)
 	if err != nil {
 		return err
 	}

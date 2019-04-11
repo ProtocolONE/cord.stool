@@ -339,6 +339,11 @@ func post(url string, token string, contentType string, obj interface{}) (resp *
 	return httpRequest("POST", url, token, contentType, obj)
 }
 
+func put(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
+
+	return httpRequest("PUT", url, token, contentType, obj)
+}
+
 func delete(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
 
 	return httpRequest("DELETE", url, token, contentType, obj)
@@ -373,7 +378,7 @@ func buldError(r io.Reader) error {
 	return errors.New(string(message))
 }
 
-func (manager *CordAPIManager) CreateBranch(branchReq *models.BranchInfoCmd) (*models.BranchInfoCmd, error) {
+func (manager *CordAPIManager) CreateBranch(branchReq *models.Branch) (*models.Branch, error) {
 
 	res, sc, err := createBranch(manager.host, manager.authToken.Token, branchReq)
 	if sc == http.StatusUnauthorized {
@@ -396,7 +401,7 @@ func (manager *CordAPIManager) CreateBranch(branchReq *models.BranchInfoCmd) (*m
 	return res, nil
 }
 
-func createBranch(host string, token string, branchReq *models.BranchInfoCmd) (*models.BranchInfoCmd, int, error) {
+func createBranch(host string, token string, branchReq *models.Branch) (*models.Branch, int, error) {
 
 	res, err := post(host+"/api/v1/branch", token, "application/json", branchReq)
 	if err != nil {
@@ -408,16 +413,16 @@ func createBranch(host string, token string, branchReq *models.BranchInfoCmd) (*
 		return nil, res.StatusCode, buldError(res.Body)
 	}
 
-	branchRes := new(models.BranchInfoCmd)
+	branchRes := new(models.Branch)
 	decoder := json.NewDecoder(res.Body)
 	decoder.Decode(&branchRes)
 
 	return branchRes, res.StatusCode, nil
 }
 
-func (manager *CordAPIManager) DeleteBranch(branchReq *models.BranchInfoCmd) (*models.BranchInfoCmd, error) {
+func (manager *CordAPIManager) DeleteBranch(id string, name string, gameID string) (*models.Branch, error) {
 
-	res, sc, err := deleteBranch(manager.host, manager.authToken.Token, branchReq)
+	res, sc, err := deleteBranch(manager.host, manager.authToken.Token, id, name, gameID)
 	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
@@ -425,7 +430,7 @@ func (manager *CordAPIManager) DeleteBranch(branchReq *models.BranchInfoCmd) (*m
 			return nil, err
 		}
 
-		res, _, err = deleteBranch(manager.host, manager.authToken.Token, branchReq)
+		res, _, err = deleteBranch(manager.host, manager.authToken.Token, id, name, gameID)
 		if err != nil {
 			return nil, err
 		}
@@ -438,9 +443,16 @@ func (manager *CordAPIManager) DeleteBranch(branchReq *models.BranchInfoCmd) (*m
 	return res, nil
 }
 
-func deleteBranch(host string, token string, branchReq *models.BranchInfoCmd) (*models.BranchInfoCmd, int, error) {
+func deleteBranch(host string, token string, id string, name string, gameID string) (*models.Branch, int, error) {
 
-	res, err := delete(host+"/api/v1/branch", token, "application/json", branchReq)
+	url := host + "/api/v1/branch?"
+	if id != "" {
+		url += "id=" + id
+	} else {
+		url += "name=" + name + "&gid=" + gameID
+	}
+
+	res, err := delete(url, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -450,16 +462,16 @@ func deleteBranch(host string, token string, branchReq *models.BranchInfoCmd) (*
 		return nil, res.StatusCode, buldError(res.Body)
 	}
 
-	branchRes := new(models.BranchInfoCmd)
+	branchRes := new(models.Branch)
 	decoder := json.NewDecoder(res.Body)
 	decoder.Decode(&branchRes)
 
 	return branchRes, res.StatusCode, nil
 }
 
-func (manager *CordAPIManager) ListBranch(branchReq *models.ListBranchCmd) (*models.ListBranchCmdResult, error) {
+func (manager *CordAPIManager) GetBranch(id string, name string, gameID string) (*models.Branch, error) {
 
-	res, sc, err := listBranch(manager.host, manager.authToken.Token, branchReq)
+	res, sc, err := getBranch(manager.host, manager.authToken.Token, id, name, gameID)
 	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
@@ -467,7 +479,7 @@ func (manager *CordAPIManager) ListBranch(branchReq *models.ListBranchCmd) (*mod
 			return nil, err
 		}
 
-		res, _, err = listBranch(manager.host, manager.authToken.Token, branchReq)
+		res, _, err = deleteBranch(manager.host, manager.authToken.Token, id, name, gameID)
 		if err != nil {
 			return nil, err
 		}
@@ -480,9 +492,96 @@ func (manager *CordAPIManager) ListBranch(branchReq *models.ListBranchCmd) (*mod
 	return res, nil
 }
 
-func listBranch(host string, token string, branchReq *models.ListBranchCmd) (*models.ListBranchCmdResult, int, error) {
+func getBranch(host string, token string, id string, name string, gameID string) (*models.Branch, int, error) {
 
-	res, err := get(host+"/api/v1/branch/list", token, "application/json", branchReq)
+	url := host + "/api/v1/branch?"
+	if id != "" {
+		url += "id=" + id
+	} else {
+		url += ("name=" + name + "&gid=" + gameID)
+	}
+
+	res, err := get(url, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, buldError(res.Body)
+	}
+
+	branchRes := new(models.Branch)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&branchRes)
+
+	return branchRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) UpdateBranch(branchReq *models.Branch) error {
+
+	sc, err := updateBranch(manager.host, manager.authToken.Token, branchReq)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return err
+		}
+
+		_, err = updateBranch(manager.host, manager.authToken.Token, branchReq)
+		if err != nil {
+			return err
+		}
+
+	} else if err != nil {
+
+		return err
+	}
+
+	return nil
+}
+
+func updateBranch(host string, token string, branchReq *models.Branch) (int, error) {
+
+	res, err := put(host+"/api/v1/branch?id="+branchReq.ID, token, "application/json", branchReq)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return res.StatusCode, buldError(res.Body)
+	}
+
+	return res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) ListBranch(gameID string) (*models.ListBranchCmdResult, error) {
+
+	res, sc, err := listBranch(manager.host, manager.authToken.Token, gameID)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = listBranch(manager.host, manager.authToken.Token, gameID)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func listBranch(host string, token string, gameID string) (*models.ListBranchCmdResult, int, error) {
+
+	res, err := get(host+"/api/v1/branch/list?gid="+gameID, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -499,9 +598,9 @@ func listBranch(host string, token string, branchReq *models.ListBranchCmd) (*mo
 	return branchRes, res.StatusCode, nil
 }
 
-func (manager *CordAPIManager) ShallowBranch(branchReq *models.ShallowBranchCmd) (*models.ShallowBranchCmdResult, error) {
+func (manager *CordAPIManager) ShallowBranch(sid string, sname string, tid string, tname string, gameID string) (*models.ShallowBranchCmdResult, error) {
 
-	res, sc, err := shallowBranch(manager.host, manager.authToken.Token, branchReq)
+	res, sc, err := shallowBranch(manager.host, manager.authToken.Token, sid, sname, tid, tname, gameID)
 	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
@@ -509,7 +608,7 @@ func (manager *CordAPIManager) ShallowBranch(branchReq *models.ShallowBranchCmd)
 			return nil, err
 		}
 
-		res, _, err = shallowBranch(manager.host, manager.authToken.Token, branchReq)
+		res, _, err = shallowBranch(manager.host, manager.authToken.Token, sid, sname, tid, tname, gameID)
 		if err != nil {
 			return nil, err
 		}
@@ -522,9 +621,26 @@ func (manager *CordAPIManager) ShallowBranch(branchReq *models.ShallowBranchCmd)
 	return res, nil
 }
 
-func shallowBranch(host string, token string, branchReq *models.ShallowBranchCmd) (*models.ShallowBranchCmdResult, int, error) {
+func shallowBranch(host string, token string, sid string, sname string, tid string, tname string, gameID string) (*models.ShallowBranchCmdResult, int, error) {
 
-	res, err := post(host+"/api/v1/branch/shallow", token, "application/json", branchReq)
+	url := host + "/api/v1/branch/shallow?"
+	if sid != "" {
+		url += "sid=" + sid
+	} else {
+		url += "sname=" + sname
+	}
+
+	if tid != "" {
+		url += "&tid=" + tid
+	} else {
+		url += "&tname=" + tname
+	}
+
+	if sid == "" || tid == "" {
+		url += "&gid=" + gameID
+	}
+
+	res, err := post(url, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}

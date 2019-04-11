@@ -6,7 +6,6 @@ import (
 	"github.com/pborman/uuid"
 
 	"fmt"
-	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"time"
@@ -22,16 +21,27 @@ func genBranchID() string {
 	return id
 }
 
+func getBranchIDOrName(context echo.Context) string {
+
+	nameOrID := ""
+	nameOrID = context.Param("id")
+	if nameOrID == "" {
+		nameOrID = context.Param("name")
+	}
+
+	return nameOrID
+}
+
 func CreateBranchCmd(context echo.Context) error {
 
-	reqBranch := &models.BranchInfoCmd{}
+	reqBranch := &models.Branch{}
 	err := context.Bind(reqBranch)
 	if err != nil {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
 	}
 
 	manager := database.NewBranchManager()
-	result, err := manager.FindByName(reqBranch.Name)
+	result, err := manager.FindByName(reqBranch.Name, reqBranch.GameID)
 	if err != nil {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
 	}
@@ -40,49 +50,120 @@ func CreateBranchCmd(context echo.Context) error {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorUserAlreadyExists, fmt.Sprintf("Branch %s already exists", reqBranch.Name)})
 	}
 
-	branchID := genBranchID()
-	err = manager.Insert(&models.Branch{branchID, reqBranch.Name, reqBranch.GameID, "", time.Now()})
+	reqBranch.ID = genBranchID()
+	reqBranch.Created = time.Now()
+	err = manager.Insert(reqBranch)
 	if err != nil {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorCreateUser, fmt.Sprintf("Cannot create branch %s, error: %s", reqBranch.Name, err.Error())})
 	}
 
-	zap.S().Infow("Created new branch", zap.String("branch id", branchID))
-	return context.JSON(http.StatusOK, models.BranchInfoCmd{branchID, reqBranch.Name, reqBranch.GameID})
+	return context.JSON(http.StatusOK, reqBranch)
+}
+
+func findBranch(context echo.Context, bidParam string, nameParam string, gidParam string) (*models.Branch, bool, error) {
+
+	var result *models.Branch
+	var err error
+
+	manager := database.NewBranchManager()
+
+	bid := context.QueryParam(bidParam)
+	name := context.QueryParam(nameParam)
+	gid := context.QueryParam(gidParam)
+
+	if bid == "" && (name == "" || gid == "") {
+		return nil, false, context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Branch ID or Name and Game ID are required"})
+	}
+
+	if bid != "" {
+		result, err = manager.FindByID(bid)
+		if err != nil {
+			return nil, false, context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
+		}
+		if result == nil {
+			return nil, false, context.JSON(http.StatusBadRequest, models.Error{models.ErrorUserAlreadyExists, fmt.Sprintf("Branch %s is not found", bid)})
+		}
+	} else {
+		result, err = manager.FindByName(name, gid)
+		if err != nil {
+			return nil, false, context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
+		}
+		if result == nil {
+			return nil, false, context.JSON(http.StatusBadRequest, models.Error{models.ErrorUserAlreadyExists, fmt.Sprintf("Branch %s is not found", name)})
+		}
+	}
+
+	return result, true, nil
 }
 
 func DeleteBranchCmd(context echo.Context) error {
 
-	reqBranch := &models.BranchInfoCmd{}
-	err := context.Bind(reqBranch)
-	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
 	}
 
 	manager := database.NewBranchManager()
-	result, err := manager.FindByIDOrName(reqBranch.ID)
+	err = manager.RemoveByID(result.ID)
+	if err != nil {
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorDeleteUser, fmt.Sprintf("Cannot delete branch %s, error: %s", result.Name, err.Error())})
+	}
+
+	return context.JSON(http.StatusOK, result)
+}
+
+func GetBranchCmd(context echo.Context) error {
+
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
+	}
+
+	return context.JSON(http.StatusOK, result)
+}
+
+func UpdateBranchCmd(context echo.Context) error {
+
+	bid := context.QueryParam("id")
+	if bid == "" {
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Branch ID is required"})
+	}
+
+	manager := database.NewBranchManager()
+	result, err := manager.FindByID(bid)
 	if err != nil {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
 	}
 
-	err = manager.RemoveByID(result.ID)
-	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorDeleteUser, fmt.Sprintf("Cannot delete branch %s, error: %s", reqBranch, err.Error())})
+	if result == nil {
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorUserAlreadyExists, fmt.Sprintf("Branch %s is not found", bid)})
 	}
 
-	zap.S().Infow("Removed branch", zap.String("branch id", result.ID))
-	return context.JSON(http.StatusOK, models.BranchInfoCmd{result.ID, result.Name, result.GameID})
-}
-
-func ListBranchCmd(context echo.Context) error {
-
-	reqBranch := &models.ListBranchCmd{}
-	err := context.Bind(reqBranch)
+	reqBranch := &models.Branch{}
+	err = context.Bind(reqBranch)
 	if err != nil {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
 	}
 
+	reqBranch.ID = result.ID
+	reqBranch.Updated = time.Now()
+	err = manager.Update(reqBranch)
+	if err != nil {
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot write to database, error: %s", err.Error())})
+	}
+
+	return context.NoContent(http.StatusOK)
+}
+
+func ListBranchCmd(context echo.Context) error {
+
+	gid := context.QueryParam("gid")
+	if gid == "" {
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Game ID is required"})
+	}
+
 	manager := database.NewBranchManager()
-	branches, err := manager.List(reqBranch.GameID)
+	branches, err := manager.List(gid)
 	if err != nil {
 		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
 	}
@@ -97,24 +178,24 @@ func ListBranchCmd(context echo.Context) error {
 
 func ShallowBranchCmd(context echo.Context) error {
 
-	reqBranch := &models.ShallowBranchCmd{}
-	err := context.Bind(reqBranch)
-	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
+	sourceBranch, ok, err := findBranch(context, "sid", "sname", "gid")
+	if !ok {
+		return err
 	}
+
+	targetBranch, ok, err := findBranch(context, "tid", "tname", "gid")
+	if !ok {
+		return err
+	}
+
+	targetBranch.BuildID = sourceBranch.BuildID
+	targetBranch.Updated = time.Now()
 
 	manager := database.NewBranchManager()
-	sourceBranch, err := manager.FindByIDOrName(reqBranch.SourceNameOrID)
+	err = manager.Update(targetBranch)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
+		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot write to database, error: %s", err.Error())})
 	}
-
-	targetBranch, err := manager.FindByIDOrName(reqBranch.TargetNameOrID)
-	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
-	}
-
-	// TO DO the shallow
 
 	return context.JSON(http.StatusOK, models.ShallowBranchCmdResult{sourceBranch.ID, sourceBranch.Name, targetBranch.ID, targetBranch.Name})
 }

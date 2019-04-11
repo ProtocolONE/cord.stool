@@ -116,31 +116,17 @@ type TorrentCmd struct {
 	InfoHash string `bson:"info_hash" json:"info_hash"`
 }
 
-type BranchInfoCmd struct {
-	ID     string `json:id`
-	Name   string `json:name`
-	GameID string `json:"game_id"`
-}
-
-type ListBranchCmd struct {
-	GameID string `json:"game_id"`
-}
-
 type Branch struct {
-	ID          string    `json:id`
-	Name        string    `json:name`
-	GameID      string    `json:"game_id"`
-	LiveBuildID string    `json:live_build_id`
-	Created     time.Time `json:created`
+	ID      string    `bson:"_id" json:id`
+	Name    string    `json:name`
+	GameID  string    `json:"game_id"`
+	BuildID string    `json:build_id`
+	Created time.Time `json:created`
+	Updated time.Time `json:updated`
 }
 
 type ListBranchCmdResult struct {
 	List []Branch `json:"list"`
-}
-
-type ShallowBranchCmd struct {
-	SourceNameOrID string `json:source_name_or_id`
-	TargetNameOrID string `json:target_name_or_id`
 }
 
 type ShallowBranchCmdResult struct {
