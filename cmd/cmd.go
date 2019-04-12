@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cord.stool/cmd/branch"
 	"cord.stool/cmd/create"
 	"cord.stool/cmd/diff"
 	"cord.stool/cmd/push"
@@ -19,4 +20,5 @@ func RegisterCmdCommands(ctx *context.StoolContext) {
 	upgrade.Register(ctx)
 	service.Register(ctx)
 	games.Register(ctx)
+	branch.Register(ctx)
 }
