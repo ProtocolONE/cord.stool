@@ -3,12 +3,10 @@ package cordapi
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"io"
-	"io/ioutil"
 	"net/http"
 
 	"cord.stool/service/models"
+	"cord.stool/utils"
 )
 
 type CordAPIManager struct {
@@ -202,7 +200,7 @@ func login(host string, username string, password string) (*models.AuthToken, er
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, buldError(res.Body)
+		return nil, utils.BuldError(res.Body)
 	}
 
 	authRes := new(models.AuthToken)
@@ -214,14 +212,14 @@ func login(host string, username string, password string) (*models.AuthToken, er
 
 func refreshToken(host string, token string) (*models.AuthRefresh, error) {
 
-	res, err := get(host+"/api/v1/auth/refresh-token", token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/auth/refresh-token", token, "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, buldError(res.Body)
+		return nil, utils.BuldError(res.Body)
 	}
 
 	refreshRes := new(models.AuthRefresh)
@@ -233,14 +231,14 @@ func refreshToken(host string, token string) (*models.AuthRefresh, error) {
 
 func upload(host string, token string, uploadReq *models.UploadCmd) (int, error) {
 
-	res, err := post(host+"/api/v1/file/upload", token, "application/json", uploadReq)
+	res, err := utils.Post(host+"/api/v1/file/upload", token, "application/json", uploadReq)
 	if err != nil {
 		return 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return res.StatusCode, buldError(res.Body)
+		return res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	return res.StatusCode, nil
@@ -248,14 +246,14 @@ func upload(host string, token string, uploadReq *models.UploadCmd) (int, error)
 
 func cmpHash(host string, token string, cmpReq *models.CompareHashCmd) (*models.CompareHashCmdResult, int, error) {
 
-	res, err := post(host+"/api/v1/file/cmp-hash", token, "application/json", cmpReq)
+	res, err := utils.Post(host+"/api/v1/file/cmp-hash", token, "application/json", cmpReq)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, res.StatusCode, buldError(res.Body)
+		return nil, res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	cmpRes := new(models.CompareHashCmdResult)
@@ -267,14 +265,14 @@ func cmpHash(host string, token string, cmpReq *models.CompareHashCmd) (*models.
 
 func addTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, error) {
 
-	res, err := post(host+"/api/v1/tracker/torrent", token, "application/json", cmdTorrent)
+	res, err := utils.Post(host+"/api/v1/tracker/torrent", token, "application/json", cmdTorrent)
 	if err != nil {
 		return 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return res.StatusCode, buldError(res.Body)
+		return res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	return res.StatusCode, nil
@@ -282,14 +280,14 @@ func addTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, 
 
 func removeTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, error) {
 
-	res, err := delete(host+"/api/v1/tracker/torrent", token, "application/json", cmdTorrent)
+	res, err := utils.Delete(host+"/api/v1/tracker/torrent", token, "application/json", cmdTorrent)
 	if err != nil {
 		return 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return res.StatusCode, buldError(res.Body)
+		return res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	return res.StatusCode, nil
@@ -297,14 +295,14 @@ func removeTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (in
 
 func getSignature(host string, token string, path string) (*models.SignatureCmdResult, int, error) {
 
-	res, err := get(host+"/api/v1/file/signature?path="+path, token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/file/signature?path="+path, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, res.StatusCode, buldError(res.Body)
+		return nil, res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	cmpRes := new(models.SignatureCmdResult)
@@ -316,66 +314,17 @@ func getSignature(host string, token string, path string) (*models.SignatureCmdR
 
 func applyPatch(host string, token string, applyReq *models.ApplyPatchCmd) (int, error) {
 
-	res, err := post(host+"/api/v1/file/patch", token, "application/json", applyReq)
+	res, err := utils.Post(host+"/api/v1/file/patch", token, "application/json", applyReq)
 	if err != nil {
 		return 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return res.StatusCode, buldError(res.Body)
+		return res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	return res.StatusCode, nil
-}
-
-func get(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
-
-	return httpRequest("GET", url, token, contentType, obj)
-}
-
-func post(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
-
-	return httpRequest("POST", url, token, contentType, obj)
-}
-
-func put(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
-
-	return httpRequest("PUT", url, token, contentType, obj)
-}
-
-func delete(url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
-
-	return httpRequest("DELETE", url, token, contentType, obj)
-}
-
-func httpRequest(method string, url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
-
-	data, err := json.Marshal(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(data))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Add("Authorization", token)
-	return client.Do(req)
-}
-
-func buldError(r io.Reader) error {
-
-	errorRes := new(models.Error)
-	decoder := json.NewDecoder(r)
-	if decoder.Decode(&errorRes) == nil {
-		return errors.New(errorRes.Message)
-	}
-
-	message, _ := ioutil.ReadAll(r)
-	return errors.New(string(message))
 }
 
 func (manager *CordAPIManager) CreateBranch(branchReq *models.Branch) (*models.Branch, error) {
@@ -403,14 +352,14 @@ func (manager *CordAPIManager) CreateBranch(branchReq *models.Branch) (*models.B
 
 func createBranch(host string, token string, branchReq *models.Branch) (*models.Branch, int, error) {
 
-	res, err := post(host+"/api/v1/branch", token, "application/json", branchReq)
+	res, err := utils.Post(host+"/api/v1/branch", token, "application/json", branchReq)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, res.StatusCode, buldError(res.Body)
+		return nil, res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	branchRes := new(models.Branch)
@@ -452,14 +401,105 @@ func deleteBranch(host string, token string, id string, name string, gameID stri
 		url += "name=" + name + "&gid=" + gameID
 	}
 
-	res, err := delete(url, token, "application/json", nil)
+	res, err := utils.Delete(url, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, res.StatusCode, buldError(res.Body)
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	branchRes := new(models.Branch)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&branchRes)
+
+	return branchRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) SetLiveBranch(id string, name string, gameID string) (*models.Branch, error) {
+
+	res, sc, err := setLiveBranch(manager.host, manager.authToken.Token, id, name, gameID)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = setLiveBranch(manager.host, manager.authToken.Token, id, name, gameID)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func setLiveBranch(host string, token string, id string, name string, gameID string) (*models.Branch, int, error) {
+
+	url := host + "/api/v1/branch/live?"
+	if id != "" {
+		url += "id=" + id
+	} else {
+		url += "name=" + name + "&gid=" + gameID
+	}
+
+	res, err := utils.Put(url, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	branchRes := new(models.Branch)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&branchRes)
+
+	return branchRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) GetLiveBranch(gameID string) (*models.Branch, error) {
+
+	res, sc, err := getLiveBranch(manager.host, manager.authToken.Token, gameID)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = getLiveBranch(manager.host, manager.authToken.Token, gameID)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func getLiveBranch(host string, token string, gameID string) (*models.Branch, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/branch/live?gid="+gameID, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	branchRes := new(models.Branch)
@@ -479,7 +519,7 @@ func (manager *CordAPIManager) GetBranch(id string, name string, gameID string) 
 			return nil, err
 		}
 
-		res, _, err = deleteBranch(manager.host, manager.authToken.Token, id, name, gameID)
+		res, _, err = getBranch(manager.host, manager.authToken.Token, id, name, gameID)
 		if err != nil {
 			return nil, err
 		}
@@ -501,14 +541,14 @@ func getBranch(host string, token string, id string, name string, gameID string)
 		url += ("name=" + name + "&gid=" + gameID)
 	}
 
-	res, err := get(url, token, "application/json", nil)
+	res, err := utils.Get(url, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, res.StatusCode, buldError(res.Body)
+		return nil, res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	branchRes := new(models.Branch)
@@ -543,20 +583,20 @@ func (manager *CordAPIManager) UpdateBranch(branchReq *models.Branch) error {
 
 func updateBranch(host string, token string, branchReq *models.Branch) (int, error) {
 
-	res, err := put(host+"/api/v1/branch?id="+branchReq.ID, token, "application/json", branchReq)
+	res, err := utils.Put(host+"/api/v1/branch?id="+branchReq.ID, token, "application/json", branchReq)
 	if err != nil {
 		return 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return res.StatusCode, buldError(res.Body)
+		return res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	return res.StatusCode, nil
 }
 
-func (manager *CordAPIManager) ListBranch(gameID string) (*models.ListBranchCmdResult, error) {
+func (manager *CordAPIManager) ListBranch(gameID string) (*[]models.Branch, error) {
 
 	res, sc, err := listBranch(manager.host, manager.authToken.Token, gameID)
 	if sc == http.StatusUnauthorized {
@@ -579,19 +619,19 @@ func (manager *CordAPIManager) ListBranch(gameID string) (*models.ListBranchCmdR
 	return res, nil
 }
 
-func listBranch(host string, token string, gameID string) (*models.ListBranchCmdResult, int, error) {
+func listBranch(host string, token string, gameID string) (*[]models.Branch, int, error) {
 
-	res, err := get(host+"/api/v1/branch/list?gid="+gameID, token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/branch/list?gid="+gameID, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, res.StatusCode, buldError(res.Body)
+		return nil, res.StatusCode, utils.BuldError(res.Body)
 	}
 
-	branchRes := new(models.ListBranchCmdResult)
+	branchRes := new([]models.Branch)
 	decoder := json.NewDecoder(res.Body)
 	decoder.Decode(&branchRes)
 
@@ -640,14 +680,14 @@ func shallowBranch(host string, token string, sid string, sname string, tid stri
 		url += "&gid=" + gameID
 	}
 
-	res, err := post(url, token, "application/json", nil)
+	res, err := utils.Post(url, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, res.StatusCode, buldError(res.Body)
+		return nil, res.StatusCode, utils.BuldError(res.Body)
 	}
 
 	branchRes := new(models.ShallowBranchCmdResult)

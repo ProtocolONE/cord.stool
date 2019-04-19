@@ -13,7 +13,6 @@ import (
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
-	"github.com/pborman/uuid"
 )
 
 var _bar *uiprogress.Bar
@@ -90,11 +89,29 @@ func Upload(args Args) error {
 		}
 	}
 
+	updateBranch(api, args)
+	if err != nil {
+		return err
+	}
+
+	_curTitle = "Finished"
+	uiprogress.Stop()
+
+	fmt.Println("Upload completed.")
+
+	return nil
+}
+
+func updateBranch(api *cordapi.CordAPIManager, args Args) error {
+
 	if args.BranchID != "" || (args.BranchName != "" && args.GameID != "") {
 
 		_curTitle = fmt.Sprint("Updating branch")
 		_bar = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
-		_bar.Set(0)
+		_title = &_curTitle
+		_bar.PrependFunc(func(b *uiprogress.Bar) string {
+			return strutil.Resize(*_title, 35)
+		})
 
 		branch, err := api.GetBranch(args.BranchID, args.BranchName, args.GameID)
 		if err != nil {
@@ -104,9 +121,7 @@ func Upload(args Args) error {
 		_bar.Incr()
 		_barTotal.Incr()
 
-		branch.BuildID = uuid.New()
-		branch.BuildID = strings.Replace(branch.BuildID, "-", "", -1)
-		branch.BuildID = strings.ToUpper(branch.BuildID)
+		branch.BuildID = utils.GenerateID()
 
 		err = api.UpdateBranch(branch)
 		if err != nil {
@@ -116,11 +131,6 @@ func Upload(args Args) error {
 		_bar.Incr()
 		_barTotal.Incr()
 	}
-
-	_curTitle = "Finished"
-	uiprogress.Stop()
-
-	fmt.Println("Upload completed.")
 
 	return nil
 }

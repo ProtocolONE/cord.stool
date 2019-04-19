@@ -6,13 +6,13 @@ import (
 	utils2 "cord.stool/utils"
 	"cord.stool/xdelta"
 
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 
 	"github.com/labstack/echo"
+	"go.uber.org/zap"
 )
 
 func UploadCmd(context echo.Context) error {
@@ -20,18 +20,20 @@ func UploadCmd(context echo.Context) error {
 	reqUpload := &models.UploadCmd{}
 	err := context.Bind(reqUpload)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGetUserStorage, err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
 	fpath := path.Join(userRoot, reqUpload.FilePath)
+	zap.S().Infow("Uploading", zap.String("path", fpath))
+
 	err = os.MkdirAll(fpath, 0777)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorCreatePath, fmt.Sprintf("Cannot create path %s, error: %s", fpath, err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
 	fpath = path.Join(fpath, reqUpload.FileName)
@@ -41,14 +43,14 @@ func UploadCmd(context echo.Context) error {
 		fpath = fpath[0:(len(fpath) - len(".diff"))]
 		patchfile, err := ioutil.TempFile(os.TempDir(), "patch")
 		if err != nil {
-			return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenTempFile, fmt.Sprintf("Cannot get temp file, error: %s", err.Error())})
+			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 		}
 		defer os.Remove(patchfile.Name())
 		patchfile.Close()
 
 		err = ioutil.WriteFile(patchfile.Name(), reqUpload.FileData, 0777)
 		if err != nil {
-			return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWriteFile, fmt.Sprintf("Cannot write to file %s, error: %s", fpath, err.Error())})
+			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 		}
 
 		fpathold := fpath
@@ -58,14 +60,14 @@ func UploadCmd(context echo.Context) error {
 
 		err = xdelta.DecodeDiff(fpathold, fpath, patchfile.Name())
 		if err != nil {
-			return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorApplyPatch, fmt.Sprintf("Cannot apply patch to %s, error: %s", fpath, err.Error())})
+			return utils.BuildInternalServerError(context, models.ErrorApplyPatch, err.Error())
 		}
 
 	} else {
 
 		err = ioutil.WriteFile(fpath, reqUpload.FileData, 0777)
 		if err != nil {
-			return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWriteFile, fmt.Sprintf("Cannot write to file %s, error: %s", fpath, err.Error())})
+			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 		}
 	}
 
@@ -77,12 +79,12 @@ func CompareHashCmd(context echo.Context) error {
 	reqCmp := &models.CompareHashCmd{}
 	err := context.Bind(reqCmp)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGetUserStorage, err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
 	fpath := path.Join(userRoot, reqCmp.FilePath)

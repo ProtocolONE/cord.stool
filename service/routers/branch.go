@@ -15,6 +15,9 @@ func InitBranchCmdRoutes(e *echo.Echo) {
 	e.GET("/api/v1/branch", controllers.GetBranchCmd, authentication.RequireTokenAuthentication)
 	e.PUT("/api/v1/branch", controllers.UpdateBranchCmd, authentication.RequireTokenAuthentication)
 
+	e.PUT("/api/v1/branch/live", controllers.SetLiveBranchCmd, authentication.RequireTokenAuthentication)
+	e.GET("/api/v1/branch/live", controllers.GetLiveBranchCmd, authentication.RequireTokenAuthentication)
+
 	e.GET("/api/v1/branch/list", controllers.ListBranchCmd, authentication.RequireTokenAuthentication)
 	e.POST("/api/v1/branch/shallow", controllers.ShallowBranchCmd, authentication.RequireTokenAuthentication)
 }

@@ -4,11 +4,11 @@ import (
 	"cord.stool/cmd/branch"
 	"cord.stool/cmd/create"
 	"cord.stool/cmd/diff"
+	"cord.stool/cmd/games"
 	"cord.stool/cmd/push"
 	"cord.stool/cmd/service"
 	"cord.stool/cmd/torrent"
 	"cord.stool/cmd/upgrade"
-	"cord.stool/cmd/games"
 	"cord.stool/context"
 )
 

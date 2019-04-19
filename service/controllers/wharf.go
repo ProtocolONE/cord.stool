@@ -5,22 +5,19 @@ import (
 	"cord.stool/service/models"
 
 	context2 "context"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/itchio/savior/seeksource"
 	"github.com/itchio/wharf/eos"
 	"github.com/itchio/wharf/pools"
 	"github.com/itchio/wharf/pwr"
 	"github.com/itchio/wharf/tlc"
 	"github.com/itchio/wharf/wire"
 	"github.com/itchio/wharf/wsync"
-	//"github.com/itchio/wharf/state"
-	//"github.com/itchio/wharf/eos/option"
-	"github.com/itchio/savior/seeksource"
 
 	"github.com/labstack/echo"
 )
@@ -59,36 +56,36 @@ func SignatureCmd(context echo.Context) error {
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGetUserStorage, err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
 	pathParam := context.QueryParam("path")
 	if pathParam == "" {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidRequest, "Invalid request params: " + err.Error()})
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
 	fpath := path.Join(userRoot, pathParam)
 
 	container, err := tlc.WalkAny(fpath, &tlc.WalkOpts{Filter: filterPaths})
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWharfLibrary, "Walking directory to sign failed: " + err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorWharfLibrary, err.Error())
 	}
 
 	pool, err := pools.New(container, fpath)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWharfLibrary, "Creating pool for directory to sign failed: " + err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorWharfLibrary, err.Error())
 	}
 
 	signFile, err := ioutil.TempFile(os.TempDir(), "sign")
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenTempFile, fmt.Sprintf("Cannot get temp file, error: %s", err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorWharfLibrary, err.Error())
 	}
 	defer os.Remove(signFile.Name())
 	signFile.Close()
 
 	signatureWriter, err := os.Create(signFile.Name())
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorCreateFile, fmt.Sprintf("Cannot create signature file, error: %s", err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorWharfLibrary, err.Error())
 	}
 	defer signatureWriter.Close()
 
@@ -98,7 +95,7 @@ func SignatureCmd(context echo.Context) error {
 
 	sigWire, err := pwr.CompressWire(rawSigWire, compressionSettings())
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWharfLibrary, "Setting up compression for signature file failed: " + err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorWharfLibrary, err.Error())
 	}
 
 	sigWire.WriteMessage(container)
@@ -111,17 +108,17 @@ func SignatureCmd(context echo.Context) error {
 	})
 
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWharfLibrary, "Computing signature failed: " + err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorWharfLibrary, err.Error())
 	}
 
 	err = sigWire.Close()
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWharfLibrary, "Finalizing signature file failed: " + err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorWharfLibrary, err.Error())
 	}
 
 	signData, err := ioutil.ReadFile(signFile.Name())
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorReadFile, fmt.Sprintf("Cannot read signature file, error: %s", err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
 	return context.JSON(http.StatusOK, models.SignatureCmdResult{FileData: signData})
@@ -132,32 +129,32 @@ func ApplyPatchCmd(context echo.Context) error {
 	reqCmp := &models.ApplyPatchCmd{}
 	err := context.Bind(reqCmp)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
 	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGetUserStorage, err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
 	fpath := path.Join(userRoot, reqCmp.Path)
 
 	patchFile, err := ioutil.TempFile(os.TempDir(), "patch")
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenTempFile, fmt.Sprintf("Cannot get temp file, error: %s", err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 	defer os.Remove(patchFile.Name())
 	patchFile.Close()
 
 	err = ioutil.WriteFile(patchFile.Name(), reqCmp.FileData, 0777)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWriteFile, fmt.Sprintf("Cannot write to patch, error: %s", err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 	patchFile.Close()
 
 	patchReader, err := eos.Open(patchFile.Name())
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorOpenFile, fmt.Sprintf("Cannot open patch file, error: %s", err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
 	actx := &pwr.ApplyContext{
@@ -177,12 +174,12 @@ func ApplyPatchCmd(context echo.Context) error {
 
 	_, err = patchSource.Resume(nil)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWharfLibrary, "Resuming patch file failed: " + err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorWharfLibrary, err.Error())
 	}
 
 	err = actx.ApplyPatch(patchSource)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorWharfLibrary, "Applying patch file failed: " + err.Error()})
+		return utils.BuildInternalServerError(context, models.ErrorWharfLibrary, err.Error())
 	}
 
 	return context.NoContent(http.StatusOK)
