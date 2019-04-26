@@ -116,16 +116,11 @@ func DeleteBranchCmd(context echo.Context) error {
 
 func SetLiveBranchCmd(context echo.Context) error {
 
-	var result *models.Branch
-	gid := context.QueryParam("gid")
-	if gid == "" {
-
-		result, ok, err := findBranch(context, "id", "name", "gid")
-		if !ok {
-			return err
-		}
-		gid = result.GameID
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
 	}
+	gid := result.GameID
 
 	if result.Live != true {
 

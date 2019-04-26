@@ -79,13 +79,20 @@ func ListBranch(url string, login string, password string, gameID string) error 
 		return err
 	}
 
-	fmt.Printf("\n")
-	fmt.Printf("|            APPLICATION ID            |            BRANCH ID             |               NAME               |              BUILD ID            |  LIVE  |         CREATED AT        |\n")
-	fmt.Printf("| ------------------------------------ | -------------------------------- | -------------------------------- | -------------------------------- | ------ | ------------------------- |\n")
-	for _, b := range *list {
-		fmt.Printf("| %36s | %32s | %32s | %32s | %6t | %24s |\n", b.GameID, b.ID, b.Name, b.BuildID, b.Live, b.Created.Format("2006-01-02 15:04:05 -0700"))
+	if list != nil {
+
+		fmt.Printf("\n")
+		fmt.Printf("|            APPLICATION ID            |            BRANCH ID             |               NAME               |              BUILD ID            |  LIVE  |         CREATED AT        |\n")
+		fmt.Printf("| ------------------------------------ | -------------------------------- | -------------------------------- | -------------------------------- | ------ | ------------------------- |\n")
+		for _, b := range *list {
+			fmt.Printf("| %36s | %32s | %32s | %32s | %6t | %24s |\n", b.GameID, b.ID, b.Name, b.BuildID, b.Live, b.Created.Format("2006-01-02 15:04:05 -0700"))
+		}
+		fmt.Printf("\n")
+	} else {
+
+		fmt.Println("There are no one branch found")
+
 	}
-	fmt.Printf("\n")
 
 	return nil
 }

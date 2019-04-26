@@ -54,7 +54,7 @@ func ListGame(qilinUrl string, url string, login string, password string) error 
 	}
 
 	if len(gameList) == 0 {
-		return fmt.Errorf("No games were found")
+		return fmt.Errorf("There are no one game found")
 	}
 
 	api2 := cordapi.NewCordAPI(url)
