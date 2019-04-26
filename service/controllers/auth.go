@@ -3,10 +3,10 @@ package controllers
 import (
 	"cord.stool/service/config"
 	"cord.stool/service/core/authentication"
+	"cord.stool/service/core/utils"
 	"cord.stool/service/database"
 	"cord.stool/service/models"
 
-	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
@@ -25,29 +25,29 @@ func CreateUser(context echo.Context) error {
 	reqUser := &models.Authorization{}
 	err := context.Bind(reqUser)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
 	manager := database.NewUserManager()
 	users, err := manager.FindByName(reqUser.Username)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorReadDataBase, fmt.Sprintf("Cannot read from database, error: %s", err.Error())})
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 	}
 
 	if len(users) != 0 {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorUserAlreadyExists, fmt.Sprintf("User %s already exists", reqUser.Username)})
+		return utils.BuildBadRequestError(context, models.ErrorAlreadyExists, reqUser.Username)
 	}
 
 	storage, err := getUserStorageName(reqUser.Username)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenUserStorageName, fmt.Sprintf("Cannot generate user files storage name, error: %s", err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorGenUserStorageName, err.Error())
 	}
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(reqUser.Password), 10)
 
 	err = manager.Insert(&models.User{reqUser.Username, string(hashedPassword), storage})
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorCreateUser, fmt.Sprintf("Cannot create user %s, error: %s", reqUser.Username, err.Error())})
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 	}
 
 	zap.S().Infow("Created new user", zap.String("username", reqUser.Username))
@@ -60,13 +60,13 @@ func DeleteUser(context echo.Context) error {
 	reqUser := &models.Authorization{}
 	err := context.Bind(reqUser)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
 	manager := database.NewUserManager()
 	err = manager.RemoveByName(reqUser.Username)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorDeleteUser, fmt.Sprintf("Cannot delete user %s, error: %s", reqUser.Username, err.Error())})
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 	}
 
 	zap.S().Infow("Removed user", zap.String("username", reqUser.Username))
@@ -78,26 +78,26 @@ func Login(context echo.Context) error {
 	reqUser := &models.Authorization{}
 	err := context.Bind(reqUser)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorInvalidJSONFormat, "Invalid JSON format: " + err.Error()})
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
 	zap.S().Infow("Login", zap.String("username", reqUser.Username), zap.String("password", reqUser.Password))
 
 	authBackend := authentication.InitJWTAuthenticationBackend()
 	if !authBackend.Authenticate(reqUser) {
-		return context.JSON(http.StatusUnauthorized, models.Error{models.ErrorInvalidUsernameOrPassword, "Invalid username or password"})
+		return utils.BuildUnauthorizedError(context, models.ErrorInvalidUsernameOrPassword, "")
 	}
 
 	userUUID := uuid.New()
 	token, err := authBackend.GenerateToken(reqUser.Username, userUUID, false)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenToken, fmt.Sprintf("Cannot generate access-token for user %s, error: %s", reqUser.Username, err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorGenToken, err.Error())
 	}
 
 	userUUID = uuid.New()
 	refreshToken, err := authBackend.GenerateToken(reqUser.Username, userUUID, true)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenToken, fmt.Sprintf("Cannot generate refresh-token for user %s, error: %s", reqUser.Username, err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorGenToken, err.Error())
 	}
 
 	zap.S().Infow("Login", zap.String("token", token))
@@ -116,13 +116,13 @@ func RefreshToken(context echo.Context) error {
 	userUUID := uuid.New()
 	token, err := authBackend.GenerateToken(username, userUUID, false)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenToken, fmt.Sprintf("Cannot generate access-token for user %s, error: %s", username, err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorGenToken, err.Error())
 	}
 
 	userUUID = uuid.New()
 	refreshToken, err := authBackend.GenerateToken(username, userUUID, true)
 	if err != nil {
-		return context.JSON(http.StatusInternalServerError, models.Error{models.ErrorGenToken, fmt.Sprintf("Cannot generate refresh-token for user %s, error: %s", username, err.Error())})
+		return utils.BuildInternalServerError(context, models.ErrorGenToken, err.Error())
 	}
 
 	return context.JSON(http.StatusOK, models.AuthRefresh{token, refreshToken})
@@ -136,14 +136,14 @@ func Logout(context echo.Context) error {
 	})
 
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorLogout, fmt.Sprintf("Logout failed, error: %s", err.Error())})
+		return utils.BuildBadRequestError(context, models.ErrorLogout, err.Error())
 	}
 
 	tokenString := context.Request().Header.Get("Authorization")
 
 	err = authBackend.Logout(tokenString, tokenRequest)
 	if err != nil {
-		return context.JSON(http.StatusBadRequest, models.Error{models.ErrorLogout, fmt.Sprintf("Logout failed, error: %s", err.Error())})
+		return utils.BuildBadRequestError(context, models.ErrorLogout, err.Error())
 	}
 
 	return context.NoContent(http.StatusOK)

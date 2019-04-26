@@ -44,6 +44,7 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.8.1
 	github.com/pkg/sftp v1.10.0
+	github.com/stretchr/testify v1.2.2
 	github.com/udhos/equalfile v0.3.0
 	github.com/urfave/cli v1.20.0
 	github.com/valyala/fasttemplate v1.0.0 // indirect

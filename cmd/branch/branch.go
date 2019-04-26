@@ -83,8 +83,37 @@ func Register(ctx *context.StoolContext) {
 				},
 			},
 			cli.Command{
+				Name:        "live",
+				ShortName:   "lv",
+				Usage:       "Marks branch as live",
+				Description: "Marks branch as live",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:        "id",
+						Usage:       "Branch ID",
+						Value:       "",
+						Destination: &args.id,
+					},
+					cli.StringFlag{
+						Name:        "name, n",
+						Usage:       "Branch name. Should be specified with game id",
+						Value:       "",
+						Destination: &args.name,
+					},
+					cli.StringFlag{
+						Name:        "game-id, gid",
+						Usage:       "Game ID. Should be specified with branch name",
+						Value:       "",
+						Destination: &args.gameID,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return doLive(ctx, c)
+				},
+			},
+			cli.Command{
 				Name:        "list",
-				ShortName:   "l",
+				ShortName:   "ls",
 				Usage:       "Shows branch list",
 				Description: "Shows branch list",
 				Flags: []cli.Flag{
@@ -181,6 +210,15 @@ func doDelete(ctx *context.StoolContext, c *cli.Context) error {
 	}
 
 	return branch.DeleteBranch(args.url, args.login, args.password, args.id, args.name, args.gameID)
+}
+
+func doLive(ctx *context.StoolContext, c *cli.Context) error {
+
+	if args.url == "" {
+		return fmt.Errorf("Cord server url is required")
+	}
+
+	return branch.SetLiveBranch(args.url, args.login, args.password, args.id, args.name, args.gameID)
 }
 
 func doList(ctx *context.StoolContext, c *cli.Context) error {

@@ -6,30 +6,25 @@ import (
 
 const (
 	ErrorInvalidJSONFormat         = 1
-	ErrorReadDataBase              = 2
-	ErrorUserAlreadyExists         = 3
+	ErrorDatabaseFailure           = 2
+	ErrorAlreadyExists             = 3
 	ErrorGenUserStorageName        = 4
-	ErrorCreateUser                = 5
-	ErrorDeleteUser                = 6
-	ErrorInvalidUsernameOrPassword = 7
-	ErrorGenToken                  = 8
-	ErrorLogout                    = 9
-	ErrorGetUserStorage            = 10
-	ErrorCreatePath                = 11
-	ErrorGenTempFile               = 12
-	ErrorWriteFile                 = 13
-	ErrorApplyPatch                = 14
-	ErrorUnauthorized              = 15
-	ErrorTokenExpired              = 16
-	ErrorInvalidToken              = 17
-	ErrorLoginTracker              = 18
-	ErrorAddTracker                = 19
-	ErrorDeleteTracker             = 20
-	ErrorWharfLibrary              = 21
-	ErrorCreateFile                = 22
-	ErrorReadFile                  = 23
-	ErrorOpenFile                  = 24
-	ErrorInvalidRequest            = 25
+	ErrorInvalidUsernameOrPassword = 5
+	ErrorGenToken                  = 6
+	ErrorLogout                    = 7
+	ErrorGetUserStorage            = 8
+	ErrorFileIOFailure             = 9
+	ErrorApplyPatch                = 10
+	ErrorUnauthorized              = 11
+	ErrorTokenExpired              = 12
+	ErrorInvalidToken              = 13
+	ErrorLoginTracker              = 14
+	ErrorAddTracker                = 15
+	ErrorDeleteTracker             = 16
+	ErrorWharfLibrary              = 17
+	ErrorInvalidRequest            = 18
+	ErrorNotFound                  = 19
+	ErrorInternalError             = 20
 )
 
 type AppKey struct {
@@ -121,12 +116,9 @@ type Branch struct {
 	Name    string    `json:name`
 	GameID  string    `json:"game_id"`
 	BuildID string    `json:build_id`
+	Live    bool      `json:live`
 	Created time.Time `json:created`
 	Updated time.Time `json:updated`
-}
-
-type ListBranchCmdResult struct {
-	List []Branch `json:"list"`
 }
 
 type ShallowBranchCmdResult struct {
@@ -134,4 +126,43 @@ type ShallowBranchCmdResult struct {
 	SourceName string `json:source_name`
 	TargetID   string `json:target_id`
 	TargetName string `json:target_name`
+}
+
+type GameGenre struct {
+	Main     int64   `json:"main"`
+	Addition []int64 `json:"addition" validate:"required"`
+}
+
+type GamePrice struct {
+	Price    float64 `json:"price" validate:"required"`
+	Currency string  `json:"currency" validate:"required"`
+}
+
+type Game struct {
+	ID           string    `json:"id"`
+	InternalName string    `json:"internalName"`
+	Icon         string    `json:"icon"`
+	Genres       GameGenre `json:"genres"`
+	ReleaseDate  time.Time `json:"releaseDate"`
+	Prices       GamePrice `json:"prices"`
+}
+
+type Vendor struct {
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Domain3         string `json:"domain3"`
+	Email           string `json:"email"`
+	ManagerID       string `json:"manager_id"`
+	HowManyProducts string `json:"howmanyproducts"`
+}
+
+type GameInfo struct {
+	ID                   string    `json:"id"`
+	InternalName         string    `json:"internalName"`
+	Title                string    `json:"title"`
+	Developers           string    `json:"developers"`
+	Publishers           string    `json:"publishers"`
+	ReleaseDate          time.Time `json:"releaseDate" validate:"required"`
+	DisplayRemainingTime bool      `json:"displayRemainingTime"`
+	AchievementOnProd    bool      `json:"achievementOnProd"`
 }
