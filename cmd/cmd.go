@@ -9,6 +9,7 @@ import (
 	"cord.stool/cmd/service"
 	"cord.stool/cmd/torrent"
 	"cord.stool/cmd/upgrade"
+	"cord.stool/cmd/build"
 	"cord.stool/context"
 )
 
@@ -21,4 +22,5 @@ func RegisterCmdCommands(ctx *context.StoolContext) {
 	service.Register(ctx)
 	games.Register(ctx)
 	branch.Register(ctx)
+	build.Register(ctx)
 }

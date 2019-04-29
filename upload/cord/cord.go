@@ -24,14 +24,14 @@ type Args = struct {
 	Url        string
 	Login      string
 	Password   string
-	BranchID   string
-	BranchName string
 	GameID     string
+	BranchName string
 	SourceDir  string
-	OutputDir  string
+	Config     string
 	Patch      bool
 	Hash       bool
 	Wharf      bool
+	Force	   bool
 }
 
 // Upload ...
@@ -55,11 +55,7 @@ func Upload(args Args) error {
 		if err != nil {
 			return err
 		}
-		barCount = fc + 1
-	}
-
-	if args.BranchID != "" || (args.BranchName != "" && args.GameID != "") {
-		barCount += 2
+		barCount = fc + 1 + 2
 	}
 
 	uiprogress.Start()
@@ -76,7 +72,7 @@ func Upload(args Args) error {
 
 	if args.Wharf {
 
-		err = uploadWharf(api, fullSourceDir, args.OutputDir)
+		err = uploadWharf(api, fullSourceDir, args.GameID, args.BranchName)
 		if err != nil {
 			return err
 		}
@@ -104,33 +100,30 @@ func Upload(args Args) error {
 
 func updateBranch(api *cordapi.CordAPIManager, args Args) error {
 
-	if args.BranchID != "" || (args.BranchName != "" && args.GameID != "") {
+	_curTitle = fmt.Sprint("Updating branch")
+	_bar = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
+	_title = &_curTitle
+	_bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(*_title, 35)
+	})
 
-		_curTitle = fmt.Sprint("Updating branch")
-		_bar = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
-		_title = &_curTitle
-		_bar.PrependFunc(func(b *uiprogress.Bar) string {
-			return strutil.Resize(*_title, 35)
-		})
-
-		branch, err := api.GetBranch(args.BranchID, args.BranchName, args.GameID)
-		if err != nil {
-			return err
-		}
-
-		_bar.Incr()
-		_barTotal.Incr()
-
-		branch.BuildID = utils.GenerateID()
-
-		err = api.UpdateBranch(branch)
-		if err != nil {
-			return err
-		}
-
-		_bar.Incr()
-		_barTotal.Incr()
+	branch, err := api.GetBranch("", args.BranchName, args.GameID)
+	if err != nil {
+		return err
 	}
+
+	_bar.Incr()
+	_barTotal.Incr()
+
+	branch.BuildID = utils.GenerateID()
+
+	err = api.UpdateBranch(branch)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+	_barTotal.Incr()
 
 	return nil
 }
@@ -187,14 +180,14 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string) error 
 	return nil
 }
 
-func compareHash(api *cordapi.CordAPIManager, path string, fpath string, fname string) (bool, error) {
+func compareHash(api *cordapi.CordAPIManager, path string, gameId string, branch string, fpath string, fname string) (bool, error) {
 
 	hash, err := utils.Md5(path)
 	if err != nil {
 		return false, errors.New("Hash calculating error: " + err.Error())
 	}
 
-	cmpRes, err := api.CmpHash(&models.CompareHashCmd{FilePath: fpath, FileName: fname, FileHash: hash})
+	cmpRes, err := api.CmpHash(&models.CompareHashCmd{GameID: gameId, BranchName: branch, FilePath: fpath, FileName: fname, FileHash: hash})
 	if err != nil {
 		return false, err
 	}
@@ -212,13 +205,13 @@ func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source stri
 		return err
 	}
 
-	fpath := filepath.Join(args.OutputDir, relativePath)
+	fpath := relativePath
 	fpath, _ = filepath.Split(fpath)
 	fpath = strings.TrimRight(fpath, "/\\")
 
 	if args.Hash {
 
-		r, err := compareHash(api, path, fpath, fname)
+		r, err := compareHash(api, path, args.GameID, args.BranchName, fpath, fname)
 		if err != nil {
 			return errors.New("Compare hash error: " + err.Error())
 		}
@@ -238,7 +231,7 @@ func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source stri
 
 	_bar.Incr()
 
-	err = api.Upload(&models.UploadCmd{FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch})
+	err = api.Upload(&models.UploadCmd{GameID: args.GameID, BranchName: args.BranchName, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch})
 	if err != nil {
 		return err
 	}

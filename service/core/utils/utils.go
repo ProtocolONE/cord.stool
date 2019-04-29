@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
+	"path/filepath"
 )
 
 func GetUserStorage(clientID string) (string, error) {
@@ -21,6 +22,27 @@ func GetUserStorage(clientID string) (string, error) {
 	}
 
 	return users[0].Storage, nil
+}
+
+func GetUserBuildPath(clientID string, gameID string, branch string) (string, error) {
+
+	storage, err := GetUserStorage(clientID)
+	if err != nil {
+		return "", err
+	}
+
+	manager := database.NewBranchManager()
+	result, err := manager.FindByName(branch, gameID)
+	if err != nil {
+		return "", err
+	}
+
+	if result == nil {
+		return "", fmt.Errorf("Cannot find branch: %s, for game id: %s", branch, gameID)
+	}
+
+	path := filepath.Join(storage, gameID, result.ID)
+	return path, nil
 }
 
 func BuildError(context echo.Context, status int, code int, message string) error {
@@ -55,7 +77,7 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 	case models.ErrorDeleteTracker:
 		errorText = "Cannot remove torrent"
 	case models.ErrorGetUserStorage:
-		errorText = "Cannot get user storage"
+		errorText = "Cannot get user build storage"
 	case models.ErrorFileIOFailure:
 		errorText = "File IO failure"
 	case models.ErrorApplyPatch:
@@ -73,7 +95,7 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 	}
 
 	if message != "" {
-		errorText += ": " + message
+		errorText += ". " + message
 	} else {
 		errorText += "."
 	}

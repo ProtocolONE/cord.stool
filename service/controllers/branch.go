@@ -83,7 +83,7 @@ func findBranch(context echo.Context, bidParam string, nameParam string, gidPara
 			return nil, false, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 		}
 		if result == nil {
-			return nil, false, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, bid)
+			return nil, false, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, "Invalid branch id: " + bid)
 		}
 	} else {
 		result, err = manager.FindByName(name, gid)

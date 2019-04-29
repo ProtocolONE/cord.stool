@@ -72,6 +72,8 @@ type Error struct {
 }
 
 type UploadCmd struct {
+	GameID  	string    `json:"game_id"`
+	BranchName  string    `json:branch_name`
 	FilePath string `json:"filepath"`
 	FileName string `json:"filename"`
 	FileData []byte `json:filedata`
@@ -79,6 +81,8 @@ type UploadCmd struct {
 }
 
 type CompareHashCmd struct {
+	GameID  	string    `json:"game_id"`
+	BranchName  string    `json:branch_name`
 	FilePath string `json:"filepath"`
 	FileName string `json:"filename"`
 	FileHash string `json:filehash`
@@ -89,7 +93,8 @@ type CompareHashCmdResult struct {
 }
 
 type SignatureCmd struct {
-	Path string `json:"path"`
+	GameID  	string    `json:"game_id"`
+	BranchName  string    `json:branch_name`
 }
 
 type SignatureCmdResult struct {
@@ -97,7 +102,8 @@ type SignatureCmdResult struct {
 }
 
 type ApplyPatchCmd struct {
-	Path     string `json:"path"`
+	GameID  	string    `json:"game_id"`
+	BranchName  string    `json:branch_name`
 	FileData []byte `json:filedata`
 }
 

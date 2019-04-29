@@ -85,7 +85,7 @@ func Progress(alpha float64) {
 func Logl(level string, msg string) {
 }
 
-func uploadWharf(api *cordapi.CordAPIManager, source string, output string) error {
+func uploadWharf(api *cordapi.CordAPIManager, source string, gameID string, branch string) error {
 
 	_bar = uiprogress.AddBar(5).AppendCompleted().PrependElapsed()
 
@@ -96,7 +96,7 @@ func uploadWharf(api *cordapi.CordAPIManager, source string, output string) erro
 
 	_curTitle = "Getting files' info from server"
 
-	signatureInfo, err := getSignatureInfo(api, output)
+	signatureInfo, err := getSignatureInfo(api, gameID, branch)
 	if err != nil {
 		return err
 	}
@@ -174,10 +174,10 @@ func uploadWharf(api *cordapi.CordAPIManager, source string, output string) erro
 
 	_barTotal.Set(_barTotal.Total - 1)
 
-	return applyPatch(api, output, patchFile.Name())
+	return applyPatch(api, gameID, branch, patchFile.Name())
 }
 
-func applyPatch(api *cordapi.CordAPIManager, output string, patch string) error {
+func applyPatch(api *cordapi.CordAPIManager, gameID string, branch string, patch string) error {
 
 	_bar.Set(0)
 	_bar.Total = 3
@@ -190,7 +190,7 @@ func applyPatch(api *cordapi.CordAPIManager, output string, patch string) error 
 
 	_bar.Incr()
 
-	err = api.ApplyPatch(&models.ApplyPatchCmd{Path: output, FileData: filedata})
+	err = api.ApplyPatch(&models.ApplyPatchCmd{GameID: gameID, BranchName: branch, FileData: filedata})
 	if err != nil {
 		return errors.New("Applying patch failed: " + err.Error())
 	}
@@ -201,9 +201,9 @@ func applyPatch(api *cordapi.CordAPIManager, output string, patch string) error 
 	return nil
 }
 
-func getSignatureInfo(api *cordapi.CordAPIManager, output string) (*pwr.SignatureInfo, error) {
+func getSignatureInfo(api *cordapi.CordAPIManager, gameID string, branch string) (*pwr.SignatureInfo, error) {
 
-	singRes, err := api.GetSignature(output)
+	singRes, err := api.GetSignature(gameID, branch)
 	if err != nil {
 		return nil, err
 	}

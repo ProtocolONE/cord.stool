@@ -9,7 +9,8 @@ func TestUpload(t *testing.T) {
 
 	args := Args{
 		SourceDir: "..\\",
-		OutputDir: "test1",
+		GameID: "ceba80b3-60de-4fbd-9ae7-7bbfece5e5e2",
+		BranchName: "Test",
 		Url:       "http://127.0.0.1:5001",
 		Login:     "admin",
 		Password:  "123456",

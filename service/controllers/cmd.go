@@ -23,12 +23,17 @@ func UploadCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
-	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqUpload.GameID, reqUpload.BranchName)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
-	fpath := path.Join(userRoot, reqUpload.FilePath)
+	/*err = os.RemoveAll(fpath)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}*/
+
+	fpath = path.Join(fpath, reqUpload.FilePath)
 	zap.S().Infow("Uploading", zap.String("path", fpath))
 
 	err = os.MkdirAll(fpath, 0777)
@@ -82,12 +87,12 @@ func CompareHashCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
-	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqCmp.GameID, reqCmp.BranchName)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
-	fpath := path.Join(userRoot, reqCmp.FilePath)
+	fpath = path.Join(fpath, reqCmp.FilePath)
 	fpath = path.Join(fpath, reqCmp.FileName)
 
 	hash, err := utils2.Md5(fpath)

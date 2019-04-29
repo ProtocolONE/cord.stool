@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/itchio/savior/seeksource"
@@ -54,17 +53,20 @@ func compressionSettings() *pwr.CompressionSettings {
 
 func SignatureCmd(context echo.Context) error {
 
-	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
+	gameId := context.QueryParam("gameId")
+	if gameId == "" {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "gameId is required")
+	}
+
+	branch := context.QueryParam("branch")
+	if branch == "" {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "branch is required")
+	}
+
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), gameId, branch)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
-
-	pathParam := context.QueryParam("path")
-	if pathParam == "" {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
-	}
-
-	fpath := path.Join(userRoot, pathParam)
 
 	container, err := tlc.WalkAny(fpath, &tlc.WalkOpts{Filter: filterPaths})
 	if err != nil {
@@ -132,12 +134,10 @@ func ApplyPatchCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
-	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqCmp.GameID, reqCmp.BranchName)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
-
-	fpath := path.Join(userRoot, reqCmp.Path)
 
 	patchFile, err := ioutil.TempFile(os.TempDir(), "patch")
 	if err != nil {
