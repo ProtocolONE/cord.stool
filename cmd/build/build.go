@@ -3,6 +3,7 @@ package build
 import (
 	"fmt"
 
+	"cord.stool/branch"
 	"cord.stool/compressor/gzip"
 	"cord.stool/context"
 	"cord.stool/upload/cord"
@@ -11,14 +12,13 @@ import (
 )
 
 var args = struct {
-	cordArgs  cord.Args
+	cordArgs cord.Args
 }{}
 
 func Register(ctx *context.StoolContext) {
 
 	cmd := cli.Command{
 		Name:        "build",
-		ShortName:   "b",
 		Usage:       "Manages builds",
 		Description: "Manages builds",
 
@@ -30,13 +30,13 @@ func Register(ctx *context.StoolContext) {
 				Destination: &args.cordArgs.Url,
 			},
 			cli.StringFlag{
-				Name:        "login",
+				Name:        "login, l",
 				Usage:       "Cord user login",
 				Value:       "",
 				Destination: &args.cordArgs.Login,
 			},
 			cli.StringFlag{
-				Name:        "password",
+				Name:        "password, p",
 				Usage:       "Cord user password",
 				Value:       "",
 				Destination: &args.cordArgs.Password,
@@ -121,7 +121,7 @@ func Register(ctx *context.StoolContext) {
 				},
 			},
 			cli.Command{
-				Name:        "update",
+				Name:        "pull",
 				Usage:       "Downloads build",
 				Description: "Downloads build from Cord server",
 				Flags: []cli.Flag{
@@ -140,6 +140,56 @@ func Register(ctx *context.StoolContext) {
 				},
 				Action: func(c *cli.Context) error {
 					return doUpdate(ctx, c)
+				},
+			},
+			cli.Command{
+				Name:        "list",
+				Usage:       "Shows build list",
+				Description: "Shows all builds specified branch",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:        "game-id, gid",
+						Usage:       "Game ID",
+						Value:       "",
+						Destination: &args.cordArgs.GameID,
+					},
+					cli.StringFlag{
+						Name:        "branch-name, bn",
+						Usage:       "Branch name",
+						Value:       "",
+						Destination: &args.cordArgs.BranchName,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return doList(ctx, c)
+				},
+			},
+			cli.Command{
+				Name:        "live",
+				Usage:       "Sets live build",
+				Description: "Sets live build for specified branch",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:        "game-id, gid",
+						Usage:       "Game ID",
+						Value:       "",
+						Destination: &args.cordArgs.GameID,
+					},
+					cli.StringFlag{
+						Name:        "branch-name, bn",
+						Usage:       "Branch name",
+						Value:       "",
+						Destination: &args.cordArgs.BranchName,
+					},
+					cli.StringFlag{
+						Name:        "build, bid",
+						Usage:       "Build ID",
+						Value:       "",
+						Destination: &args.cordArgs.BuildID,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return doLive(ctx, c)
 				},
 			},
 		},
@@ -169,7 +219,7 @@ func doPush(ctx *context.StoolContext, c *cli.Context) error {
 	if args.cordArgs.BranchName == "" {
 		return fmt.Errorf("Branch name is required")
 	}
-	
+
 	err := cord.Upload(args.cordArgs)
 	if err != nil {
 		return err
@@ -184,6 +234,54 @@ func doPublish(ctx *context.StoolContext, c *cli.Context) error {
 }
 
 func doUpdate(ctx *context.StoolContext, c *cli.Context) error {
+
+	return nil
+}
+
+func doList(ctx *context.StoolContext, c *cli.Context) error {
+
+	if args.cordArgs.Url == "" {
+		return fmt.Errorf("-url flag is required")
+	}
+
+	if args.cordArgs.GameID == "" {
+		return fmt.Errorf("Game ID is required")
+	}
+
+	if args.cordArgs.BranchName == "" {
+		return fmt.Errorf("Branch name is required")
+	}
+
+	err := branch.ListBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func doLive(ctx *context.StoolContext, c *cli.Context) error {
+
+	if args.cordArgs.Url == "" {
+		return fmt.Errorf("-url flag is required")
+	}
+
+	if args.cordArgs.GameID == "" {
+		return fmt.Errorf("Game ID is required")
+	}
+
+	if args.cordArgs.BranchName == "" {
+		return fmt.Errorf("Branch name is required")
+	}
+
+	if args.cordArgs.BuildID == "" {
+		return fmt.Errorf("Build ID is required")
+	}
+
+	err := branch.LiveBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName, args.cordArgs.BuildID)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

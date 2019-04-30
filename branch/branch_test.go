@@ -68,4 +68,14 @@ func TestBranch(t *testing.T) {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	err = LiveBuild(url, login, password, "ceba80b3-60de-4fbd-9ae7-7bbfece5e5e2", "Test", "6E8D1B28C9A440BAA3E45D5E8E9032C6")
+	if err != nil {
+		log.Panic(err)
+	}
+
+	err = ListBuild(url, login, password, "ceba80b3-60de-4fbd-9ae7-7bbfece5e5e2", "Test")
+	if err != nil {
+		log.Panic(err)
+	}
 }

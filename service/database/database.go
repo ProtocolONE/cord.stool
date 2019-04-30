@@ -179,3 +179,44 @@ func (manager *BranchManager) List(gameID string) ([]*models.Branch, error) {
 
 	return dbBranch, nil
 }
+
+type BuildManager struct {
+	collection *mgo.Collection
+}
+
+func NewBuildManager() *BuildManager {
+	session := dbConf.Dbs.Copy()
+	return &BuildManager{collection: session.DB(dbConf.Database).C("builds")}
+}
+
+func (manager *BuildManager) Insert(build *models.Build) error {
+
+	err := manager.collection.Insert(build)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *BuildManager) FindByID(id string) ([]*models.Build, error) {
+
+	var dbbuild []*models.Build
+	err := manager.collection.Find(bson.M{"_id": id}).All(&dbbuild)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbbuild, nil
+}
+
+func (manager *BuildManager) FindBuildByBranch(bid string) ([]*models.Build, error) {
+
+	var dbbuild []*models.Build
+	err := manager.collection.Find(bson.M{"branchid": bid}).All(&dbbuild)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbbuild, nil
+}

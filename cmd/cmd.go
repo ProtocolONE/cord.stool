@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"cord.stool/cmd/branch"
+	"cord.stool/cmd/build"
 	"cord.stool/cmd/create"
 	"cord.stool/cmd/diff"
 	"cord.stool/cmd/games"
@@ -9,7 +10,6 @@ import (
 	"cord.stool/cmd/service"
 	"cord.stool/cmd/torrent"
 	"cord.stool/cmd/upgrade"
-	"cord.stool/cmd/build"
 	"cord.stool/context"
 )
 

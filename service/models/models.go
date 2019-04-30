@@ -72,8 +72,7 @@ type Error struct {
 }
 
 type UploadCmd struct {
-	GameID  	string    `json:"game_id"`
-	BranchName  string    `json:branch_name`
+	BuildID  string `json:"build_id"`
 	FilePath string `json:"filepath"`
 	FileName string `json:"filename"`
 	FileData []byte `json:filedata`
@@ -81,8 +80,7 @@ type UploadCmd struct {
 }
 
 type CompareHashCmd struct {
-	GameID  	string    `json:"game_id"`
-	BranchName  string    `json:branch_name`
+	BuildID  string `json:"build_id"`
 	FilePath string `json:"filepath"`
 	FileName string `json:"filename"`
 	FileHash string `json:filehash`
@@ -93,8 +91,7 @@ type CompareHashCmdResult struct {
 }
 
 type SignatureCmd struct {
-	GameID  	string    `json:"game_id"`
-	BranchName  string    `json:branch_name`
+	BuildID string `json:"build_id"`
 }
 
 type SignatureCmdResult struct {
@@ -102,8 +99,7 @@ type SignatureCmdResult struct {
 }
 
 type ApplyPatchCmd struct {
-	GameID  	string    `json:"game_id"`
-	BranchName  string    `json:branch_name`
+	BuildID  string `json:"build_id"`
 	FileData []byte `json:filedata`
 }
 
@@ -118,13 +114,19 @@ type TorrentCmd struct {
 }
 
 type Branch struct {
-	ID      string    `bson:"_id" json:id`
-	Name    string    `json:name`
-	GameID  string    `json:"game_id"`
-	BuildID string    `json:build_id`
-	Live    bool      `json:live`
-	Created time.Time `json:created`
-	Updated time.Time `json:updated`
+	ID          string    `bson:"_id" json:id`
+	Name        string    `json:name`
+	GameID      string    `json:"game_id"`
+	ActiveBuild string    `json:active_build`
+	Live        bool      `json:live`
+	Created     time.Time `json:created`
+	Updated     time.Time `json:updated`
+}
+
+type Build struct {
+	ID       string    `bson:"_id" json:id`
+	BranchID string    `json:branch_id`
+	Created  time.Time `json:created`
 }
 
 type ShallowBranchCmdResult struct {

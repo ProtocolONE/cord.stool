@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"cord.stool/cordapi"
 	"cord.stool/service/models"
@@ -26,12 +27,13 @@ type Args = struct {
 	Password   string
 	GameID     string
 	BranchName string
+	BuildID    string
 	SourceDir  string
 	Config     string
 	Patch      bool
 	Hash       bool
 	Wharf      bool
-	Force	   bool
+	Force      bool
 }
 
 // Upload ...
@@ -55,7 +57,7 @@ func Upload(args Args) error {
 		if err != nil {
 			return err
 		}
-		barCount = fc + 1 + 2
+		barCount = fc + 1 + 3
 	}
 
 	uiprogress.Start()
@@ -70,9 +72,15 @@ func Upload(args Args) error {
 		return err
 	}
 
+	branch, build, err := createBuild(api, args)
+	if err != nil {
+		return err
+	}
+	args.BuildID = build.ID
+
 	if args.Wharf {
 
-		err = uploadWharf(api, fullSourceDir, args.GameID, args.BranchName)
+		err = uploadWharf(api, args, fullSourceDir)
 		if err != nil {
 			return err
 		}
@@ -85,7 +93,7 @@ func Upload(args Args) error {
 		}
 	}
 
-	updateBranch(api, args)
+	err = updateBranch(api, branch, build)
 	if err != nil {
 		return err
 	}
@@ -98,33 +106,47 @@ func Upload(args Args) error {
 	return nil
 }
 
-func updateBranch(api *cordapi.CordAPIManager, args Args) error {
+func createBuild(api *cordapi.CordAPIManager, args Args) (*models.Branch, *models.Build, error) {
 
-	_curTitle = fmt.Sprint("Updating branch")
-	_bar = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
-	_title = &_curTitle
-	_bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize(*_title, 35)
-	})
+	_curTitle = fmt.Sprint("Creating build ...")
 
 	branch, err := api.GetBranch("", args.BranchName, args.GameID)
 	if err != nil {
-		return err
+
+		if !args.Force {
+			return nil, nil, err
+		}
+
+		_curTitle = fmt.Sprint("Creating branch ...")
+		branch, err = api.CreateBranch(&models.Branch{"", args.BranchName, args.GameID, "", false, time.Time{}, time.Time{}})
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
-	_bar.Incr()
 	_barTotal.Incr()
+	_curTitle = fmt.Sprint("Creating build ...")
 
-	branch.BuildID = utils.GenerateID()
+	build, err := api.CreateBuild(&models.Build{"", branch.ID, time.Time{}})
+	if err != nil {
+		return nil, nil, err
+	}
 
-	err = api.UpdateBranch(branch)
+	_barTotal.Incr()
+	return branch, build, nil
+}
+
+func updateBranch(api *cordapi.CordAPIManager, branch *models.Branch, build *models.Build) error {
+
+	_curTitle = fmt.Sprint("Updating branch ...")
+
+	branch.ActiveBuild = build.ID
+	err := api.UpdateBranch(branch)
 	if err != nil {
 		return err
 	}
 
-	_bar.Incr()
 	_barTotal.Incr()
-
 	return nil
 }
 
@@ -180,14 +202,14 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string) error 
 	return nil
 }
 
-func compareHash(api *cordapi.CordAPIManager, path string, gameId string, branch string, fpath string, fname string) (bool, error) {
+func compareHash(api *cordapi.CordAPIManager, path string, buildid string, fpath string, fname string) (bool, error) {
 
 	hash, err := utils.Md5(path)
 	if err != nil {
 		return false, errors.New("Hash calculating error: " + err.Error())
 	}
 
-	cmpRes, err := api.CmpHash(&models.CompareHashCmd{GameID: gameId, BranchName: branch, FilePath: fpath, FileName: fname, FileHash: hash})
+	cmpRes, err := api.CmpHash(&models.CompareHashCmd{BuildID: buildid, FilePath: fpath, FileName: fname, FileHash: hash})
 	if err != nil {
 		return false, err
 	}
@@ -211,7 +233,7 @@ func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source stri
 
 	if args.Hash {
 
-		r, err := compareHash(api, path, args.GameID, args.BranchName, fpath, fname)
+		r, err := compareHash(api, path, args.BuildID, fpath, fname)
 		if err != nil {
 			return errors.New("Compare hash error: " + err.Error())
 		}
@@ -231,7 +253,7 @@ func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source stri
 
 	_bar.Incr()
 
-	err = api.Upload(&models.UploadCmd{GameID: args.GameID, BranchName: args.BranchName, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch})
+	err = api.Upload(&models.UploadCmd{BuildID: args.BuildID, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch})
 	if err != nil {
 		return err
 	}

@@ -24,24 +24,24 @@ func GetUserStorage(clientID string) (string, error) {
 	return users[0].Storage, nil
 }
 
-func GetUserBuildPath(clientID string, gameID string, branch string) (string, error) {
+func GetUserBuildPath(clientID string, buildID string) (string, error) {
 
 	storage, err := GetUserStorage(clientID)
 	if err != nil {
 		return "", err
 	}
 
-	manager := database.NewBranchManager()
-	result, err := manager.FindByName(branch, gameID)
+	manager := database.NewBuildManager()
+	build, err := manager.FindByID(buildID)
 	if err != nil {
 		return "", err
 	}
 
-	if result == nil {
-		return "", fmt.Errorf("Cannot find branch: %s, for game id: %s", branch, gameID)
+	if build == nil {
+		return "", fmt.Errorf("Cannot find the specified build %s", buildID)
 	}
 
-	path := filepath.Join(storage, gameID, result.ID)
+	path := filepath.Join(storage, buildID)
 	return path, nil
 }
 

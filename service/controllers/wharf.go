@@ -53,17 +53,12 @@ func compressionSettings() *pwr.CompressionSettings {
 
 func SignatureCmd(context echo.Context) error {
 
-	gameId := context.QueryParam("gameId")
-	if gameId == "" {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "gameId is required")
+	buildId := context.QueryParam("buildId")
+	if buildId == "" {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Build id is required")
 	}
 
-	branch := context.QueryParam("branch")
-	if branch == "" {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "branch is required")
-	}
-
-	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), gameId, branch)
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), buildId)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
@@ -134,7 +129,7 @@ func ApplyPatchCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
-	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqCmp.GameID, reqCmp.BranchName)
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqCmp.BuildID)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}

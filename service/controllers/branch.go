@@ -83,7 +83,7 @@ func findBranch(context echo.Context, bidParam string, nameParam string, gidPara
 			return nil, false, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 		}
 		if result == nil {
-			return nil, false, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, "Invalid branch id: " + bid)
+			return nil, false, utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid branch id: "+bid)
 		}
 	} else {
 		result, err = manager.FindByName(name, gid)
@@ -91,7 +91,7 @@ func findBranch(context echo.Context, bidParam string, nameParam string, gidPara
 			return nil, false, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 		}
 		if result == nil {
-			return nil, false, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, name)
+			return nil, false, utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid branch name: "+name)
 		}
 	}
 
@@ -247,7 +247,7 @@ func ShallowBranchCmd(context echo.Context) error {
 		return err
 	}
 
-	targetBranch.BuildID = sourceBranch.BuildID
+	targetBranch.ActiveBuild = sourceBranch.ActiveBuild
 	targetBranch.Updated = time.Now()
 
 	manager := database.NewBranchManager()
@@ -257,4 +257,60 @@ func ShallowBranchCmd(context echo.Context) error {
 	}
 
 	return context.JSON(http.StatusOK, models.ShallowBranchCmdResult{sourceBranch.ID, sourceBranch.Name, targetBranch.ID, targetBranch.Name})
+}
+
+func CreateBuildCmd(context echo.Context) error {
+
+	bid := context.QueryParam("id")
+	if bid == "" {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Build ID is required")
+	}
+
+	manager := database.NewBuildManager()
+	build, err := manager.FindByID(bid)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	if build == nil {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid build id: "+bid)
+	}
+
+	return context.JSON(http.StatusOK, build)
+}
+
+func GetBuildCmd(context echo.Context) error {
+
+	bid := context.QueryParam("id")
+	if bid == "" {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Build ID is required")
+	}
+
+	manager := database.NewBuildManager()
+	build, err := manager.FindByID(bid)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	if build == nil {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid build id: "+bid)
+	}
+
+	return context.JSON(http.StatusOK, build[0])
+}
+
+func ListBuildCmd(context echo.Context) error {
+
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
+	}
+
+	manager := database.NewBuildManager()
+	builds, err := manager.FindBuildByBranch(result.ID)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	return context.JSON(http.StatusOK, builds)
 }
