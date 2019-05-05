@@ -96,7 +96,7 @@ func uploadWharf(api *cordapi.CordAPIManager, args Args, source string) error {
 
 	_curTitle = "Getting files' info from server"
 
-	signatureInfo, err := getSignatureInfo(api, args.BuildID)
+	signatureInfo, err := getSignatureInfo(api, args.SrcBuildID)
 	if err != nil {
 		return err
 	}
@@ -174,10 +174,10 @@ func uploadWharf(api *cordapi.CordAPIManager, args Args, source string) error {
 
 	_barTotal.Set(_barTotal.Total - 1)
 
-	return applyPatch(api, args.BuildID, patchFile.Name())
+	return applyPatch(api, args.BuildID, args.SrcBuildID, patchFile.Name())
 }
 
-func applyPatch(api *cordapi.CordAPIManager, buildID string, patch string) error {
+func applyPatch(api *cordapi.CordAPIManager, buildID string, srcbuildID string, patch string) error {
 
 	_bar.Set(0)
 	_bar.Total = 3
@@ -190,7 +190,7 @@ func applyPatch(api *cordapi.CordAPIManager, buildID string, patch string) error
 
 	_bar.Incr()
 
-	err = api.ApplyPatch(&models.ApplyPatchCmd{BuildID: buildID, FileData: filedata})
+	err = api.ApplyPatch(&models.ApplyPatchCmd{BuildID: buildID, SrcBuildID: srcbuildID, FileData: filedata})
 	if err != nil {
 		return errors.New("Applying patch failed: " + err.Error())
 	}

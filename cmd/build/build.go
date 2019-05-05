@@ -41,12 +41,6 @@ func Register(ctx *context.StoolContext) {
 				Value:       "",
 				Destination: &args.cordArgs.Password,
 			},
-			cli.StringFlag{
-				Name:        "source, s",
-				Usage:       "Path to game",
-				Value:       "",
-				Destination: &args.cordArgs.SourceDir,
-			},
 		},
 
 		Subcommands: cli.Commands{
@@ -55,6 +49,12 @@ func Register(ctx *context.StoolContext) {
 				Usage:       "Uploads build",
 				Description: "Uploads build to Cord server",
 				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:        "source, s",
+						Usage:       "Path to game",
+						Value:       "",
+						Destination: &args.cordArgs.SourceDir,
+					},
 					cli.StringFlag{
 						Name:        "game-id, gid",
 						Usage:       "Game ID",
@@ -78,7 +78,7 @@ func Register(ctx *context.StoolContext) {
 						Value:       "",
 						Destination: &args.cordArgs.Config,
 					},
-					cli.BoolFlag{
+					/*cli.BoolFlag{
 						Name:        "patch, p",
 						Usage:       "Uploads the difference between files using xdelta algorithm",
 						Destination: &args.cordArgs.Patch,
@@ -87,7 +87,7 @@ func Register(ctx *context.StoolContext) {
 						Name:        "hash, h",
 						Usage:       "Uploads changed files only",
 						Destination: &args.cordArgs.Hash,
-					},
+					},*/
 					cli.BoolFlag{
 						Name:        "wsync, w",
 						Usage:       "Uploads changed files only using Wharf protocol that enables incremental uploads",

@@ -129,6 +129,11 @@ func ApplyPatchCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
+	srcPath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqCmp.SrcBuildID)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
 	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqCmp.BuildID)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
@@ -153,7 +158,7 @@ func ApplyPatchCmd(context echo.Context) error {
 	}
 
 	actx := &pwr.ApplyContext{
-		TargetPath: fpath,
+		TargetPath: srcPath,
 		OutputPath: fpath,
 		DryRun:     false,
 		InPlace:    true,

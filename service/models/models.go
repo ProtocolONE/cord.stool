@@ -99,8 +99,9 @@ type SignatureCmdResult struct {
 }
 
 type ApplyPatchCmd struct {
-	BuildID  string `json:"build_id"`
-	FileData []byte `json:filedata`
+	BuildID    string `json:"build_id"`
+	SrcBuildID string `json:"src_build_id"`
+	FileData   []byte `json:filedata`
 }
 
 type User struct {
@@ -114,13 +115,13 @@ type TorrentCmd struct {
 }
 
 type Branch struct {
-	ID          string    `bson:"_id" json:id`
-	Name        string    `json:name`
-	GameID      string    `json:"game_id"`
-	ActiveBuild string    `json:active_build`
-	Live        bool      `json:live`
-	Created     time.Time `json:created`
-	Updated     time.Time `json:updated`
+	ID        string    `bson:"_id" json:id`
+	Name      string    `json:name`
+	GameID    string    `json:"game_id"`
+	LiveBuild string    `json:live_build`
+	Live      bool      `json:live`
+	Created   time.Time `json:created`
+	Updated   time.Time `json:updated`
 }
 
 type Build struct {

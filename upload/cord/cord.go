@@ -28,6 +28,7 @@ type Args = struct {
 	GameID     string
 	BranchName string
 	BuildID    string
+	SrcBuildID string
 	SourceDir  string
 	Config     string
 	Patch      bool
@@ -72,11 +73,10 @@ func Upload(args Args) error {
 		return err
 	}
 
-	branch, build, err := createBuild(api, args)
+	branch, build, err := createBuild(api, &args)
 	if err != nil {
 		return err
 	}
-	args.BuildID = build.ID
 
 	if args.Wharf {
 
@@ -106,7 +106,7 @@ func Upload(args Args) error {
 	return nil
 }
 
-func createBuild(api *cordapi.CordAPIManager, args Args) (*models.Branch, *models.Build, error) {
+func createBuild(api *cordapi.CordAPIManager, args *Args) (*models.Branch, *models.Build, error) {
 
 	_curTitle = fmt.Sprint("Creating build ...")
 
@@ -131,6 +131,15 @@ func createBuild(api *cordapi.CordAPIManager, args Args) (*models.Branch, *model
 	if err != nil {
 		return nil, nil, err
 	}
+	args.BuildID = build.ID
+
+	if args.Wharf {
+		build, err := api.GetLiveBuild(args.GameID, args.BranchName)
+		if err != nil {
+			return nil, nil, err
+		}
+		args.SrcBuildID = build.ID
+	}
 
 	_barTotal.Incr()
 	return branch, build, nil
@@ -140,7 +149,7 @@ func updateBranch(api *cordapi.CordAPIManager, branch *models.Branch, build *mod
 
 	_curTitle = fmt.Sprint("Updating branch ...")
 
-	branch.ActiveBuild = build.ID
+	branch.LiveBuild = build.ID
 	err := api.UpdateBranch(branch)
 	if err != nil {
 		return err

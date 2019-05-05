@@ -295,7 +295,7 @@ func removeTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (in
 
 func getSignature(host string, token string, buildid string) (*models.SignatureCmdResult, int, error) {
 
-	res, err := utils.Get(host+"/api/v1/file/signature?buildid="+buildid, token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/file/signature?buildId="+buildid, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -821,4 +821,46 @@ func listBuild(host string, token string, gameID string, branch string) (*[]mode
 	decoder.Decode(&listRes)
 
 	return listRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) GetLiveBuild(gameID string, branch string) (*models.Build, error) {
+
+	res, sc, err := getLiveBuild(manager.host, manager.authToken.Token, gameID, branch)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = getLiveBuild(manager.host, manager.authToken.Token, gameID, branch)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func getLiveBuild(host string, token string, gameID string, branch string) (*models.Build, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/branch/build/live?gid="+gameID+"&name="+branch, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	buildRes := new(models.Build)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&buildRes)
+
+	return buildRes, res.StatusCode, nil
 }

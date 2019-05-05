@@ -206,7 +206,7 @@ func UpdateBranchCmd(context echo.Context) error {
 	reqBranch := &models.Branch{}
 	err = context.Bind(reqBranch)
 	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorInternalError, err.Error())
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
 	reqBranch.ID = result.ID
@@ -247,7 +247,7 @@ func ShallowBranchCmd(context echo.Context) error {
 		return err
 	}
 
-	targetBranch.ActiveBuild = sourceBranch.ActiveBuild
+	targetBranch.LiveBuild = sourceBranch.LiveBuild
 	targetBranch.Updated = time.Now()
 
 	manager := database.NewBranchManager()
@@ -261,22 +261,22 @@ func ShallowBranchCmd(context echo.Context) error {
 
 func CreateBuildCmd(context echo.Context) error {
 
-	bid := context.QueryParam("id")
-	if bid == "" {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Build ID is required")
+	reqBuild := &models.Build{}
+	err := context.Bind(reqBuild)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
+	reqBuild.ID = utils2.GenerateID()
+	reqBuild.Created = time.Now()
+
 	manager := database.NewBuildManager()
-	build, err := manager.FindByID(bid)
+	err = manager.Insert(reqBuild)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 	}
 
-	if build == nil {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid build id: "+bid)
-	}
-
-	return context.JSON(http.StatusOK, build)
+	return context.JSON(http.StatusOK, reqBuild)
 }
 
 func GetBuildCmd(context echo.Context) error {
@@ -314,3 +314,47 @@ func ListBuildCmd(context echo.Context) error {
 
 	return context.JSON(http.StatusOK, builds)
 }
+
+func GetLiveBuildCmd(context echo.Context) error {
+
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
+	}
+
+	manager := database.NewBuildManager()
+	build, err := manager.FindByID(result.LiveBuild)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	if build == nil || len(build) == 0 {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "There are no one Live Build")
+	}
+
+	return context.JSON(http.StatusOK, build[0])
+}
+
+/*
+func CloneLiveBuildCmd(context echo.Context) error {
+
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
+	}
+
+	manager := database.NewBuildManager()
+	build, err := manager.FindByID(result.LiveBuild)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), BuildID)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
+
+	return context.JSON(http.StatusOK, build)
+}
+*/

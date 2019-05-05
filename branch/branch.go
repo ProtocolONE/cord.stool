@@ -85,7 +85,7 @@ func ListBranch(url string, login string, password string, gameID string) error 
 		fmt.Printf("|            APPLICATION ID            |            BRANCH ID             |               NAME               |              BUILD ID            |  LIVE  |         CREATED AT        |\n")
 		fmt.Printf("| ------------------------------------ | -------------------------------- | -------------------------------- | -------------------------------- | ------ | ------------------------- |\n")
 		for _, b := range *list {
-			fmt.Printf("| %36s | %32s | %32s | %32s | %6t | %24s |\n", b.GameID, b.ID, b.Name, b.ActiveBuild, b.Live, b.Created.Format("2006-01-02 15:04:05 -0700"))
+			fmt.Printf("| %36s | %32s | %32s | %32s | %6t | %24s |\n", b.GameID, b.ID, b.Name, b.LiveBuild, b.Live, b.Created.Format("2006-01-02 15:04:05 -0700"))
 		}
 		fmt.Printf("\n")
 	} else {
@@ -136,13 +136,13 @@ func LiveBuild(url string, login string, password string, gameID string, branch 
 		return err
 	}
 
-	brn.ActiveBuild = build.ID
+	brn.LiveBuild = build.ID
 	err = api.UpdateBranch(brn)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Branch \"%s\" with id %s has live build with id %s\n", brn.Name, brn.ID, brn.ActiveBuild)
+	fmt.Printf("Branch \"%s\" with id %s has live build with id %s\n", brn.Name, brn.ID, brn.LiveBuild)
 	return nil
 }
 
@@ -172,7 +172,7 @@ func ListBuild(url string, login string, password string, gameID string, branch 
 		fmt.Printf("|            APPLICATION ID            |            BRANCH ID             |               NAME               |              BUILD ID            |  LIVE  |         CREATED AT        |\n")
 		fmt.Printf("| ------------------------------------ | -------------------------------- | -------------------------------- | -------------------------------- | ------ | ------------------------- |\n")
 		for _, b := range *list {
-			fmt.Printf("| %36s | %32s | %32s | %32s | %6t | %24s |\n", brn.GameID, brn.ID, brn.Name, b.ID, brn.ActiveBuild == b.ID, b.Created.Format("2006-01-02 15:04:05 -0700"))
+			fmt.Printf("| %36s | %32s | %32s | %32s | %6t | %24s |\n", brn.GameID, brn.ID, brn.Name, b.ID, brn.LiveBuild == b.ID, b.Created.Format("2006-01-02 15:04:05 -0700"))
 		}
 		fmt.Printf("\n")
 	} else {
