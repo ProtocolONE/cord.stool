@@ -161,7 +161,7 @@ func ApplyPatchCmd(context echo.Context) error {
 		TargetPath: srcPath,
 		OutputPath: fpath,
 		DryRun:     false,
-		InPlace:    true,
+		InPlace:    false,
 		Signature:  nil,
 		WoundsPath: "",
 		StagePath:  "",
