@@ -19,12 +19,13 @@ const (
 	ErrorTokenExpired              = 12
 	ErrorInvalidToken              = 13
 	ErrorLoginTracker              = 14
-	ErrorAddTracker                = 15
-	ErrorDeleteTracker             = 16
+	ErrorAddTorrent                = 15
+	ErrorDeleteTorrent             = 16
 	ErrorWharfLibrary              = 17
 	ErrorInvalidRequest            = 18
 	ErrorNotFound                  = 19
 	ErrorInternalError             = 20
+	ErrorCreateTorrent             = 21
 )
 
 type AppKey struct {

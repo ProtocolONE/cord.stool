@@ -1,12 +1,16 @@
 package controllers
 
 import (
+	"cord.stool/cordapi"
+	"cord.stool/service/config"
 	"cord.stool/service/core/utils"
 	"cord.stool/service/database"
 	"cord.stool/service/models"
+	"cord.stool/upload/cord"
 	utils2 "cord.stool/utils"
 
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/labstack/echo"
@@ -330,6 +334,73 @@ func GetLiveBuildCmd(context echo.Context) error {
 
 	if build == nil || len(build) == 0 {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "There are no one Live Build")
+	}
+
+	return context.JSON(http.StatusOK, build[0])
+}
+
+func PublishBuildCmd(context echo.Context) error {
+
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
+	}
+
+	buildID := context.QueryParam("build")
+	if buildID == "" {
+		buildID = result.LiveBuild
+	}
+
+	manager := database.NewBuildManager()
+	build, err := manager.FindByID(buildID)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	if build == nil || len(build) == 0 {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid build ID or Branch has no Live Build")
+	}
+
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), build[0].ID)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
+	builtinAnnounceList := []string{
+		"udp://tracker.openbittorrent.com:80",
+		"udp://tracker.publicbt.com:80",
+		"udp://tracker.istole.it:6969",
+	}
+
+	targetFile := path.Join(fpath, "torrent.torrent")
+
+	err = cord.CreateTorrent(
+		fpath,
+		targetFile,
+		builtinAnnounceList,
+		nil,
+		512,
+		true,
+	)
+
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorCreateTorrent, err.Error())
+	}
+
+	infoHash, err := cord.GetInfoHash(targetFile)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorCreateTorrent, err.Error())
+	}
+
+	api := cordapi.NewCordAPI(config.Get().Tracker.Url)
+	err = api.Login(config.Get().Tracker.User, config.Get().Tracker.Password)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorLoginTracker, err.Error())
+	}
+
+	err = api.AddTorrent(&models.TorrentCmd{infoHash})
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorAddTorrent, err.Error())
 	}
 
 	return context.JSON(http.StatusOK, build[0])

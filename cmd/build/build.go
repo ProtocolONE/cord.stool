@@ -89,7 +89,7 @@ func Register(ctx *context.StoolContext) {
 						Destination: &args.cordArgs.Hash,
 					},*/
 					cli.BoolFlag{
-						Name:        "wsync, w",
+						Name:        "sync, s",
 						Usage:       "Uploads changed files only using Wharf protocol that enables incremental uploads",
 						Destination: &args.cordArgs.Wharf,
 					},
@@ -115,15 +115,21 @@ func Register(ctx *context.StoolContext) {
 						Value:       "",
 						Destination: &args.cordArgs.BranchName,
 					},
+					/*cli.StringFlag{
+						Name:        "build-id, bi",
+						Usage:       "Build ID, optional",
+						Value:       "",
+						Destination: &args.cordArgs.BuildID,
+					},*/
 				},
 				Action: func(c *cli.Context) error {
 					return doPublish(ctx, c)
 				},
 			},
 			cli.Command{
-				Name:        "pull",
-				Usage:       "Downloads build",
-				Description: "Downloads build from Cord server",
+				Name:        "Update",
+				Usage:       "Downloads and install build",
+				Description: "Downloads build from Cord server and install it",
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:        "game-id, gid",
@@ -164,34 +170,6 @@ func Register(ctx *context.StoolContext) {
 					return doList(ctx, c)
 				},
 			},
-			cli.Command{
-				Name:        "live",
-				Usage:       "Sets live build",
-				Description: "Sets live build for specified branch",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:        "game-id, gid",
-						Usage:       "Game ID",
-						Value:       "",
-						Destination: &args.cordArgs.GameID,
-					},
-					cli.StringFlag{
-						Name:        "branch-name, bn",
-						Usage:       "Branch name",
-						Value:       "",
-						Destination: &args.cordArgs.BranchName,
-					},
-					cli.StringFlag{
-						Name:        "build, bid",
-						Usage:       "Build ID",
-						Value:       "",
-						Destination: &args.cordArgs.BuildID,
-					},
-				},
-				Action: func(c *cli.Context) error {
-					return doLive(ctx, c)
-				},
-			},
 		},
 		Action: func(c *cli.Context) error {
 			return do(ctx, c)
@@ -228,11 +206,6 @@ func doPush(ctx *context.StoolContext, c *cli.Context) error {
 	return nil
 }
 
-func doPublish(ctx *context.StoolContext, c *cli.Context) error {
-
-	return nil
-}
-
 func doUpdate(ctx *context.StoolContext, c *cli.Context) error {
 
 	return nil
@@ -260,7 +233,7 @@ func doList(ctx *context.StoolContext, c *cli.Context) error {
 	return nil
 }
 
-func doLive(ctx *context.StoolContext, c *cli.Context) error {
+func doPublish(ctx *context.StoolContext, c *cli.Context) error {
 
 	if args.cordArgs.Url == "" {
 		return fmt.Errorf("-url flag is required")
@@ -274,11 +247,7 @@ func doLive(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Branch name is required")
 	}
 
-	if args.cordArgs.BuildID == "" {
-		return fmt.Errorf("Build ID is required")
-	}
-
-	err := branch.LiveBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName, args.cordArgs.BuildID)
+	err := branch.PublishBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName, args.cordArgs.BuildID)
 	if err != nil {
 		return err
 	}

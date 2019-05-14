@@ -72,10 +72,10 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 		errorText = "Logout failed"
 	case models.ErrorLoginTracker:
 		errorText = "Login to tracker failed"
-	case models.ErrorAddTracker:
-		errorText = "Cannot add torrent"
-	case models.ErrorDeleteTracker:
-		errorText = "Cannot remove torrent"
+	case models.ErrorAddTorrent:
+		errorText = "Cannot regist torrent file"
+	case models.ErrorDeleteTorrent:
+		errorText = "Cannot unregist torrent file"
 	case models.ErrorGetUserStorage:
 		errorText = "Cannot get user build storage"
 	case models.ErrorFileIOFailure:
@@ -90,6 +90,8 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 		errorText = "Token is expired"
 	case models.ErrorInvalidToken:
 		errorText = "Invalid token"
+	case models.ErrorCreateTorrent:
+		errorText = "Cannot create torrent file"
 	default:
 		errorText = "Unknown error"
 	}

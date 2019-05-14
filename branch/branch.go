@@ -116,9 +116,9 @@ func ShallowBranch(url string, login string, password string, sid string, sname 
 	return nil
 }
 
-func LiveBuild(url string, login string, password string, gameID string, branch string, buildId string) error {
+func PublishBuild(url string, login string, password string, gameID string, branch string, build string) error {
 
-	fmt.Printf("Living build ...\n")
+	fmt.Printf("Publishing build ...\n")
 
 	api := cordapi.NewCordAPI(url)
 	err := api.Login(login, password)
@@ -126,12 +126,12 @@ func LiveBuild(url string, login string, password string, gameID string, branch 
 		return err
 	}
 
-	brn, err := api.GetBranch("", branch, gameID)
+	brn, err := api.PublishBuild(gameID, branch, build)
 	if err != nil {
 		return err
 	}
 
-	build, err := api.GetBuild(buildId)
+	/*build, err := api.GetBuild(buildId)
 	if err != nil {
 		return err
 	}
@@ -140,9 +140,9 @@ func LiveBuild(url string, login string, password string, gameID string, branch 
 	err = api.UpdateBranch(brn)
 	if err != nil {
 		return err
-	}
+	}*/
 
-	fmt.Printf("Branch \"%s\" with id %s has live build with id %s\n", brn.Name, brn.ID, brn.LiveBuild)
+	fmt.Printf("Branch \"%s\" with id %s has published build with id %s\n", brn.Name, brn.ID, brn.LiveBuild)
 	return nil
 }
 

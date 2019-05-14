@@ -864,3 +864,45 @@ func getLiveBuild(host string, token string, gameID string, branch string) (*mod
 
 	return buildRes, res.StatusCode, nil
 }
+
+func (manager *CordAPIManager) PublishBuild(gameID string, branch string, build string) (*models.Branch, error) {
+
+	res, sc, err := publishBuild(manager.host, manager.authToken.Token, gameID, branch, build)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = publishBuild(manager.host, manager.authToken.Token, gameID, branch, build)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func publishBuild(host string, token string, gameID string, branch string, build string) (*models.Branch, int, error) {
+
+	res, err := utils.Put(host+"/api/v1/branch/build/publish?gid="+gameID+"&name="+branch+"&build="+build, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	branchdRes := new(models.Branch)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&branchdRes)
+
+	return branchdRes, res.StatusCode, nil
+}
