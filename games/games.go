@@ -68,11 +68,6 @@ func ListGame(qilinUrl string, url string, login string, password string) error 
 	fmt.Printf("| ------------------------------------ | -------------------------------------------------- | -------------------------------- | -------------------------------- | ------------------------- |\n")
 	for _, g := range gameList {
 
-		title := g.Title
-		if title == "" {
-			title = g.InternalName
-		}
-
 		var liveID, branchName string
 		b, _ := api2.GetLiveBranch(g.ID)
 		if b != nil {
@@ -81,7 +76,7 @@ func ListGame(qilinUrl string, url string, login string, password string) error 
 			branchName = b.Name
 		}
 
-		fmt.Printf("| %36s | %50s | %32s | %32s | %24s |\n", g.ID, title, liveID, branchName, g.ReleaseDate.Format("2006-01-02 15:04:05 -0700"))
+		fmt.Printf("| %36s | %50s | %32s | %32s | %24s |\n", g.ID, g.InternalName, liveID, branchName, g.ReleaseDate.Format("2006-01-02 15:04:05 -0700"))
 	}
 	fmt.Printf("\n")
 
