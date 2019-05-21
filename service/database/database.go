@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"time"
 )
 
 type DbConf struct {
@@ -25,14 +26,17 @@ func Init() error {
 		Database: cfg.Database,
 	}
 
+	timeout, _ := time.ParseDuration("30s")
 	session, err := mgo.DialWithInfo(&mgo.DialInfo{
 		Addrs:    []string{cfg.Host},
 		Database: cfg.Database,
 		Username: cfg.User,
 		Password: cfg.Password,
+		Timeout:  timeout,
 	})
+
 	if err != nil {
-		session, err := mgo.Dial(cfg.Host)
+		session, err := mgo.DialWithTimeout(cfg.Host, timeout)
 		if err != nil {
 			zap.S().Fatal(err)
 			return err
