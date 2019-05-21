@@ -58,7 +58,7 @@ func Upload(args Args) error {
 		if err != nil {
 			return err
 		}
-		barCount = fc + 1 + 3
+		barCount = fc + 1 + 3 + 1
 	}
 
 	uiprogress.Start()
@@ -92,6 +92,13 @@ func Upload(args Args) error {
 			return err
 		}
 	}
+
+	_curTitle = fmt.Sprint("Uploading config file ...")
+	err = uploadFile(api, args, args.Config, "", true)
+	if err != nil {
+		return err
+	}
+	_barTotal.Incr()
 
 	err = updateBranch(api, branch, build)
 	if err != nil {
@@ -197,7 +204,7 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string) error 
 		_barTotal.Incr()
 		_bar.Set(0)
 
-		err := uploadFile(api, args, path, fullSourceDir)
+		err := uploadFile(api, args, path, fullSourceDir, false)
 		if err != nil {
 			return err
 		}
@@ -226,7 +233,7 @@ func compareHash(api *cordapi.CordAPIManager, path string, buildid string, fpath
 	return cmpRes.Equal, nil
 }
 
-func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source string) error {
+func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source string, config bool) error {
 
 	_bar.Incr()
 
@@ -262,7 +269,7 @@ func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source stri
 
 	_bar.Incr()
 
-	err = api.Upload(&models.UploadCmd{BuildID: args.BuildID, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch})
+	err = api.Upload(&models.UploadCmd{BuildID: args.BuildID, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch, Config: config})
 	if err != nil {
 		return err
 	}

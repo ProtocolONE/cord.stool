@@ -28,7 +28,11 @@ func UploadCmd(context echo.Context) error {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
-	fpath = path.Join(fpath, reqUpload.FilePath)
+	if !reqUpload.Config {
+		fpath = path.Join(fpath, "content")
+		fpath = path.Join(fpath, reqUpload.FilePath)
+	}
+
 	zap.S().Infow("Uploading", zap.String("path", fpath))
 
 	err = os.MkdirAll(fpath, 0777)

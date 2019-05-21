@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"path"
 
 	"github.com/itchio/savior/seeksource"
 	"github.com/itchio/wharf/eos"
@@ -62,6 +63,7 @@ func SignatureCmd(context echo.Context) error {
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
+	fpath = path.Join(fpath, "content")
 
 	container, err := tlc.WalkAny(fpath, &tlc.WalkOpts{Filter: filterPaths})
 	if err != nil {
@@ -133,11 +135,13 @@ func ApplyPatchCmd(context echo.Context) error {
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
+	srcPath = path.Join(srcPath, "content")
 
 	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqCmp.BuildID)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
+	fpath = path.Join(fpath, "content")
 
 	patchFile, err := ioutil.TempFile(os.TempDir(), "patch")
 	if err != nil {

@@ -78,18 +78,8 @@ func Register(ctx *context.StoolContext) {
 						Value:       "",
 						Destination: &args.cordArgs.Config,
 					},
-					/*cli.BoolFlag{
-						Name:        "patch, p",
-						Usage:       "Uploads the difference between files using xdelta algorithm",
-						Destination: &args.cordArgs.Patch,
-					},
 					cli.BoolFlag{
-						Name:        "hash, h",
-						Usage:       "Uploads changed files only",
-						Destination: &args.cordArgs.Hash,
-					},*/
-					cli.BoolFlag{
-						Name:        "sync, s",
+						Name:        "sync",
 						Usage:       "Uploads changed files only using Wharf protocol that enables incremental uploads",
 						Destination: &args.cordArgs.Wharf,
 					},
@@ -196,6 +186,10 @@ func doPush(ctx *context.StoolContext, c *cli.Context) error {
 
 	if args.cordArgs.BranchName == "" {
 		return fmt.Errorf("Branch name is required")
+	}
+
+	if args.cordArgs.Config == "" {
+		return fmt.Errorf("Config file is required")
 	}
 
 	err := cord.Upload(args.cordArgs)
