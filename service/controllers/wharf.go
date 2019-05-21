@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"path"
+	"path/filepath"
 
 	"github.com/itchio/savior/seeksource"
 	"github.com/itchio/wharf/eos"

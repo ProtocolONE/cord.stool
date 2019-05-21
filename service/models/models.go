@@ -78,7 +78,7 @@ type UploadCmd struct {
 	FileName string `json:"filename"`
 	FileData []byte `json:filedata`
 	Patch    bool   `json:patch`
-	Config    bool   `json:config`
+	Config   bool   `json:config`
 }
 
 type CompareHashCmd struct {
