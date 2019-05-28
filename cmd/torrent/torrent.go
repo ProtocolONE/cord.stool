@@ -136,7 +136,7 @@ func buildFromFilePathEx(root string, ignoreFiles map[string]bool) (info metainf
 
 		relPath, err := filepath.Rel(root, path)
 		if err != nil {
-			return fmt.Errorf("error getting relative path: %s", err)
+			return fmt.Errorf("error getting relative path: %v", err)
 		}
 
 		if _, found := ignoreFiles[relPath]; found {
