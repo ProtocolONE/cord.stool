@@ -19,6 +19,7 @@ var args = struct {
 	url      string
 	login    string
 	password string
+	qilinUrl string
 }{}
 
 func Register(ctx *context.StoolContext) {
@@ -47,6 +48,12 @@ func Register(ctx *context.StoolContext) {
 						Usage:       "Game ID",
 						Value:       "",
 						Destination: &args.gameID,
+					},
+					cli.StringFlag{
+						Name:        "qurl, q",
+						Usage:       "Qilin server url",
+						Value:       "",
+						Destination: &args.qilinUrl,
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -200,7 +207,11 @@ func doCreate(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Cord server url is required")
 	}
 
-	return branch.CreateBranch(args.url, args.login, args.password, args.name, args.gameID)
+	if args.qilinUrl == "" {
+		return fmt.Errorf("Qilin server url is required")
+	}
+
+	return branch.CreateBranch(args.url, args.login, args.password, args.name, args.gameID, args.qilinUrl)
 }
 
 func doDelete(ctx *context.StoolContext, c *cli.Context) error {
