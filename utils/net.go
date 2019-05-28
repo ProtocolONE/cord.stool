@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	url2 "net/url"
 	"strings"
 
 	"cord.stool/service/models"
@@ -42,6 +43,14 @@ func Delete(url string, token string, contentType string, obj interface{}) (resp
 }
 
 func httpRequest(method string, url string, token string, contentType string, obj interface{}) (resp *http.Response, err error) {
+
+	u, err := url2.Parse(url)
+	if err != nil {
+		return nil, err
+	}
+
+	u.RawQuery = u.Query().Encode()
+	url = u.String()
 
 	data, err := json.Marshal(obj)
 	if err != nil {

@@ -82,3 +82,18 @@ func ListGame(qilinUrl string, url string, login string, password string) error 
 
 	return nil
 }
+
+func GetGameInfo(qilinUrl string, gid string) (*models.GameInfo, error) {
+
+	api, err := qilinapi.NewQilinAPI(qilinUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := api.GetGameInfo(gid)
+	if err != nil {
+		return nil, err
+	}
+
+	return info, nil
+}

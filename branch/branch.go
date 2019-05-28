@@ -2,17 +2,24 @@ package branch
 
 import (
 	"cord.stool/cordapi"
+	"cord.stool/games"
 	"cord.stool/service/models"
+
 	"fmt"
 	"time"
 )
 
-func CreateBranch(url string, login string, password string, name string, gameID string) error {
+func CreateBranch(url string, login string, password string, name string, gameID string, qilinUrl string) error {
 
 	fmt.Printf("Creating branch ...\n")
 
+	_, err := games.GetGameInfo(qilinUrl, gameID)
+	if err != nil {
+		return fmt.Errorf("Cannot get game info: %v", err)
+	}
+
 	api := cordapi.NewCordAPI(url)
-	err := api.Login(login, password)
+	err = api.Login(login, password)
 	if err != nil {
 		return err
 	}
