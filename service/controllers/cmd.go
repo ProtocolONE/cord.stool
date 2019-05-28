@@ -31,6 +31,8 @@ func UploadCmd(context echo.Context) error {
 	if !reqUpload.Config {
 		fpath = path.Join(fpath, "content")
 		fpath = path.Join(fpath, reqUpload.FilePath)
+	} else {
+		reqUpload.FileName = "config.json"
 	}
 
 	zap.S().Infow("Uploading", zap.String("path", fpath))
@@ -41,6 +43,13 @@ func UploadCmd(context echo.Context) error {
 	}
 
 	fpath = path.Join(fpath, reqUpload.FileName)
+	if reqUpload.Config {
+		// Checking file format
+		_, err := utils.ReadConfigFile(fpath, &context)
+		if err != nil {
+			return err
+		}
+	}
 
 	if reqUpload.Patch {
 
@@ -91,6 +100,7 @@ func CompareHashCmd(context echo.Context) error {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
+	fpath = path.Join(fpath, "content")
 	fpath = path.Join(fpath, reqCmp.FilePath)
 	fpath = path.Join(fpath, reqCmp.FileName)
 

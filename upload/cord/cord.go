@@ -11,6 +11,7 @@ import (
 	"cord.stool/cordapi"
 	"cord.stool/service/models"
 	"cord.stool/utils"
+	utils2 "cord.stool/service/core/utils"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
@@ -30,7 +31,10 @@ type Args = struct {
 	BuildID    string
 	SrcBuildID string
 	SourceDir  string
+	TargetDir  string
 	Config     string
+	Locale     string
+	Platform     string
 	Patch      bool
 	Hash       bool
 	Wharf      bool
@@ -66,6 +70,16 @@ func Upload(args Args) error {
 	_barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize("Total progress", 35)
 	})
+
+	cfg, err := utils2.ReadConfigFile(args.Config, nil)
+	if err != nil {
+		return errors.New("Cannot read config file: " + err.Error())
+	}
+	
+	for _, m := range cfg.Application.Manifests {
+
+		m.Platforms
+	}
 
 	api := cordapi.NewCordAPI(args.Url)
 	err = api.Login(args.Login, args.Password)

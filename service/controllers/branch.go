@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"path"
 	"time"
+	"path/filepath"
+	"io/ioutil"
 
 	"github.com/labstack/echo"
 )
@@ -373,6 +375,7 @@ func PublishBuildCmd(context echo.Context) error {
 	}
 
 	targetFile := path.Join(fpath, "torrent.torrent")
+	fpath = path.Join(fpath, "content")
 
 	err = cord.CreateTorrent(
 		fpath,
@@ -424,8 +427,97 @@ func CloneLiveBuildCmd(context echo.Context) error {
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
-
+	fpath = path.Join(fpath, "content")
 
 	return context.JSON(http.StatusOK, build)
 }
 */
+
+func UpdateCmd(context echo.Context) error {
+
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
+	}
+
+	if result.LiveBuild == "" {
+		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
+	}
+
+	locale := context.QueryParam("locale")
+	if locale == "" {
+		locale = "en-US"
+	}
+
+	platform := context.QueryParam("platform")
+	if platform == "" {
+		platform = "win64"
+	}
+
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), result.LiveBuild)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
+	info := &models.UpdateInfo{}
+	info.BuildID = result.LiveBuild
+	info.Config = path.Join(fpath, "config.json")
+
+	data, err := ioutil.ReadFile(info.Config)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	config := models.Config{}
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
+	}
+
+	fmt.Println(config)
+
+	info.Config, err = filepath.Rel(fpath, info.Config)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	info.Files, err = utils2.GetAllFiles(path.Join(fpath, "content"))
+	if !ok {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	for i, f := range info.Files {
+
+		info.Files[i], err = filepath.Rel(fpath, f)
+		if err != nil {
+			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+		}
+	}
+
+	return context.JSON(http.StatusOK, info)
+}
+
+func DownloadCmd(context echo.Context) error {
+	
+	buildID := context.QueryParam("bid")
+	srcPath := context.QueryParam("path")
+	if buildID == "" || srcPath == "" {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Build ID and Path are required")
+	}
+
+	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), buildID)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
+	fpath = path.Join(fpath, srcPath)
+
+	downloadRes := new(models.DownloadCmd)
+	downloadRes.FilePath = srcPath
+	downloadRes.FileData, err = ioutil.ReadFile(fpath)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	return context.JSON(http.StatusOK, downloadRes)
+}

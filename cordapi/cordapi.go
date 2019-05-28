@@ -906,3 +906,87 @@ func publishBuild(host string, token string, gameID string, branch string, build
 
 	return branchdRes, res.StatusCode, nil
 }
+
+func (manager *CordAPIManager) GetUpdateInfo(gameID string, branch string, locale string, platform string) (*models.UpdateInfo, error) {
+
+	res, sc, err := getUpdateInfo(manager.host, manager.authToken.Token, gameID, branch, locale, platform)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = getUpdateInfo(manager.host, manager.authToken.Token, gameID, branch, locale, platform)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func getUpdateInfo(host string, token string, gameID string, branch string, locale string, platform string) (*models.UpdateInfo, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/file/update?gid="+gameID+"&name="+branch+"&locale="+locale+"platform+"+platform, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	info := new(models.UpdateInfo)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&info)
+
+	return info, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) Download(buildID string, path string) (*models.DownloadCmd, error) {
+
+	res, sc, err := download(manager.host, manager.authToken.Token, buildID, path)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = download(manager.host, manager.authToken.Token, buildID, path)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func download(host string, token string, buildID string, path string) (*models.DownloadCmd, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/file/download?bid="+buildID+"&path="+path, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	downloadRes := new(models.DownloadCmd)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&downloadRes)
+
+	return downloadRes, res.StatusCode, nil
+}

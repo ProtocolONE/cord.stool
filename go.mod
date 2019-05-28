@@ -42,6 +42,9 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.8.1
 	github.com/pkg/sftp v1.10.0
+	github.com/tidwall/gjson v1.2.1
+	github.com/tidwall/match v1.0.1 // indirect
+	github.com/tidwall/pretty v0.0.0-20190325153808-1166b9ac2b65 // indirect
 	github.com/udhos/equalfile v0.3.0
 	github.com/urfave/cli v1.20.0
 	github.com/valyala/fasttemplate v1.0.1 // indirect

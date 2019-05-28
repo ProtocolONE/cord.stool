@@ -7,6 +7,8 @@ import (
 	"github.com/labstack/echo"
 	"net/http"
 	"path/filepath"
+	"encoding/json"
+	"io/ioutil"
 )
 
 func GetUserStorage(clientID string) (string, error) {
@@ -92,6 +94,8 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 		errorText = "Invalid token"
 	case models.ErrorCreateTorrent:
 		errorText = "Cannot create torrent file"
+	case models.ErrorBuildIsNotPublished:
+		errorText = "The branch has no published build"
 	default:
 		errorText = "Unknown error"
 	}
@@ -118,4 +122,26 @@ func BuildInternalServerError(context echo.Context, code int, message string) er
 func BuildUnauthorizedError(context echo.Context, code int, message string) error {
 
 	return BuildError(context, http.StatusUnauthorized, code, message)
+}
+
+func ReadConfigFile(path string, context *echo.Context) (*models.Config, error) {
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		if context != nil {
+			return nil, BuildInternalServerError(*context, models.ErrorFileIOFailure, err.Error())
+		}
+		return nil, err
+	}
+
+	config := &models.Config{}
+	err = json.Unmarshal(data, config)
+	if err != nil {
+		if context != nil {
+			return nil, BuildBadRequestError(*context, models.ErrorInvalidJSONFormat, err.Error())
+		}
+		return nil, err
+	}
+
+	return config, nil
 }

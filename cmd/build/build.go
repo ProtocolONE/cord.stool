@@ -7,6 +7,7 @@ import (
 	"cord.stool/compressor/gzip"
 	"cord.stool/context"
 	"cord.stool/upload/cord"
+	"cord.stool/update"
 
 	"github.com/urfave/cli"
 )
@@ -117,7 +118,7 @@ func Register(ctx *context.StoolContext) {
 				},
 			},
 			cli.Command{
-				Name:        "Update",
+				Name:        "update",
 				Usage:       "Downloads and install build",
 				Description: "Downloads build from Cord server and install it",
 				Flags: []cli.Flag{
@@ -132,6 +133,24 @@ func Register(ctx *context.StoolContext) {
 						Usage:       "Branch name",
 						Value:       "",
 						Destination: &args.cordArgs.BranchName,
+					},
+					cli.StringFlag{
+						Name:        "target, t",
+						Usage:       "Path to install/update a game",
+						Value:       "",
+						Destination: &args.cordArgs.TargetDir,
+					},
+					cli.StringFlag{
+						Name:        "locale, l",
+						Usage:       "Locale [default: en-US]",
+						Value:       "en-US",
+						Destination: &args.cordArgs.Locale,
+					},
+					cli.StringFlag{
+						Name:        "platform, p",
+						Usage:       "Platform [default: win64]",
+						Value:       "win64",
+						Destination: &args.cordArgs.Platform,
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -192,17 +211,28 @@ func doPush(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Config file is required")
 	}
 
-	err := cord.Upload(args.cordArgs)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return cord.Upload(args.cordArgs)
 }
 
 func doUpdate(ctx *context.StoolContext, c *cli.Context) error {
 
-	return nil
+	if args.cordArgs.Url == "" {
+		return fmt.Errorf("-url flag is required")
+	}
+
+	if args.cordArgs.GameID == "" {
+		return fmt.Errorf("Game ID is required")
+	}
+
+	if args.cordArgs.BranchName == "" {
+		return fmt.Errorf("Branch name is required")
+	}
+
+	if args.cordArgs.TargetDir == "" {
+		return fmt.Errorf("-target flag is required")
+	}
+
+	return update.Update(args.cordArgs)
 }
 
 func doList(ctx *context.StoolContext, c *cli.Context) error {
@@ -219,12 +249,7 @@ func doList(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Branch name is required")
 	}
 
-	err := branch.ListBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return branch.ListBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName)
 }
 
 func doPublish(ctx *context.StoolContext, c *cli.Context) error {
@@ -241,15 +266,10 @@ func doPublish(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Branch name is required")
 	}
 
-	err := branch.PublishBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName, args.cordArgs.BuildID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return branch.PublishBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName, args.cordArgs.BuildID)
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
 
-	return fmt.Errorf("Specify one of following sub-commands: push, publish or update")
+	return fmt.Errorf("Specify one of following sub-commands: push, publish, list or update")
 }

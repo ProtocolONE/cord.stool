@@ -26,6 +26,7 @@ const (
 	ErrorNotFound                  = 19
 	ErrorInternalError             = 20
 	ErrorCreateTorrent             = 21
+	ErrorBuildIsNotPublished       = 22
 )
 
 type AppKey struct {
@@ -79,6 +80,7 @@ type UploadCmd struct {
 	FileData []byte `json:filedata`
 	Patch    bool   `json:patch`
 	Config   bool   `json:config`
+	Platforms string `json:platforms`
 }
 
 type CompareHashCmd struct {
@@ -176,4 +178,31 @@ type GameInfo struct {
 	ReleaseDate          time.Time `json:"releaseDate" validate:"required"`
 	DisplayRemainingTime bool      `json:"displayRemainingTime"`
 	AchievementOnProd    bool      `json:"achievementOnProd"`
+}
+
+type UpdateInfo struct {
+	BuildID  string `json:"build_id"`
+	Config    string `json:"config"`
+	Files   []string `json:files`
+}
+
+type DownloadCmd struct {
+	FilePath string `json:"filepath"`
+	FileData []byte `json:filedata`
+}
+
+type ConfigManifests struct {
+	Label string `json:label`
+	Platforms []string `json:platforms`
+	Locales []string `json:locales`
+	Local_Root string `json:local_root`
+}
+
+type ConfigApplication struct {
+	ID float64 `json:id`
+	Manifests []ConfigManifests `json:manifests`
+}
+
+type Config struct {
+	Application ConfigApplication `json:application`
 }
