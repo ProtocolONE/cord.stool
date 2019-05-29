@@ -89,7 +89,7 @@ func Upload(args Args) error {
 
 	if args.Wharf {
 
-		err = uploadWharf(api, args, fullSourceDir)
+		err = uploadWharf(api, args, fullSourceDir, cfg)
 		if err != nil {
 			return err
 		}

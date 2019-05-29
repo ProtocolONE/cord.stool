@@ -28,6 +28,7 @@ const (
 	ErrorCreateTorrent             = 21
 	ErrorBuildIsNotPublished       = 22
 	ErrorInvalidPlatformName       = 23
+	ErrorInvalidBuildPlatform      = 24
 )
 
 const (
@@ -132,6 +133,7 @@ type ApplyPatchCmd struct {
 	BuildID    string `json:"build_id"`
 	SrcBuildID string `json:"src_build_id"`
 	FileData   []byte `json:filedata`
+	Platform   string `json:platform`
 }
 
 type User struct {

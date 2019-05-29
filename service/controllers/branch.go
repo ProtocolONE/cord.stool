@@ -418,17 +418,11 @@ func PublishBuildCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid build ID or Branch has no Live Build")
 	}
 
-	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), build[0].ID)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
-	}
-
 	platform := context.QueryParam("platform")
-	pf, err := utils.GetPlatformPath(platform, context)
+	fpath, _, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), build[0].ID, platform, context)
 	if err != nil {
 		return err
 	}
-	fpath = path.Join(fpath, pf)
 
 	builtinAnnounceList := []string{
 		"udp://tracker.openbittorrent.com:80",

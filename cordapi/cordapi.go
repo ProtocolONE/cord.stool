@@ -75,9 +75,9 @@ func (manager *CordAPIManager) CmpHash(cmpReq *models.CompareHashCmd) (*models.C
 	return res, nil
 }
 
-func (manager *CordAPIManager) GetSignature(buildid string) (*models.SignatureCmdResult, error) {
+func (manager *CordAPIManager) GetSignature(buildid string, platform string) (*models.SignatureCmdResult, error) {
 
-	res, sc, err := getSignature(manager.host, manager.authToken.Token, buildid)
+	res, sc, err := getSignature(manager.host, manager.authToken.Token, buildid, platform)
 	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
@@ -85,7 +85,7 @@ func (manager *CordAPIManager) GetSignature(buildid string) (*models.SignatureCm
 			return nil, err
 		}
 
-		res, _, err = getSignature(manager.host, manager.authToken.Token, buildid)
+		res, _, err = getSignature(manager.host, manager.authToken.Token, buildid, platform)
 		if err != nil {
 			return nil, err
 		}
@@ -293,9 +293,9 @@ func removeTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (in
 	return res.StatusCode, nil
 }
 
-func getSignature(host string, token string, buildid string) (*models.SignatureCmdResult, int, error) {
+func getSignature(host string, token string, buildid string, platform string) (*models.SignatureCmdResult, int, error) {
 
-	res, err := utils.Get(host+"/api/v1/file/signature?buildId="+buildid, token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/file/signature?buildId="+buildid+"&platform="+platform, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -85,7 +85,7 @@ func Progress(alpha float64) {
 func Logl(level string, msg string) {
 }
 
-func uploadWharf(api *cordapi.CordAPIManager, args Args, source string) error {
+func uploadWharf(api *cordapi.CordAPIManager, args Args, source string, cfg *models.Config) error {
 
 	_bar = uiprogress.AddBar(5).AppendCompleted().PrependElapsed()
 
@@ -96,7 +96,7 @@ func uploadWharf(api *cordapi.CordAPIManager, args Args, source string) error {
 
 	_curTitle = "Getting files' info from server"
 
-	signatureInfo, err := getSignatureInfo(api, args.SrcBuildID)
+	signatureInfo, err := getSignatureInfo(api, args.SrcBuildID, cfg.Application.Platform)
 	if err != nil {
 		return err
 	}
@@ -174,10 +174,10 @@ func uploadWharf(api *cordapi.CordAPIManager, args Args, source string) error {
 
 	_barTotal.Set(_barTotal.Total - 1)
 
-	return applyPatch(api, args.BuildID, args.SrcBuildID, patchFile.Name())
+	return applyPatch(api, args.BuildID, args.SrcBuildID, patchFile.Name(), cfg.Application.Platform)
 }
 
-func applyPatch(api *cordapi.CordAPIManager, buildID string, srcbuildID string, patch string) error {
+func applyPatch(api *cordapi.CordAPIManager, buildID string, srcbuildID string, patch string, platform string) error {
 
 	_bar.Set(0)
 	_bar.Total = 3
@@ -190,7 +190,7 @@ func applyPatch(api *cordapi.CordAPIManager, buildID string, srcbuildID string, 
 
 	_bar.Incr()
 
-	err = api.ApplyPatch(&models.ApplyPatchCmd{BuildID: buildID, SrcBuildID: srcbuildID, FileData: filedata})
+	err = api.ApplyPatch(&models.ApplyPatchCmd{BuildID: buildID, SrcBuildID: srcbuildID, FileData: filedata, Platform: platform})
 	if err != nil {
 		return errors.New("Applying patch failed: " + err.Error())
 	}
@@ -201,9 +201,9 @@ func applyPatch(api *cordapi.CordAPIManager, buildID string, srcbuildID string, 
 	return nil
 }
 
-func getSignatureInfo(api *cordapi.CordAPIManager, buildID string) (*pwr.SignatureInfo, error) {
+func getSignatureInfo(api *cordapi.CordAPIManager, buildID string, platform string) (*pwr.SignatureInfo, error) {
 
-	singRes, err := api.GetSignature(buildID)
+	singRes, err := api.GetSignature(buildID, platform)
 	if err != nil {
 		return nil, err
 	}

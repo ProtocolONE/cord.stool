@@ -31,16 +31,14 @@ func UploadCmd(context echo.Context) error {
 		}
 	}
 
-	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqUpload.BuildID)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
-	}
-
-	pf, err := utils.GetPlatformPath(reqUpload.Platform, context)
+	fpath, cbid, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), reqUpload.BuildID, reqUpload.Platform, context)
 	if err != nil {
 		return err
 	}
-	fpath = path.Join(fpath, pf)
+
+	if cbid != reqUpload.BuildID {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidBuildPlatform, reqUpload.Platform)
+	}
 
 	if !reqUpload.Config {
 		fpath = path.Join(fpath, "content")
@@ -102,16 +100,10 @@ func CompareHashCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
-	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqCmp.BuildID)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
-	}
-
-	pf, err := utils.GetPlatformPath(reqCmp.Platform, context)
+	fpath, _, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), reqCmp.BuildID, reqCmp.Platform, context)
 	if err != nil {
 		return err
 	}
-	fpath = path.Join(fpath, pf)
 
 	fpath = path.Join(fpath, "content")
 	fpath = path.Join(fpath, reqCmp.FilePath)

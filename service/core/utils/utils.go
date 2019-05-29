@@ -83,6 +83,10 @@ func GetUserBuildPathWithPlatform(clientID string, buildID string, platform stri
 
 	for _, b := range builds {
 
+		if b.Created.After(build[0].Created) {
+			continue
+		}
+
 		if b.Platform == platform {
 			fpath := filepath.Join(storage, b.ID)
 			fpath = filepath.Join(fpath, pf)
@@ -90,7 +94,7 @@ func GetUserBuildPathWithPlatform(clientID string, buildID string, platform stri
 		}
 	}
 
-	return "", "", BuildBadRequestError(context, models.ErrorInvalidPlatformName, platform)
+	return "", "", BuildBadRequestError(context, models.ErrorInvalidBuildPlatform, platform)
 }
 
 func GetUserBuildPath(clientID string, buildID string) (string, error) {
@@ -165,6 +169,8 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 		errorText = "The branch has no published build"
 	case models.ErrorInvalidPlatformName:
 		errorText = "Invalid platform name"
+	case models.ErrorInvalidBuildPlatform:
+		errorText = "The build platform is not matched the specified platform"
 	default:
 		errorText = "Unknown error"
 	}
