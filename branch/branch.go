@@ -123,7 +123,7 @@ func ShallowBranch(url string, login string, password string, sid string, sname 
 	return nil
 }
 
-func PublishBuild(url string, login string, password string, gameID string, branch string, build string) error {
+func PublishBuild(url string, login string, password string, gameID string, branch string, build string, platform string) error {
 
 	fmt.Printf("Publishing build ...\n")
 
@@ -133,7 +133,7 @@ func PublishBuild(url string, login string, password string, gameID string, bran
 		return err
 	}
 
-	brn, err := api.PublishBuild(gameID, branch, build)
+	brn, err := api.PublishBuild(gameID, branch, build, platform)
 	if err != nil {
 		return err
 	}

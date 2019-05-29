@@ -865,9 +865,9 @@ func getLiveBuild(host string, token string, gameID string, branch string) (*mod
 	return buildRes, res.StatusCode, nil
 }
 
-func (manager *CordAPIManager) PublishBuild(gameID string, branch string, build string) (*models.Branch, error) {
+func (manager *CordAPIManager) PublishBuild(gameID string, branch string, build string, platform string) (*models.Branch, error) {
 
-	res, sc, err := publishBuild(manager.host, manager.authToken.Token, gameID, branch, build)
+	res, sc, err := publishBuild(manager.host, manager.authToken.Token, gameID, branch, build, platform)
 	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
@@ -875,7 +875,7 @@ func (manager *CordAPIManager) PublishBuild(gameID string, branch string, build 
 			return nil, err
 		}
 
-		res, _, err = publishBuild(manager.host, manager.authToken.Token, gameID, branch, build)
+		res, _, err = publishBuild(manager.host, manager.authToken.Token, gameID, branch, build, platform)
 		if err != nil {
 			return nil, err
 		}
@@ -888,9 +888,9 @@ func (manager *CordAPIManager) PublishBuild(gameID string, branch string, build 
 	return res, nil
 }
 
-func publishBuild(host string, token string, gameID string, branch string, build string) (*models.Branch, int, error) {
+func publishBuild(host string, token string, gameID string, branch string, build string, platform string) (*models.Branch, int, error) {
 
-	res, err := utils.Put(host+"/api/v1/branch/build/publish?gid="+gameID+"&name="+branch+"&build="+build, token, "application/json", nil)
+	res, err := utils.Put(host+"/api/v1/branch/build/publish?gid="+gameID+"&name="+branch+"&build="+build+"&platform="+platform, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}

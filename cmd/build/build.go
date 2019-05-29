@@ -106,12 +106,18 @@ func Register(ctx *context.StoolContext) {
 						Value:       "",
 						Destination: &args.cordArgs.BranchName,
 					},
-					/*cli.StringFlag{
+					cli.StringFlag{
 						Name:        "build-id, bi",
-						Usage:       "Build ID, optional",
+						Usage:       "Build ID, optional, (default: LiveBuildID)",
 						Value:       "",
 						Destination: &args.cordArgs.BuildID,
-					},*/
+					},
+					cli.StringFlag{
+						Name:        "platform, p",
+						Usage:       "Platform (default: win64)",
+						Value:       "win64",
+						Destination: &args.cordArgs.Platform,
+					},
 				},
 				Action: func(c *cli.Context) error {
 					return doPublish(ctx, c)
@@ -148,7 +154,7 @@ func Register(ctx *context.StoolContext) {
 					},
 					cli.StringFlag{
 						Name:        "platform, p",
-						Usage:       "Platform [default: win64]",
+						Usage:       "Platform (default: win64)",
 						Value:       "win64",
 						Destination: &args.cordArgs.Platform,
 					},
@@ -266,7 +272,7 @@ func doPublish(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("Branch name is required")
 	}
 
-	return branch.PublishBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName, args.cordArgs.BuildID)
+	return branch.PublishBuild(args.cordArgs.Url, args.cordArgs.Login, args.cordArgs.Password, args.cordArgs.GameID, args.cordArgs.BranchName, args.cordArgs.BuildID, args.cordArgs.Platform)
 }
 
 func do(ctx *context.StoolContext, c *cli.Context) error {

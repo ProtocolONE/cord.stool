@@ -462,7 +462,7 @@ func PublishBuildCmd(context echo.Context) error {
 		return utils.BuildInternalServerError(context, models.ErrorAddTorrent, err.Error())
 	}
 
-	return context.JSON(http.StatusOK, build[0])
+	return context.JSON(http.StatusOK, result)
 }
 
 /*
