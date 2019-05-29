@@ -23,10 +23,24 @@ func UploadCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
+	if reqUpload.Config {
+		// Checking file format
+		_, err := utils.ReadConfigData(reqUpload.FileData, &context)
+		if err != nil {
+			return err
+		}
+	}
+
 	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), reqUpload.BuildID)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
+
+	pf, err := utils.GetPlatformPath(reqUpload.Platform, context)
+	if err != nil {
+		return err
+	}
+	fpath = path.Join(fpath, pf)
 
 	if !reqUpload.Config {
 		fpath = path.Join(fpath, "content")
@@ -43,13 +57,6 @@ func UploadCmd(context echo.Context) error {
 	}
 
 	fpath = path.Join(fpath, reqUpload.FileName)
-	if reqUpload.Config {
-		// Checking file format
-		_, err := utils.ReadConfigFile(fpath, &context)
-		if err != nil {
-			return err
-		}
-	}
 
 	if reqUpload.Patch {
 
@@ -99,6 +106,12 @@ func CompareHashCmd(context echo.Context) error {
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
+
+	pf, err := utils.GetPlatformPath(reqCmp.Platform, context)
+	if err != nil {
+		return err
+	}
+	fpath = path.Join(fpath, pf)
 
 	fpath = path.Join(fpath, "content")
 	fpath = path.Join(fpath, reqCmp.FilePath)

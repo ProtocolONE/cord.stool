@@ -6,8 +6,8 @@ import (
 	"cord.stool/branch"
 	"cord.stool/compressor/gzip"
 	"cord.stool/context"
-	"cord.stool/upload/cord"
 	"cord.stool/update"
+	"cord.stool/upload/cord"
 
 	"github.com/urfave/cli"
 )
@@ -142,8 +142,8 @@ func Register(ctx *context.StoolContext) {
 					},
 					cli.StringFlag{
 						Name:        "locale, l",
-						Usage:       "Locale [default: en-US]",
-						Value:       "en-US",
+						Usage:       "Locale",
+						Value:       "",
 						Destination: &args.cordArgs.Locale,
 					},
 					cli.StringFlag{

@@ -9,11 +9,12 @@ import (
 	"cord.stool/upload/cord"
 	utils2 "cord.stool/utils"
 
+	"io/ioutil"
 	"net/http"
 	"path"
-	"time"
 	"path/filepath"
-	"io/ioutil"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo"
 )
@@ -368,6 +369,13 @@ func PublishBuildCmd(context echo.Context) error {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
+	platform := context.QueryParam("platform")
+	pf, err := utils.GetPlatformPath(platform, context)
+	if err != nil {
+		return err
+	}
+	fpath = path.Join(fpath, pf)
+
 	builtinAnnounceList := []string{
 		"udp://tracker.openbittorrent.com:80",
 		"udp://tracker.publicbt.com:80",
@@ -445,52 +453,72 @@ func UpdateCmd(context echo.Context) error {
 	}
 
 	locale := context.QueryParam("locale")
-	if locale == "" {
+	/*if locale == "" {
 		locale = "en-US"
-	}
-
-	platform := context.QueryParam("platform")
-	if platform == "" {
-		platform = "win64"
-	}
+	}*/
 
 	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), result.LiveBuild)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
 
+	platform := context.QueryParam("platform")
+	pf, err := utils.GetPlatformPath(platform, context)
+	if err != nil {
+		return err
+	}
+	fpath = path.Join(fpath, pf)
+
 	info := &models.UpdateInfo{}
 	info.BuildID = result.LiveBuild
 	info.Config = path.Join(fpath, "config.json")
-
-	data, err := ioutil.ReadFile(info.Config)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-	}
-
-	config := models.Config{}
-	err = json.Unmarshal(data, &config)
-	if err != nil {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
-	}
-
-	fmt.Println(config)
 
 	info.Config, err = filepath.Rel(fpath, info.Config)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
-	info.Files, err = utils2.GetAllFiles(path.Join(fpath, "content"))
+	files, err := utils2.GetAllFiles(path.Join(fpath, "content"))
 	if !ok {
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
-	for i, f := range info.Files {
+	cfg, err := utils.ReadConfigFile(path.Join(fpath, info.Config), &context)
+	if err != nil {
+		return err
+	}
 
-		info.Files[i], err = filepath.Rel(fpath, f)
+	for _, f := range files {
+
+		relpath, err := filepath.Rel(fpath, f)
 		if err != nil {
 			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+		}
+
+		if locale == "" {
+			info.Files = append(info.Files, relpath)
+			continue
+		}
+
+		index := len("content/")
+		useFile := true
+
+		for _, l := range cfg.Application.Manifest.Locales {
+
+			rpath, _ := filepath.Split(relpath)
+			rpath = filepath.ToSlash(rpath)
+
+			match := strings.Index(rpath, l.Local_Root)
+			if match == index || (rpath == "content/" && l.Local_Root == "./") {
+
+				if locale != l.Locale {
+					useFile = false
+				}
+			}
+		}
+
+		if useFile {
+			info.Files = append(info.Files, relpath)
 		}
 	}
 
@@ -498,7 +526,7 @@ func UpdateCmd(context echo.Context) error {
 }
 
 func DownloadCmd(context echo.Context) error {
-	
+
 	buildID := context.QueryParam("bid")
 	srcPath := context.QueryParam("path")
 	if buildID == "" || srcPath == "" {
@@ -509,6 +537,13 @@ func DownloadCmd(context echo.Context) error {
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
 	}
+
+	platform := context.QueryParam("platform")
+	pf, err := utils.GetPlatformPath(platform, context)
+	if err != nil {
+		return err
+	}
+	fpath = path.Join(fpath, pf)
 
 	fpath = path.Join(fpath, srcPath)
 

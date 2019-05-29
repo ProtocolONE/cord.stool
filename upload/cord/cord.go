@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"cord.stool/cordapi"
+	utils2 "cord.stool/service/core/utils"
 	"cord.stool/service/models"
 	"cord.stool/utils"
-	utils2 "cord.stool/service/core/utils"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
@@ -34,7 +34,7 @@ type Args = struct {
 	TargetDir  string
 	Config     string
 	Locale     string
-	Platform     string
+	Platform   string
 	Patch      bool
 	Hash       bool
 	Wharf      bool
@@ -75,11 +75,6 @@ func Upload(args Args) error {
 	if err != nil {
 		return errors.New("Cannot read config file: " + err.Error())
 	}
-	
-	for _, m := range cfg.Application.Manifests {
-
-		m.Platforms
-	}
 
 	api := cordapi.NewCordAPI(args.Url)
 	err = api.Login(args.Login, args.Password)
@@ -101,14 +96,14 @@ func Upload(args Args) error {
 
 	} else {
 
-		err = upload(api, args, fullSourceDir)
+		err = upload(api, args, fullSourceDir, cfg)
 		if err != nil {
 			return err
 		}
 	}
 
 	_curTitle = fmt.Sprint("Uploading config file ...")
-	err = uploadFile(api, args, args.Config, "", true)
+	err = uploadFile(api, args, args.Config, "", true, cfg)
 	if err != nil {
 		return err
 	}
@@ -180,7 +175,7 @@ func updateBranch(api *cordapi.CordAPIManager, branch *models.Branch, build *mod
 	return nil
 }
 
-func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string) error {
+func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, cfg *models.Config) error {
 
 	var err error
 
@@ -218,7 +213,7 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string) error 
 		_barTotal.Incr()
 		_bar.Set(0)
 
-		err := uploadFile(api, args, path, fullSourceDir, false)
+		err := uploadFile(api, args, path, fullSourceDir, false, cfg)
 		if err != nil {
 			return err
 		}
@@ -247,19 +242,24 @@ func compareHash(api *cordapi.CordAPIManager, path string, buildid string, fpath
 	return cmpRes.Equal, nil
 }
 
-func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source string, config bool) error {
+func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source string, config bool, cfg *models.Config) error {
 
 	_bar.Incr()
 
 	_, fname := filepath.Split(path)
-	relativePath, err := filepath.Rel(source, path)
-	if err != nil {
-		return err
-	}
 
-	fpath := relativePath
-	fpath, _ = filepath.Split(fpath)
-	fpath = strings.TrimRight(fpath, "/\\")
+	fpath := ""
+	if !config {
+
+		relativePath, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+
+		fpath = relativePath
+		fpath, _ = filepath.Split(fpath)
+		fpath = strings.TrimRight(fpath, "/\\")
+	}
 
 	if args.Hash {
 
@@ -283,7 +283,7 @@ func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source stri
 
 	_bar.Incr()
 
-	err = api.Upload(&models.UploadCmd{BuildID: args.BuildID, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch, Config: config})
+	err = api.Upload(&models.UploadCmd{BuildID: args.BuildID, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch, Config: config, Platform: cfg.Application.Platform})
 	if err != nil {
 		return err
 	}

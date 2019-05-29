@@ -27,6 +27,23 @@ const (
 	ErrorInternalError             = 20
 	ErrorCreateTorrent             = 21
 	ErrorBuildIsNotPublished       = 22
+	ErrorInvalidPlatformName       = 23
+)
+
+const (
+	Win32    = "win32"
+	Win64    = "win64"
+	Win32_64 = "win32_64"
+	MacOS    = "macos"
+	Linux    = "linux"
+)
+
+const (
+	Win32_Folder    = ".win32"
+	Win64_Folder    = ".win64"
+	Win32_64_Folder = ".win32_64"
+	MacOS_Folder    = ".macos"
+	Linux_Folder    = ".linux"
 )
 
 type AppKey struct {
@@ -80,7 +97,7 @@ type UploadCmd struct {
 	FileData []byte `json:filedata`
 	Patch    bool   `json:patch`
 	Config   bool   `json:config`
-	Platforms string `json:platforms`
+	Platform string `json:platform`
 }
 
 type CompareHashCmd struct {
@@ -88,6 +105,7 @@ type CompareHashCmd struct {
 	FilePath string `json:"filepath"`
 	FileName string `json:"filename"`
 	FileHash string `json:filehash`
+	Platform string `json:platform`
 }
 
 type CompareHashCmdResult struct {
@@ -181,8 +199,8 @@ type GameInfo struct {
 }
 
 type UpdateInfo struct {
-	BuildID  string `json:"build_id"`
-	Config    string `json:"config"`
+	BuildID string   `json:"build_id"`
+	Config  string   `json:"config"`
 	Files   []string `json:files`
 }
 
@@ -191,16 +209,22 @@ type DownloadCmd struct {
 	FileData []byte `json:filedata`
 }
 
-type ConfigManifests struct {
-	Label string `json:label`
-	Platforms []string `json:platforms`
-	Locales []string `json:locales`
+type ConfigLocales struct {
+	Label      string `json:label`
+	Locale     string `json:locale`
 	Local_Root string `json:local_root`
 }
 
+type ConfigManifest struct {
+	Label      string          `json:label`
+	Locales    []ConfigLocales `json:locales`
+	Local_Root string          `json:local_root`
+}
+
 type ConfigApplication struct {
-	ID float64 `json:id`
-	Manifests []ConfigManifests `json:manifests`
+	ID       float64        `json:id`
+	Platform string         `json:platform`
+	Manifest ConfigManifest `json:manifest`
 }
 
 type Config struct {

@@ -3,12 +3,12 @@ package utils
 import (
 	"cord.stool/service/database"
 	"cord.stool/service/models"
+	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo"
+	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"encoding/json"
-	"io/ioutil"
 )
 
 func GetUserStorage(clientID string) (string, error) {
@@ -96,6 +96,8 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 		errorText = "Cannot create torrent file"
 	case models.ErrorBuildIsNotPublished:
 		errorText = "The branch has no published build"
+	case models.ErrorInvalidPlatformName:
+		errorText = "Invalid platform name"
 	default:
 		errorText = "Unknown error"
 	}
@@ -124,6 +126,20 @@ func BuildUnauthorizedError(context echo.Context, code int, message string) erro
 	return BuildError(context, http.StatusUnauthorized, code, message)
 }
 
+func ReadConfigData(data []byte, context *echo.Context) (*models.Config, error) {
+
+	config := &models.Config{}
+	err := json.Unmarshal(data, config)
+	if err != nil {
+		if context != nil {
+			return nil, BuildBadRequestError(*context, models.ErrorInvalidJSONFormat, err.Error())
+		}
+		return nil, err
+	}
+
+	return config, nil
+}
+
 func ReadConfigFile(path string, context *echo.Context) (*models.Config, error) {
 
 	data, err := ioutil.ReadFile(path)
@@ -134,14 +150,22 @@ func ReadConfigFile(path string, context *echo.Context) (*models.Config, error) 
 		return nil, err
 	}
 
-	config := &models.Config{}
-	err = json.Unmarshal(data, config)
-	if err != nil {
-		if context != nil {
-			return nil, BuildBadRequestError(*context, models.ErrorInvalidJSONFormat, err.Error())
-		}
-		return nil, err
+	return ReadConfigData(data, context)
+}
+
+func GetPlatformPath(platform string, context echo.Context) (string, error) {
+
+	if platform == models.Win32 {
+		return models.Win32_Folder, nil
+	} else if platform == models.Win64 || platform == "" {
+		return models.Win64_Folder, nil
+	} else if platform == models.Win32_64 {
+		return models.Win32_64_Folder, nil
+	} else if platform == models.MacOS {
+		return models.MacOS_Folder, nil
+	} else if platform == models.Linux {
+		return models.Linux_Folder, nil
 	}
 
-	return config, nil
+	return "", BuildBadRequestError(context, models.ErrorInvalidPlatformName, platform)
 }

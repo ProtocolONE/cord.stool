@@ -932,7 +932,7 @@ func (manager *CordAPIManager) GetUpdateInfo(gameID string, branch string, local
 
 func getUpdateInfo(host string, token string, gameID string, branch string, locale string, platform string) (*models.UpdateInfo, int, error) {
 
-	res, err := utils.Get(host+"/api/v1/file/update?gid="+gameID+"&name="+branch+"&locale="+locale+"platform+"+platform, token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/file/update?gid="+gameID+"&name="+branch+"&locale="+locale+"&platform="+platform, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -949,9 +949,9 @@ func getUpdateInfo(host string, token string, gameID string, branch string, loca
 	return info, res.StatusCode, nil
 }
 
-func (manager *CordAPIManager) Download(buildID string, path string) (*models.DownloadCmd, error) {
+func (manager *CordAPIManager) Download(buildID string, path string, platform string) (*models.DownloadCmd, error) {
 
-	res, sc, err := download(manager.host, manager.authToken.Token, buildID, path)
+	res, sc, err := download(manager.host, manager.authToken.Token, buildID, path, platform)
 	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
@@ -959,7 +959,7 @@ func (manager *CordAPIManager) Download(buildID string, path string) (*models.Do
 			return nil, err
 		}
 
-		res, _, err = download(manager.host, manager.authToken.Token, buildID, path)
+		res, _, err = download(manager.host, manager.authToken.Token, buildID, path, platform)
 		if err != nil {
 			return nil, err
 		}
@@ -972,9 +972,9 @@ func (manager *CordAPIManager) Download(buildID string, path string) (*models.Do
 	return res, nil
 }
 
-func download(host string, token string, buildID string, path string) (*models.DownloadCmd, int, error) {
+func download(host string, token string, buildID string, path string, platform string) (*models.DownloadCmd, int, error) {
 
-	res, err := utils.Get(host+"/api/v1/file/download?bid="+buildID+"&path="+path, token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/file/download?bid="+buildID+"&path="+path+"&platform="+platform, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
