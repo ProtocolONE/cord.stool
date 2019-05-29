@@ -31,16 +31,24 @@ const (
 )
 
 const (
-	Win32    = "win32"
+	Win64Mask    = 0
+	Win32Mask    = 1
+	Win32_64Mask = 2
+	MacOSMask    = 4
+	LinuxMask    = 8
+)
+
+const (
 	Win64    = "win64"
+	Win32    = "win32"
 	Win32_64 = "win32_64"
 	MacOS    = "macos"
 	Linux    = "linux"
 )
 
 const (
-	Win32_Folder    = ".win32"
 	Win64_Folder    = ".win64"
+	Win32_Folder    = ".win32"
 	Win32_64_Folder = ".win32_64"
 	MacOS_Folder    = ".macos"
 	Linux_Folder    = ".linux"
@@ -150,6 +158,12 @@ type Build struct {
 	ID       string    `bson:"_id" json:id`
 	BranchID string    `json:branch_id`
 	Created  time.Time `json:created`
+	Platform string    `json:platform`
+	/*Win64    string `json:win64`
+	Win32    string `json:win32`
+	Win32_64 string `json:win32_64`
+	MacOS    string `json:macoS`
+	Linux    string `json:linux`*/
 }
 
 type ShallowBranchCmdResult struct {

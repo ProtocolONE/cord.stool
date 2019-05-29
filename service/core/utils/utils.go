@@ -26,6 +26,73 @@ func GetUserStorage(clientID string) (string, error) {
 	return users[0].Storage, nil
 }
 
+func GetUserBuildPathWithPlatform(clientID string, buildID string, platform string, context echo.Context) (string, string, error) {
+
+	manager := database.NewBuildManager()
+	build, err := manager.FindByID(buildID)
+	if err != nil {
+		return "", "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	if build == nil {
+		return "", "", BuildBadRequestError(context, models.ErrorInvalidRequest, fmt.Sprintf("Cannot find the specified build %s", buildID))
+	}
+
+	storage, err := GetUserStorage(clientID)
+	if err != nil {
+		return "", "", BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
+	pf, err := GetPlatformPath(platform, context)
+	if err != nil {
+		return "", "", err
+	}
+
+	/*if build[0].Platform != platform {
+
+		if platform == models.Win64 {
+			buildID = build[0].Win64
+		} else if platform == models.Win32 {
+			buildID = build[0].Win32
+		} else if platform == models.Win32_64 {
+			buildID = build[0].Win32_64
+		} else if platform == models.MacOS {
+			buildID = build[0].MacOS
+		} else if platform == models.Linux {
+			buildID = build[0].Linux
+		} else {
+			return "", "", BuildBadRequestError(context, models.ErrorInvalidPlatformName, platform)
+		}
+	}
+
+	fpath := filepath.Join(storage, buildID)
+	fpath = filepath.Join(fpath, pf)
+	return fpath, buildID, nil*/
+
+	if build[0].Platform == platform {
+
+		fpath := filepath.Join(storage, buildID)
+		fpath = filepath.Join(fpath, pf)
+		return fpath, buildID, nil
+	}
+
+	builds, err := manager.FindBuildByBranch(build[0].BranchID)
+	if err != nil {
+		return "", "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	for _, b := range builds {
+
+		if b.Platform == platform {
+			fpath := filepath.Join(storage, b.ID)
+			fpath = filepath.Join(fpath, pf)
+			return fpath, b.ID, nil
+		}
+	}
+
+	return "", "", BuildBadRequestError(context, models.ErrorInvalidPlatformName, platform)
+}
+
 func GetUserBuildPath(clientID string, buildID string) (string, error) {
 
 	storage, err := GetUserStorage(clientID)
@@ -43,8 +110,8 @@ func GetUserBuildPath(clientID string, buildID string) (string, error) {
 		return "", fmt.Errorf("Cannot find the specified build %s", buildID)
 	}
 
-	path := filepath.Join(storage, buildID)
-	return path, nil
+	fpath := filepath.Join(storage, buildID)
+	return fpath, nil
 }
 
 func BuildError(context echo.Context, status int, code int, message string) error {
@@ -103,7 +170,7 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 	}
 
 	if message != "" {
-		errorText += ". " + message
+		errorText += ": " + message
 	} else {
 		errorText += "."
 	}

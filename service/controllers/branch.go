@@ -266,6 +266,55 @@ func ShallowBranchCmd(context echo.Context) error {
 	return context.JSON(http.StatusOK, models.ShallowBranchCmdResult{sourceBranch.ID, sourceBranch.Name, targetBranch.ID, targetBranch.Name})
 }
 
+/*func mergeBuilds(manager *database.BuildManager, build *models.Build, context echo.Context) error {
+
+	builds, err := manager.FindBuildByBranch(build.BranchID)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	if build.Platform == "" {
+		build.Platform = "win64"
+	}
+
+	if build.Platform == models.Win64 {
+		build.Win64 = ""
+	}
+	if build.Platform == models.Win32 {
+		build.Win32 = ""
+	}
+	if build.Platform == models.Win32_64 {
+		build.Win32_64 = ""
+	}
+	if build.Platform == models.MacOS {
+		build.MacOS = ""
+	}
+	if build.Platform == models.Linux {
+		build.Linux = ""
+	}
+
+	for _, b := range builds {
+
+		if b.Platform == models.Win64 && build.Platform != models.Win64 && build.Win64 == "" {
+			build.Win64 = b.ID
+		}
+		if b.Platform == models.Win32 && build.Platform != models.Win32 && build.Win32 == "" {
+			build.Win32 = b.ID
+		}
+		if b.Platform == models.Win32_64 && build.Platform != models.Win32_64 && build.Win32_64 == "" {
+			build.Win32_64 = b.ID
+		}
+		if b.Platform == models.MacOS && build.Platform != models.MacOS && build.MacOS == "" {
+			build.MacOS = b.ID
+		}
+		if b.Platform == models.Linux && build.Platform != models.Linux && build.Linux == "" {
+			build.Linux = b.ID
+		}
+	}
+
+	return nil
+}*/
+
 func CreateBuildCmd(context echo.Context) error {
 
 	reqBuild := &models.Build{}
@@ -278,6 +327,11 @@ func CreateBuildCmd(context echo.Context) error {
 	reqBuild.Created = time.Now()
 
 	manager := database.NewBuildManager()
+	/*err = mergeBuilds(manager, reqBuild, context)
+	if err != nil {
+		return err
+	}*/
+
 	err = manager.Insert(reqBuild)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -453,24 +507,15 @@ func UpdateCmd(context echo.Context) error {
 	}
 
 	locale := context.QueryParam("locale")
-	/*if locale == "" {
-		locale = "en-US"
-	}*/
-
-	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), result.LiveBuild)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
-	}
 
 	platform := context.QueryParam("platform")
-	pf, err := utils.GetPlatformPath(platform, context)
+	fpath, curBuildID, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), result.LiveBuild, platform, context)
 	if err != nil {
 		return err
 	}
-	fpath = path.Join(fpath, pf)
 
 	info := &models.UpdateInfo{}
-	info.BuildID = result.LiveBuild
+	info.BuildID = curBuildID
 	info.Config = path.Join(fpath, "config.json")
 
 	info.Config, err = filepath.Rel(fpath, info.Config)
@@ -533,17 +578,11 @@ func DownloadCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Build ID and Path are required")
 	}
 
-	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), buildID)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
-	}
-
 	platform := context.QueryParam("platform")
-	pf, err := utils.GetPlatformPath(platform, context)
+	fpath, _, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), buildID, platform, context)
 	if err != nil {
 		return err
 	}
-	fpath = path.Join(fpath, pf)
 
 	fpath = path.Join(fpath, srcPath)
 

@@ -217,7 +217,7 @@ func (manager *BuildManager) FindByID(id string) ([]*models.Build, error) {
 func (manager *BuildManager) FindBuildByBranch(bid string) ([]*models.Build, error) {
 
 	var dbbuild []*models.Build
-	err := manager.collection.Find(bson.M{"branchid": bid}).All(&dbbuild)
+	err := manager.collection.Find(bson.M{"branchid": bid}).Sort("-created").All(&dbbuild)
 	if err != nil {
 		return nil, err
 	}

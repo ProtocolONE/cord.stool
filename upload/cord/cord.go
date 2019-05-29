@@ -82,7 +82,7 @@ func Upload(args Args) error {
 		return err
 	}
 
-	branch, build, err := createBuild(api, &args)
+	branch, build, err := createBuild(api, &args, cfg)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func Upload(args Args) error {
 	return nil
 }
 
-func createBuild(api *cordapi.CordAPIManager, args *Args) (*models.Branch, *models.Build, error) {
+func createBuild(api *cordapi.CordAPIManager, args *Args, cfg *models.Config) (*models.Branch, *models.Build, error) {
 
 	_curTitle = fmt.Sprint("Creating build ...")
 
@@ -143,7 +143,7 @@ func createBuild(api *cordapi.CordAPIManager, args *Args) (*models.Branch, *mode
 	_barTotal.Incr()
 	_curTitle = fmt.Sprint("Creating build ...")
 
-	build, err := api.CreateBuild(&models.Build{"", branch.ID, time.Time{}})
+	build, err := api.CreateBuild(&models.Build{"", branch.ID, time.Time{}, cfg.Application.Platform /*, "", "", "", "", ""*/})
 	if err != nil {
 		return nil, nil, err
 	}
