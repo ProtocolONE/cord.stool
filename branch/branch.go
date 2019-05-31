@@ -14,9 +14,9 @@ func CreateBranch(url string, login string, password string, name string, gameID
 	fmt.Printf("Creating branch ...\n")
 
 	_, err := games.GetGameInfo(qilinUrl, gameID)
-	/*if err != nil {
+	if err != nil {
 		return fmt.Errorf("Cannot get game info: %v", err)
-	}*/
+	}
 
 	api := cordapi.NewCordAPI(url)
 	err = api.Login(login, password)
