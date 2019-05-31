@@ -112,6 +112,53 @@ func DeleteBranchCmd(context echo.Context) error {
 		return err
 	}
 
+	managerB := database.NewBuildManager()
+	builds, err := managerB.FindBuildByBranchID(result.ID)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	for _, b := range builds {
+
+		managerBD := database.NewBuildDepotManager()
+		buildDepots, err := managerBD.FindByBuildID(b.ID)
+		if err != nil {
+			return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+		}
+
+		for _, bd := range buildDepots {
+
+			managerD := database.NewDepotManager()
+			depot, err := managerD.FindByID(bd.DepotID)
+			if err != nil {
+				return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+			}
+
+			if depot != nil {
+
+				err = utils.RemoveDepotFiles(context.Request().Header.Get("ClientID"), bd.DepotID, context)
+				if err != nil {
+					return err
+				}
+
+				err = managerD.RemoveByID(bd.DepotID)
+				if err != nil {
+					return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+				}
+			}
+
+			err = managerBD.RemoveByID(bd.ID)
+			if err != nil {
+				return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+			}
+		}
+
+		err = managerB.RemoveByID(b.ID)
+		if err != nil {
+			return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+		}
+	}
+
 	manager := database.NewBranchManager()
 	err = manager.RemoveByID(result.ID)
 	if err != nil {
@@ -336,6 +383,50 @@ func CreateBuildCmd(context echo.Context) error {
 	}
 
 	return context.JSON(http.StatusOK, reqBuild)
+}
+
+func DeleteBuildCmd(context echo.Context) error {
+
+	buildID := context.QueryParam("id")
+	if buildID == "" {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Build ID is required")
+	}
+
+	managerBD := database.NewBuildDepotManager()
+	buildDepots, err := managerBD.FindByBuildID(buildID)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	for _, bd := range buildDepots {
+
+		if bd.LinkID == "" {
+
+			err = utils.RemoveDepotFiles(context.Request().Header.Get("ClientID"), bd.DepotID, context)
+			if err != nil {
+				return err
+			}
+
+			managerD := database.NewDepotManager()
+			err = managerD.RemoveByID(bd.DepotID)
+			if err != nil {
+				return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+			}
+		}
+
+		err = managerBD.RemoveByID(bd.ID)
+		if err != nil {
+			return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+		}
+	}
+
+	manager := database.NewBuildManager()
+	err = manager.RemoveByID(buildID)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	return context.NoContent(http.StatusOK)
 }
 
 func GetBuildCmd(context echo.Context) error {

@@ -21,6 +21,7 @@ var _bar *uiprogress.Bar
 var _barTotal *uiprogress.Bar
 var _curTitle string
 var _title *string
+var _rallBack bool
 
 type Args = struct {
 	Url        string
@@ -39,6 +40,21 @@ type Args = struct {
 	Hash       bool
 	Wharf      bool
 	Force      bool
+}
+
+func initProgressBar(barCount int) {
+
+	uiprogress.Start()
+	_barTotal = uiprogress.AddBar(barCount).AppendCompleted().PrependElapsed()
+	_barTotal.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize("Total progress", 35)
+	})
+
+	_bar = uiprogress.AddBar(1).AppendCompleted().PrependElapsed()
+	_title = &_curTitle
+	_bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(*_title, 35)
+	})
 }
 
 // Upload ...
@@ -78,17 +94,7 @@ func Upload(args Args) error {
 	barCount *= manCount
 	barCount -= 3 * manCount
 
-	uiprogress.Start()
-	_barTotal = uiprogress.AddBar(barCount).AppendCompleted().PrependElapsed()
-	_barTotal.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize("Total progress", 35)
-	})
-
-	_bar = uiprogress.AddBar(1).AppendCompleted().PrependElapsed()
-	_title = &_curTitle
-	_bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize(*_title, 35)
-	})
+	initProgressBar(barCount)
 
 	api := cordapi.NewCordAPI(args.Url)
 	err = api.Login(args.Login, args.Password)
@@ -100,6 +106,17 @@ func Upload(args Args) error {
 	if err != nil {
 		return err
 	}
+
+	cleanerProc := func() {
+
+		if !_rallBack {
+			return
+		}
+		fmt.Println("Cleanup, deleting branch ...")
+		api.DeleteBuild(build.ID)
+	}
+	_rallBack = true
+	defer cleanerProc()
 
 	for _, m := range cfg.Application.Manifests {
 
@@ -143,6 +160,7 @@ func Upload(args Args) error {
 
 	fmt.Println("Upload completed.")
 
+	_rallBack = false
 	return nil
 }
 

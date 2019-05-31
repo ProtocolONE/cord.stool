@@ -242,9 +242,10 @@ type ConfigLocales struct {
 }
 
 type ConfigManifest struct {
-	Label    string          `json:"label"`
-	Platform string          `json:"platform"`
-	Locales  []ConfigLocales `json:"locales"`
+	Label     string          `json:"label"`
+	Platform  string          `json:"platform"`
+	Locales   []ConfigLocales `json:"locales"`
+	LocalRoot string          `json:"local_root"`
 }
 
 type ConfigApplication struct {

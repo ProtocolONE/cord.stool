@@ -165,7 +165,7 @@ func (manager *BranchManager) Update(branch *models.Branch) error {
 
 func (manager *BranchManager) RemoveByID(id string) error {
 
-	err := manager.collection.Remove(bson.M{"_id": id})
+	err := manager.collection.RemoveId(id)
 	if err != nil {
 		return err
 	}
@@ -196,6 +196,16 @@ func NewBuildManager() *BuildManager {
 func (manager *BuildManager) Insert(build *models.Build) error {
 
 	err := manager.collection.Insert(build)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *BuildManager) RemoveByID(id string) error {
+
+	err := manager.collection.RemoveId(id)
 	if err != nil {
 		return err
 	}
@@ -266,6 +276,16 @@ func (manager *DepotManager) Insert(depot *models.Depot) error {
 	return nil
 }
 
+func (manager *DepotManager) RemoveByID(id string) error {
+
+	err := manager.collection.RemoveId(id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (manager *DepotManager) FindByID(id string) (*models.Depot, error) {
 
 	var dbdepot []*models.Depot
@@ -297,6 +317,16 @@ func NewBuildDepotManager() *BuildDepotManager {
 func (manager *BuildDepotManager) Insert(buildDepot *models.BuildDepot) error {
 
 	err := manager.collection.Insert(buildDepot)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *BuildDepotManager) RemoveByID(id string) error {
+
+	err := manager.collection.RemoveId(id)
 	if err != nil {
 		return err
 	}

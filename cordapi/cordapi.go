@@ -739,6 +739,44 @@ func createBuild(host string, token string, buildReq *models.Build) (*models.Bui
 	return buildRes, res.StatusCode, nil
 }
 
+func (manager *CordAPIManager) DeleteBuild(id string) error {
+
+	sc, err := deleteBuild(manager.host, manager.authToken.Token, id)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return err
+		}
+
+		_, err = deleteBuild(manager.host, manager.authToken.Token, id)
+		if err != nil {
+			return err
+		}
+
+	} else if err != nil {
+
+		return err
+	}
+
+	return nil
+}
+
+func deleteBuild(host string, token string, id string) (int, error) {
+
+	res, err := utils.Delete(host+"/api/v1/branch/build?id="+id, token, "application/json", nil)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	return res.StatusCode, nil
+}
+
 func (manager *CordAPIManager) GetBuild(id string) (*models.Build, error) {
 
 	res, sc, err := getBuild(manager.host, manager.authToken.Token, id)

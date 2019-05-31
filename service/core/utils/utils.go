@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -134,6 +135,22 @@ func GetUserStorage(clientID string) (string, error) {
 	}
 
 	return users[0].Storage, nil
+}
+
+func RemoveDepotFiles(clientID string, depotID string, context echo.Context) error {
+
+	storage, err := GetUserStorage(clientID)
+	if err != nil {
+		return BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
+	fpath := filepath.Join(storage, depotID)
+	err = os.RemoveAll(fpath)
+	if err != nil {
+		return BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	return nil
 }
 
 func GetUserBuildDepotPath(clientID string, buildID string, platform string, context echo.Context, createDepot bool) (string, error) {
