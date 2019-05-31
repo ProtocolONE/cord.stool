@@ -231,6 +231,8 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, manife
 		close(stopCh)
 	}()
 
+	fullSourceDir = filepath.Join(fullSourceDir, manifest.LocalRoot)
+
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
 
 	if args.Hash {
