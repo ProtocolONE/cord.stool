@@ -103,22 +103,22 @@ type UploadCmd struct {
 	BuildID  string `json:"build_id"`
 	FilePath string `json:"filepath"`
 	FileName string `json:"filename"`
-	FileData []byte `json:filedata`
-	Patch    bool   `json:patch`
-	Config   bool   `json:config`
-	Platform string `json:platform`
+	FileData []byte `json:"filedata"`
+	Patch    bool   `json:"patch"`
+	Config   bool   `json:"config"`
+	Platform string `json:"platform"`
 }
 
 type CompareHashCmd struct {
 	BuildID  string `json:"build_id"`
 	FilePath string `json:"filepath"`
 	FileName string `json:"filename"`
-	FileHash string `json:filehash`
-	Platform string `json:platform`
+	FileHash string `json:"filehash"`
+	Platform string `json:"platform"`
 }
 
 type CompareHashCmdResult struct {
-	Equal bool `json:equal`
+	Equal bool `json:"equal"`
 }
 
 type SignatureCmd struct {
@@ -126,14 +126,14 @@ type SignatureCmd struct {
 }
 
 type SignatureCmdResult struct {
-	FileData []byte `json:filedata`
+	FileData []byte `json:"filedata"`
 }
 
 type ApplyPatchCmd struct {
 	BuildID    string `json:"build_id"`
 	SrcBuildID string `json:"src_build_id"`
-	FileData   []byte `json:filedata`
-	Platform   string `json:platform`
+	FileData   []byte `json:"filedata"`
+	Platform   string `json:"platform"`
 }
 
 type User struct {
@@ -148,31 +148,41 @@ type TorrentCmd struct {
 
 type Branch struct {
 	ID        string    `bson:"_id" json:id`
-	Name      string    `json:name`
+	Name      string    `json:"name"`
 	GameID    string    `json:"game_id"`
-	LiveBuild string    `json:live_build`
-	Live      bool      `json:live`
-	Created   time.Time `json:created`
-	Updated   time.Time `json:updated`
+	LiveBuild string    `json:"live_build"`
+	Live      bool      `json:"live"`
+	Created   time.Time `json:"created"`
+	Updated   time.Time `json:"updated"`
 }
 
 type Build struct {
 	ID       string    `bson:"_id" json:id`
-	BranchID string    `json:branch_id`
-	Created  time.Time `json:created`
-	Platform string    `json:platform`
-	/*Win64    string `json:win64`
-	Win32    string `json:win32`
-	Win32_64 string `json:win32_64`
-	MacOS    string `json:macoS`
-	Linux    string `json:linux`*/
+	BranchID string    `json:"branch_id"`
+	Created  time.Time `json:"created"`
+	//Platform string    `json:"platform"`
+}
+
+type Depot struct {
+	ID       string    `bson:"_id" json:id`
+	Created  time.Time `json:"created"`
+	Platform string    `json:"platform"`
+}
+
+type BuildDepot struct {
+	ID       string    `bson:"_id" json:id`
+	BuildID  string    `json:"build_id"`
+	DepotID  string    `json:"depot_id"`
+	LinkID   string    `json:"link_id"`
+	Platform string    `json:"platform"`
+	Created  time.Time `json:"created"`
 }
 
 type ShallowBranchCmdResult struct {
-	SourceID   string `json:source_id`
-	SourceName string `json:source_name`
-	TargetID   string `json:target_id`
-	TargetName string `json:target_name`
+	SourceID   string `json:"source_id"`
+	SourceName string `json:"source_name"`
+	TargetID   string `json:"target_id"`
+	TargetName string `json:"target_name"`
 }
 
 type GameGenre struct {
@@ -217,32 +227,31 @@ type GameInfo struct {
 type UpdateInfo struct {
 	BuildID string   `json:"build_id"`
 	Config  string   `json:"config"`
-	Files   []string `json:files`
+	Files   []string `json:"files"`
 }
 
 type DownloadCmd struct {
 	FilePath string `json:"filepath"`
-	FileData []byte `json:filedata`
+	FileData []byte `json:"filedata"`
 }
 
 type ConfigLocales struct {
-	Label      string `json:label`
-	Locale     string `json:locale`
-	Local_Root string `json:local_root`
+	Label     string `json:"label"`
+	Locale    string `json:"locale"`
+	LocalRoot string `json:"local_root"`
 }
 
 type ConfigManifest struct {
-	Label      string          `json:label`
-	Locales    []ConfigLocales `json:locales`
-	Local_Root string          `json:local_root`
+	Label    string          `json:"label"`
+	Platform string          `json:"platform"`
+	Locales  []ConfigLocales `json:"locales"`
 }
 
 type ConfigApplication struct {
-	ID       float64        `json:id`
-	Platform string         `json:platform`
-	Manifest ConfigManifest `json:manifest`
+	ID        float64          `json:"id"`
+	Manifests []ConfigManifest `json:"manifests"`
 }
 
 type Config struct {
-	Application ConfigApplication `json:application`
+	Application ConfigApplication `json:"application"`
 }

@@ -203,7 +203,7 @@ func (manager *BuildManager) Insert(build *models.Build) error {
 	return nil
 }
 
-func (manager *BuildManager) FindByID(id string) ([]*models.Build, error) {
+func (manager *BuildManager) FindByID(id string) (*models.Build, error) {
 
 	var dbbuild []*models.Build
 	err := manager.collection.Find(bson.M{"_id": id}).All(&dbbuild)
@@ -211,10 +211,18 @@ func (manager *BuildManager) FindByID(id string) ([]*models.Build, error) {
 		return nil, err
 	}
 
-	return dbbuild, nil
+	if dbbuild == nil {
+		return nil, nil
+	}
+
+	if len(dbbuild) > 1 {
+		return nil, fmt.Errorf("Database integrity error")
+	}
+
+	return dbbuild[0], nil
 }
 
-func (manager *BuildManager) FindBuildByBranch(bid string) ([]*models.Build, error) {
+func (manager *BuildManager) FindBuildByBranchID(bid string) ([]*models.Build, error) {
 
 	var dbbuild []*models.Build
 	err := manager.collection.Find(bson.M{"branchid": bid}).Sort("-created").All(&dbbuild)
@@ -223,4 +231,134 @@ func (manager *BuildManager) FindBuildByBranch(bid string) ([]*models.Build, err
 	}
 
 	return dbbuild, nil
+}
+
+func (manager *BuildManager) FindLastBuildByBranchID(bid string) (*models.Build, error) {
+
+	dbbuild, err := manager.FindBuildByBranchID(bid)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(dbbuild) == 0 {
+		return nil, nil
+	}
+
+	return dbbuild[0], nil
+}
+
+type DepotManager struct {
+	collection *mgo.Collection
+}
+
+func NewDepotManager() *DepotManager {
+	session := dbConf.Dbs.Copy()
+	return &DepotManager{collection: session.DB(dbConf.Database).C("depots")}
+}
+
+func (manager *DepotManager) Insert(depot *models.Depot) error {
+
+	err := manager.collection.Insert(depot)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *DepotManager) FindByID(id string) (*models.Depot, error) {
+
+	var dbdepot []*models.Depot
+	err := manager.collection.Find(bson.M{"_id": id}).All(&dbdepot)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbdepot == nil {
+		return nil, nil
+	}
+
+	if len(dbdepot) > 1 {
+		return nil, fmt.Errorf("Database integrity error")
+	}
+
+	return dbdepot[0], nil
+}
+
+type BuildDepotManager struct {
+	collection *mgo.Collection
+}
+
+func NewBuildDepotManager() *BuildDepotManager {
+	session := dbConf.Dbs.Copy()
+	return &BuildDepotManager{collection: session.DB(dbConf.Database).C("build_depot")}
+}
+
+func (manager *BuildDepotManager) Insert(buildDepot *models.BuildDepot) error {
+
+	err := manager.collection.Insert(buildDepot)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *BuildDepotManager) Update(buildDepot *models.BuildDepot) error {
+
+	err := manager.collection.UpdateId(buildDepot.ID, buildDepot)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *BuildDepotManager) FindByID(id string) (*models.BuildDepot, error) {
+
+	var dbbuilddepot []*models.BuildDepot
+	err := manager.collection.Find(bson.M{"_id": id}).All(&dbbuilddepot)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbbuilddepot == nil {
+		return nil, nil
+	}
+
+	if len(dbbuilddepot) > 1 {
+		return nil, fmt.Errorf("Database integrity error")
+	}
+
+	return dbbuilddepot[0], nil
+}
+
+func (manager *BuildDepotManager) FindByBuildID(id string) ([]*models.BuildDepot, error) {
+
+	var dbbuilddepot []*models.BuildDepot
+	err := manager.collection.Find(bson.M{"buildid": id}).Sort("-created").All(&dbbuilddepot)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbbuilddepot, nil
+}
+
+func (manager *BuildDepotManager) FindByBuildAndPlatformID(id string, platform string) (*models.BuildDepot, error) {
+
+	var dbbuilddepot []*models.BuildDepot
+	err := manager.collection.Find(bson.M{"buildid": id, "platform": platform}).Sort("-created").All(&dbbuilddepot)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbbuilddepot == nil {
+		return nil, nil
+	}
+
+	if len(dbbuilddepot) > 1 {
+		return nil, fmt.Errorf("Database integrity error")
+	}
+
+	return dbbuilddepot[0], nil
 }

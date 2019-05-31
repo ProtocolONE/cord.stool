@@ -266,54 +266,52 @@ func ShallowBranchCmd(context echo.Context) error {
 	return context.JSON(http.StatusOK, models.ShallowBranchCmdResult{sourceBranch.ID, sourceBranch.Name, targetBranch.ID, targetBranch.Name})
 }
 
-/*func mergeBuilds(manager *database.BuildManager, build *models.Build, context echo.Context) error {
+func mergeBuilds(branchID string, newBuildID string, context echo.Context) error {
 
-	builds, err := manager.FindBuildByBranch(build.BranchID)
+	manager := database.NewBuildManager()
+	builds, err := manager.FindBuildByBranchID(branchID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 	}
 
-	if build.Platform == "" {
-		build.Platform = "win64"
+	buildID := ""
+	if builds != nil && len(builds) != 0 {
+		// skip new build
+		if builds[0].ID == newBuildID && len(builds) > 1 {
+			buildID = builds[1].ID
+		} else if builds[0].ID != newBuildID && len(builds) > 0 {
+			buildID = builds[0].ID
+		}
 	}
 
-	if build.Platform == models.Win64 {
-		build.Win64 = ""
-	}
-	if build.Platform == models.Win32 {
-		build.Win32 = ""
-	}
-	if build.Platform == models.Win32_64 {
-		build.Win32_64 = ""
-	}
-	if build.Platform == models.MacOS {
-		build.MacOS = ""
-	}
-	if build.Platform == models.Linux {
-		build.Linux = ""
+	if buildID == "" {
+		return nil
 	}
 
-	for _, b := range builds {
+	managerBD := database.NewBuildDepotManager()
+	buildDepots, err := managerBD.FindByBuildID(buildID)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
 
-		if b.Platform == models.Win64 && build.Platform != models.Win64 && build.Win64 == "" {
-			build.Win64 = b.ID
+	for _, bd := range buildDepots {
+
+		if bd.ID == newBuildID {
+			continue
 		}
-		if b.Platform == models.Win32 && build.Platform != models.Win32 && build.Win32 == "" {
-			build.Win32 = b.ID
-		}
-		if b.Platform == models.Win32_64 && build.Platform != models.Win32_64 && build.Win32_64 == "" {
-			build.Win32_64 = b.ID
-		}
-		if b.Platform == models.MacOS && build.Platform != models.MacOS && build.MacOS == "" {
-			build.MacOS = b.ID
-		}
-		if b.Platform == models.Linux && build.Platform != models.Linux && build.Linux == "" {
-			build.Linux = b.ID
+
+		bd.LinkID = bd.ID
+		bd.ID = utils2.GenerateID()
+		bd.BuildID = newBuildID
+		bd.Created = time.Now()
+		err = managerBD.Insert(bd)
+		if err != nil {
+			return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 		}
 	}
 
 	return nil
-}*/
+}
 
 func CreateBuildCmd(context echo.Context) error {
 
@@ -327,14 +325,14 @@ func CreateBuildCmd(context echo.Context) error {
 	reqBuild.Created = time.Now()
 
 	manager := database.NewBuildManager()
-	/*err = mergeBuilds(manager, reqBuild, context)
-	if err != nil {
-		return err
-	}*/
-
 	err = manager.Insert(reqBuild)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	err = mergeBuilds(reqBuild.BranchID, reqBuild.ID, context)
+	if err != nil {
+		return err
 	}
 
 	return context.JSON(http.StatusOK, reqBuild)
@@ -357,7 +355,7 @@ func GetBuildCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid build id: "+bid)
 	}
 
-	return context.JSON(http.StatusOK, build[0])
+	return context.JSON(http.StatusOK, build)
 }
 
 func ListBuildCmd(context echo.Context) error {
@@ -368,7 +366,7 @@ func ListBuildCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBuildManager()
-	builds, err := manager.FindBuildByBranch(result.ID)
+	builds, err := manager.FindBuildByBranchID(result.ID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 	}
@@ -389,11 +387,11 @@ func GetLiveBuildCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 	}
 
-	if build == nil || len(build) == 0 {
+	if build == nil {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "There are no one Live Build")
 	}
 
-	return context.JSON(http.StatusOK, build[0])
+	return context.JSON(http.StatusOK, build)
 }
 
 func PublishBuildCmd(context echo.Context) error {
@@ -414,12 +412,12 @@ func PublishBuildCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 	}
 
-	if build == nil || len(build) == 0 {
+	if build == nil {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid build ID or Branch has no Live Build")
 	}
 
 	platform := context.QueryParam("platform")
-	fpath, _, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), build[0].ID, platform, context)
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), build.ID, platform, context, false)
 	if err != nil {
 		return err
 	}
@@ -465,30 +463,6 @@ func PublishBuildCmd(context echo.Context) error {
 	return context.JSON(http.StatusOK, result)
 }
 
-/*
-func CloneLiveBuildCmd(context echo.Context) error {
-
-	result, ok, err := findBranch(context, "id", "name", "gid")
-	if !ok {
-		return err
-	}
-
-	manager := database.NewBuildManager()
-	build, err := manager.FindByID(result.LiveBuild)
-	if err != nil {
-		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
-	}
-
-	fpath, err := utils.GetUserBuildPath(context.Request().Header.Get("ClientID"), BuildID)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
-	}
-	fpath = path.Join(fpath, "content")
-
-	return context.JSON(http.StatusOK, build)
-}
-*/
-
 func UpdateCmd(context echo.Context) error {
 
 	result, ok, err := findBranch(context, "id", "name", "gid")
@@ -503,13 +477,13 @@ func UpdateCmd(context echo.Context) error {
 	locale := context.QueryParam("locale")
 
 	platform := context.QueryParam("platform")
-	fpath, curBuildID, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), result.LiveBuild, platform, context)
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), result.LiveBuild, platform, context, false)
 	if err != nil {
 		return err
 	}
 
 	info := &models.UpdateInfo{}
-	info.BuildID = curBuildID
+	info.BuildID = result.LiveBuild //curBuildID
 	info.Config = path.Join(fpath, "config.json")
 
 	info.Config, err = filepath.Rel(fpath, info.Config)
@@ -527,6 +501,21 @@ func UpdateCmd(context echo.Context) error {
 		return err
 	}
 
+	var manifest *models.ConfigManifest
+	manifest = nil
+
+	for _, m := range cfg.Application.Manifests {
+
+		if m.Platform == platform {
+			manifest = &m
+			break
+		}
+	}
+
+	if manifest == nil {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidBuildPlatform, platform)
+	}
+
 	for _, f := range files {
 
 		relpath, err := filepath.Rel(fpath, f)
@@ -542,13 +531,13 @@ func UpdateCmd(context echo.Context) error {
 		index := len("content/")
 		useFile := true
 
-		for _, l := range cfg.Application.Manifest.Locales {
+		for _, l := range manifest.Locales {
 
 			rpath, _ := filepath.Split(relpath)
 			rpath = filepath.ToSlash(rpath)
 
-			match := strings.Index(rpath, l.Local_Root)
-			if match == index || (rpath == "content/" && l.Local_Root == "./") {
+			match := strings.Index(rpath, l.LocalRoot)
+			if match == index || (rpath == "content/" && l.LocalRoot == "./") {
 
 				if locale != l.Locale {
 					useFile = false
@@ -573,7 +562,7 @@ func DownloadCmd(context echo.Context) error {
 	}
 
 	platform := context.QueryParam("platform")
-	fpath, _, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), buildID, platform, context)
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), buildID, platform, context, false)
 	if err != nil {
 		return err
 	}

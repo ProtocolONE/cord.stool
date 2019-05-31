@@ -11,9 +11,6 @@ import (
 	"cord.stool/cordapi"
 	"cord.stool/service/models"
 
-	"github.com/gosuri/uiprogress"
-	"github.com/gosuri/uiprogress/util/strutil"
-
 	"github.com/itchio/savior/seeksource"
 	"github.com/itchio/wharf/eos"
 	"github.com/itchio/wharf/eos/option"
@@ -85,18 +82,12 @@ func Progress(alpha float64) {
 func Logl(level string, msg string) {
 }
 
-func uploadWharf(api *cordapi.CordAPIManager, args Args, source string, cfg *models.Config) error {
+func uploadWharf(api *cordapi.CordAPIManager, args Args, source string, manifest models.ConfigManifest) error {
 
-	_bar = uiprogress.AddBar(5).AppendCompleted().PrependElapsed()
-
-	_title = &_curTitle
-	_bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize(*_title, 35)
-	})
-
+	_bar.Total = 5
 	_curTitle = "Getting files' info from server"
 
-	signatureInfo, err := getSignatureInfo(api, args.SrcBuildID, cfg.Application.Platform)
+	signatureInfo, err := getSignatureInfo(api, args.SrcBuildID, manifest.Platform)
 	if err != nil {
 		return err
 	}
@@ -174,7 +165,7 @@ func uploadWharf(api *cordapi.CordAPIManager, args Args, source string, cfg *mod
 
 	_barTotal.Set(_barTotal.Total - 1)
 
-	return applyPatch(api, args.BuildID, args.SrcBuildID, patchFile.Name(), cfg.Application.Platform)
+	return applyPatch(api, args.BuildID, args.SrcBuildID, patchFile.Name(), manifest.Platform)
 }
 
 func applyPatch(api *cordapi.CordAPIManager, buildID string, srcbuildID string, patch string, platform string) error {

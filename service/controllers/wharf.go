@@ -60,11 +60,10 @@ func SignatureCmd(context echo.Context) error {
 	}
 
 	platform := context.QueryParam("platform")
-	fpath, _, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), buildId, platform, context)
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), buildId, platform, context, false)
 	if err != nil {
 		return err
 	}
-
 	fpath = path.Join(fpath, "content")
 
 	container, err := tlc.WalkAny(fpath, &tlc.WalkOpts{Filter: filterPaths})
@@ -133,18 +132,15 @@ func ApplyPatchCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
-	srcPath, _, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), reqCmp.SrcBuildID, reqCmp.Platform, context)
+	srcPath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), reqCmp.SrcBuildID, reqCmp.Platform, context, false)
 	if err != nil {
 		return err
 	}
 	srcPath = path.Join(srcPath, "content")
 
-	fpath, cbid, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), reqCmp.BuildID, reqCmp.Platform, context)
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), reqCmp.BuildID, reqCmp.Platform, context, true)
 	if err != nil {
 		return err
-	}
-	if cbid != reqCmp.BuildID {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidBuildPlatform, reqCmp.Platform)
 	}
 	fpath = path.Join(fpath, "content")
 

@@ -65,16 +65,30 @@ func Upload(args Args) error {
 		barCount = fc + 1 + 3 + 1
 	}
 
+	cfg, err := utils2.ReadConfigFile(args.Config, nil)
+	if err != nil {
+		return errors.New("Cannot read config file: " + err.Error())
+	}
+
+	if len(cfg.Application.Manifests) == 0 {
+		return errors.New("There are no one manifest section in config file")
+	}
+
+	manCount := len(cfg.Application.Manifests)
+	barCount *= manCount
+	barCount -= 3 * manCount
+
 	uiprogress.Start()
 	_barTotal = uiprogress.AddBar(barCount).AppendCompleted().PrependElapsed()
 	_barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize("Total progress", 35)
 	})
 
-	cfg, err := utils2.ReadConfigFile(args.Config, nil)
-	if err != nil {
-		return errors.New("Cannot read config file: " + err.Error())
-	}
+	_bar = uiprogress.AddBar(1).AppendCompleted().PrependElapsed()
+	_title = &_curTitle
+	_bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(*_title, 35)
+	})
 
 	api := cordapi.NewCordAPI(args.Url)
 	err = api.Login(args.Login, args.Password)
@@ -82,32 +96,42 @@ func Upload(args Args) error {
 		return err
 	}
 
-	branch, build, err := createBuild(api, &args, cfg)
+	branch, build, err := createBuild(api, &args)
 	if err != nil {
 		return err
 	}
 
-	if args.Wharf {
+	for _, m := range cfg.Application.Manifests {
 
-		err = uploadWharf(api, args, fullSourceDir, cfg)
+		_bar.Set(0)
+
+		if m.Platform == "" {
+			return errors.New("There is no platform value of manifest section in config file")
+		}
+
+		if args.Wharf {
+
+			err = uploadWharf(api, args, fullSourceDir, m)
+			if err != nil {
+				return err
+			}
+
+		} else {
+
+			err = upload(api, args, fullSourceDir, m)
+			if err != nil {
+				return err
+			}
+		}
+
+		_curTitle = fmt.Sprint("Uploading config file ...")
+		err = uploadFile(api, args, args.Config, "", true, m)
 		if err != nil {
 			return err
 		}
+		_barTotal.Incr()
 
-	} else {
-
-		err = upload(api, args, fullSourceDir, cfg)
-		if err != nil {
-			return err
-		}
 	}
-
-	_curTitle = fmt.Sprint("Uploading config file ...")
-	err = uploadFile(api, args, args.Config, "", true, cfg)
-	if err != nil {
-		return err
-	}
-	_barTotal.Incr()
 
 	err = updateBranch(api, branch, build)
 	if err != nil {
@@ -122,7 +146,7 @@ func Upload(args Args) error {
 	return nil
 }
 
-func createBuild(api *cordapi.CordAPIManager, args *Args, cfg *models.Config) (*models.Branch, *models.Build, error) {
+func createBuild(api *cordapi.CordAPIManager, args *Args) (*models.Branch, *models.Build, error) {
 
 	_curTitle = fmt.Sprint("Creating build ...")
 
@@ -143,7 +167,7 @@ func createBuild(api *cordapi.CordAPIManager, args *Args, cfg *models.Config) (*
 	_barTotal.Incr()
 	_curTitle = fmt.Sprint("Creating build ...")
 
-	build, err := api.CreateBuild(&models.Build{"", branch.ID, time.Time{}, cfg.Application.Platform /*, "", "", "", "", ""*/})
+	build, err := api.CreateBuild(&models.Build{"", branch.ID, time.Time{}})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -175,7 +199,7 @@ func updateBranch(api *cordapi.CordAPIManager, branch *models.Branch, build *mod
 	return nil
 }
 
-func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, cfg *models.Config) error {
+func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, manifest models.ConfigManifest) error {
 
 	var err error
 
@@ -192,16 +216,10 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, cfg *m
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
 
 	if args.Hash {
-		_bar = uiprogress.AddBar(4).AppendCompleted().PrependElapsed()
+		_bar.Total = 4
 	} else {
-		_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
+		_bar.Total = 3
 	}
-
-	_title = &_curTitle
-
-	_bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize(*_title, 35)
-	})
 
 	_barTotal.Incr()
 
@@ -213,7 +231,7 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, cfg *m
 		_barTotal.Incr()
 		_bar.Set(0)
 
-		err := uploadFile(api, args, path, fullSourceDir, false, cfg)
+		err := uploadFile(api, args, path, fullSourceDir, false, manifest)
 		if err != nil {
 			return err
 		}
@@ -242,7 +260,7 @@ func compareHash(api *cordapi.CordAPIManager, path string, buildid string, fpath
 	return cmpRes.Equal, nil
 }
 
-func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source string, config bool, cfg *models.Config) error {
+func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source string, config bool, manifest models.ConfigManifest) error {
 
 	_bar.Incr()
 
@@ -283,7 +301,7 @@ func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source stri
 
 	_bar.Incr()
 
-	err = api.Upload(&models.UploadCmd{BuildID: args.BuildID, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch, Config: config, Platform: cfg.Application.Platform})
+	err = api.Upload(&models.UploadCmd{BuildID: args.BuildID, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch, Config: config, Platform: manifest.Platform})
 	if err != nil {
 		return err
 	}

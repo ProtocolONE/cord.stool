@@ -3,120 +3,15 @@ package utils
 import (
 	"cord.stool/service/database"
 	"cord.stool/service/models"
+	utils2 "cord.stool/utils"
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"time"
 )
-
-func GetUserStorage(clientID string) (string, error) {
-
-	manager := database.NewUserManager()
-	users, err := manager.FindByName(clientID)
-	if err != nil {
-		return "", fmt.Errorf("Cannot find user %s, error: %s", clientID, err.Error())
-	}
-
-	if len(users) > 1 {
-		return "", fmt.Errorf("Duplicate users %s", clientID)
-	}
-
-	return users[0].Storage, nil
-}
-
-func GetUserBuildPathWithPlatform(clientID string, buildID string, platform string, context echo.Context) (string, string, error) {
-
-	manager := database.NewBuildManager()
-	build, err := manager.FindByID(buildID)
-	if err != nil {
-		return "", "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
-	}
-
-	if build == nil {
-		return "", "", BuildBadRequestError(context, models.ErrorInvalidRequest, fmt.Sprintf("Cannot find the specified build %s", buildID))
-	}
-
-	storage, err := GetUserStorage(clientID)
-	if err != nil {
-		return "", "", BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
-	}
-
-	pf, err := GetPlatformPath(platform, context)
-	if err != nil {
-		return "", "", err
-	}
-
-	/*if build[0].Platform != platform {
-
-		if platform == models.Win64 {
-			buildID = build[0].Win64
-		} else if platform == models.Win32 {
-			buildID = build[0].Win32
-		} else if platform == models.Win32_64 {
-			buildID = build[0].Win32_64
-		} else if platform == models.MacOS {
-			buildID = build[0].MacOS
-		} else if platform == models.Linux {
-			buildID = build[0].Linux
-		} else {
-			return "", "", BuildBadRequestError(context, models.ErrorInvalidPlatformName, platform)
-		}
-	}
-
-	fpath := filepath.Join(storage, buildID)
-	fpath = filepath.Join(fpath, pf)
-	return fpath, buildID, nil*/
-
-	if build[0].Platform == platform {
-
-		fpath := filepath.Join(storage, buildID)
-		fpath = filepath.Join(fpath, pf)
-		return fpath, buildID, nil
-	}
-
-	builds, err := manager.FindBuildByBranch(build[0].BranchID)
-	if err != nil {
-		return "", "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
-	}
-
-	for _, b := range builds {
-
-		if b.Created.After(build[0].Created) {
-			continue
-		}
-
-		if b.Platform == platform {
-			fpath := filepath.Join(storage, b.ID)
-			fpath = filepath.Join(fpath, pf)
-			return fpath, b.ID, nil
-		}
-	}
-
-	return "", "", BuildBadRequestError(context, models.ErrorInvalidBuildPlatform, platform)
-}
-
-func GetUserBuildPath(clientID string, buildID string) (string, error) {
-
-	storage, err := GetUserStorage(clientID)
-	if err != nil {
-		return "", err
-	}
-
-	manager := database.NewBuildManager()
-	build, err := manager.FindByID(buildID)
-	if err != nil {
-		return "", err
-	}
-
-	if build == nil {
-		return "", fmt.Errorf("Cannot find the specified build %s", buildID)
-	}
-
-	fpath := filepath.Join(storage, buildID)
-	return fpath, nil
-}
 
 func BuildError(context echo.Context, status int, code int, message string) error {
 
@@ -226,19 +121,99 @@ func ReadConfigFile(path string, context *echo.Context) (*models.Config, error) 
 	return ReadConfigData(data, context)
 }
 
-func GetPlatformPath(platform string, context echo.Context) (string, error) {
+func GetUserStorage(clientID string) (string, error) {
 
-	if platform == models.Win32 {
-		return models.Win32_Folder, nil
-	} else if platform == models.Win64 || platform == "" {
-		return models.Win64_Folder, nil
-	} else if platform == models.Win32_64 {
-		return models.Win32_64_Folder, nil
-	} else if platform == models.MacOS {
-		return models.MacOS_Folder, nil
-	} else if platform == models.Linux {
-		return models.Linux_Folder, nil
+	manager := database.NewUserManager()
+	users, err := manager.FindByName(clientID)
+	if err != nil {
+		return "", fmt.Errorf("Cannot find user %s, error: %s", clientID, err.Error())
 	}
 
-	return "", BuildBadRequestError(context, models.ErrorInvalidPlatformName, platform)
+	if len(users) > 1 {
+		return "", fmt.Errorf("Duplicate users %s", clientID)
+	}
+
+	return users[0].Storage, nil
+}
+
+func GetUserBuildDepotPath(clientID string, buildID string, platform string, context echo.Context, createDepot bool) (string, error) {
+
+	manager := database.NewBuildManager()
+	build, err := manager.FindByID(buildID)
+	if err != nil {
+		return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	if build == nil {
+		return "", BuildBadRequestError(context, models.ErrorInvalidRequest, fmt.Sprintf("Cannot find the specified build %s", buildID))
+	}
+
+	storage, err := GetUserStorage(clientID)
+	if err != nil {
+		return "", BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
+	managerBD := database.NewBuildDepotManager()
+	buildDepot, err := managerBD.FindByBuildAndPlatformID(buildID, platform)
+	if err != nil {
+		return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	DepotID := ""
+
+	if (buildDepot == nil || buildDepot.LinkID != "") && createDepot {
+
+		depot := &models.Depot{utils2.GenerateID(), time.Now(), platform}
+		managerD := database.NewDepotManager()
+		err = managerD.Insert(depot)
+		if err != nil {
+			return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+		}
+
+		if buildDepot != nil && buildDepot.LinkID != "" {
+
+			linkDuildDepot, err := managerBD.FindByID(buildDepot.LinkID)
+			if err != nil {
+				return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+			}
+
+			if linkDuildDepot.Platform != platform {
+				createDepot = true
+			} else {
+				createDepot = false
+			}
+		}
+
+		if createDepot {
+
+			buildDepot := &models.BuildDepot{utils2.GenerateID(), buildID, depot.ID, "", platform, time.Now()}
+			err = managerBD.Insert(buildDepot)
+			if err != nil {
+				return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+			}
+
+		} else {
+
+			buildDepot.DepotID = depot.ID
+			buildDepot.LinkID = ""
+			err = managerBD.Update(buildDepot)
+			if err != nil {
+				return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+			}
+		}
+
+		DepotID = depot.ID
+
+	} else if buildDepot != nil {
+
+		DepotID = buildDepot.DepotID
+	}
+
+	if DepotID == "" {
+		return "", BuildBadRequestError(context, models.ErrorInvalidBuildPlatform, platform)
+	}
+
+	fpath := filepath.Join(storage, DepotID)
+	return fpath, nil
+
 }

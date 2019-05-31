@@ -31,13 +31,9 @@ func UploadCmd(context echo.Context) error {
 		}
 	}
 
-	fpath, cbid, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), reqUpload.BuildID, reqUpload.Platform, context)
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), reqUpload.BuildID, reqUpload.Platform, context, true)
 	if err != nil {
 		return err
-	}
-
-	if cbid != reqUpload.BuildID {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidBuildPlatform, reqUpload.Platform)
 	}
 
 	if !reqUpload.Config {
@@ -100,7 +96,7 @@ func CompareHashCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
-	fpath, _, err := utils.GetUserBuildPathWithPlatform(context.Request().Header.Get("ClientID"), reqCmp.BuildID, reqCmp.Platform, context)
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), reqCmp.BuildID, reqCmp.Platform, context, false)
 	if err != nil {
 		return err
 	}
