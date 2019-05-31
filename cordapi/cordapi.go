@@ -394,14 +394,7 @@ func (manager *CordAPIManager) DeleteBranch(id string, name string, gameID strin
 
 func deleteBranch(host string, token string, id string, name string, gameID string) (*models.Branch, int, error) {
 
-	url := host + "/api/v1/branch?"
-	if id != "" {
-		url += "id=" + id
-	} else {
-		url += "name=" + name + "&gid=" + gameID
-	}
-
-	res, err := utils.Delete(url, token, "application/json", nil)
+	res, err := utils.Delete(host+"/api/v1/branch?id="+id+"&name="+name+"&gid="+gameID, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -443,14 +436,7 @@ func (manager *CordAPIManager) SetLiveBranch(id string, name string, gameID stri
 
 func setLiveBranch(host string, token string, id string, name string, gameID string) (*models.Branch, int, error) {
 
-	url := host + "/api/v1/branch/live?"
-	if id != "" {
-		url += "id=" + id
-	} else {
-		url += "name=" + name + "&gid=" + gameID
-	}
-
-	res, err := utils.Put(url, token, "application/json", nil)
+	res, err := utils.Put(host+"/api/v1/branch/live?id="+id+"&name="+name+"&gid="+gameID, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -534,14 +520,7 @@ func (manager *CordAPIManager) GetBranch(id string, name string, gameID string) 
 
 func getBranch(host string, token string, id string, name string, gameID string) (*models.Branch, int, error) {
 
-	url := host + "/api/v1/branch?"
-	if id != "" {
-		url += "id=" + id
-	} else {
-		url += ("name=" + name + "&gid=" + gameID)
-	}
-
-	res, err := utils.Get(url, token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/branch?id="+id+"&name="+name+"&gid="+gameID, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -663,24 +642,7 @@ func (manager *CordAPIManager) ShallowBranch(sid string, sname string, tid strin
 
 func shallowBranch(host string, token string, sid string, sname string, tid string, tname string, gameID string) (*models.ShallowBranchCmdResult, int, error) {
 
-	url := host + "/api/v1/branch/shallow?"
-	if sid != "" {
-		url += "sid=" + sid
-	} else {
-		url += "sname=" + sname
-	}
-
-	if tid != "" {
-		url += "&tid=" + tid
-	} else {
-		url += "&tname=" + tname
-	}
-
-	if sid == "" || tid == "" {
-		url += "&gid=" + gameID
-	}
-
-	res, err := utils.Post(url, token, "application/json", nil)
+	res, err := utils.Post(host+"/api/v1/branch/shallow?sid="+sid+"&sname="+sname+"&tid="+tid+"&tname="+tname+"&gid="+gameID, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}

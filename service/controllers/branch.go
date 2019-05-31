@@ -98,8 +98,12 @@ func findBranch(context echo.Context, bidParam string, nameParam string, gidPara
 			return nil, false, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 		}
 		if result == nil {
-			return nil, false, utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid branch name: "+name)
+			return nil, false, utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Invalid branch name \""+name+"\" or Game ID \""+gid+"\"")
 		}
+	}
+
+	if bid != "" && gid != "" && result.GameID != gid {
+		return nil, false, utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Specified Game ID \""+gid+"\""+" is not belonged to the Branch ID \""+bid+"\"")
 	}
 
 	return result, true, nil
