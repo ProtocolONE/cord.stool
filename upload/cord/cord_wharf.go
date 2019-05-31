@@ -95,6 +95,8 @@ func uploadWharf(api *cordapi.CordAPIManager, args Args, source string, manifest
 	_barTotal.Incr()
 	_curTitle = "Checking changed files"
 
+	source = filepath.Join(source, manifest.LocalRoot)
+
 	err = pwr.AssertValid(source, signatureInfo)
 	_bar.Incr()
 	if err == nil {

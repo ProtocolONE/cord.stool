@@ -217,6 +217,30 @@ func updateBranch(api *cordapi.CordAPIManager, branch *models.Branch, build *mod
 	return nil
 }
 
+func checkExclusion(source string, fpath string, manifest models.ConfigManifest) bool {
+
+	fpath, err := filepath.Rel(source, fpath)
+	if err != nil {
+		return false
+	}
+
+	fpath = filepath.ToSlash(fpath)
+
+	for _, ex := range manifest.FileRules.Exclusions {
+
+		exPath := strings.TrimLeft(ex.LocalPath, ".")
+		exPath = strings.TrimLeft(ex.LocalPath, "/")
+		exPath = filepath.ToSlash(exPath)
+
+		match, err := filepath.Match(exPath, fpath)
+		if match && err == nil {
+			return true
+		}
+	}
+
+	return false
+}
+
 func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, manifest models.ConfigManifest) error {
 
 	var err error
@@ -245,11 +269,17 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, manife
 
 	for path := range f {
 
+		_bar.Set(0)
+
+		if checkExclusion(fullSourceDir, path, manifest) {
+			_barTotal.Incr()
+			continue
+		}
+
 		_, fn := filepath.Split(path)
 		_curTitle = fmt.Sprint("Uploading file: ", fn)
 
 		_barTotal.Incr()
-		_bar.Set(0)
 
 		err := uploadFile(api, args, path, fullSourceDir, false, manifest)
 		if err != nil {

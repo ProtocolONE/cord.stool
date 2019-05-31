@@ -235,17 +235,38 @@ type DownloadCmd struct {
 	FileData []byte `json:"filedata"`
 }
 
-type ConfigLocales struct {
+type ConfigLocale struct {
 	Label     string `json:"label"`
 	Locale    string `json:"locale"`
 	LocalRoot string `json:"local_root"`
 }
 
+type ConfigMapping struct {
+	LocalPath   string `json:"local_path"`
+	InstallPath string `json:"install_path"`
+}
+
+type ConfigProperty struct {
+	InstallPath string   `json:"install_path"`
+	Attributes  []string `json:"attributes"`
+}
+
+type ConfigExclusion struct {
+	LocalPath string `json:"local_path"`
+}
+
+type ConfigFileRules struct {
+	Mappings   []ConfigMapping   `json:"mappings"`
+	Properties []ConfigProperty  `json:"properties"`
+	Exclusions []ConfigExclusion `json:"exclusions"`
+}
+
 type ConfigManifest struct {
 	Label     string          `json:"label"`
 	Platform  string          `json:"platform"`
-	Locales   []ConfigLocales `json:"locales"`
+	Locales   []ConfigLocale  `json:"locales"`
 	LocalRoot string          `json:"local_root"`
+	FileRules ConfigFileRules `json:"file_rules"`
 }
 
 type ConfigApplication struct {
