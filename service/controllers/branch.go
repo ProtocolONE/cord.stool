@@ -618,29 +618,47 @@ func UpdateCmd(context echo.Context) error {
 			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 		}
 
-		if locale == "" {
-			info.Files = append(info.Files, relpath)
-			continue
-		}
-
-		index := len("content/")
 		useFile := true
+		
+		if locale != "" {
 
-		for _, l := range manifest.Locales {
+			index := len("content/")
 
-			rpath, _ := filepath.Split(relpath)
-			rpath = filepath.ToSlash(rpath)
+			for _, l := range manifest.Locales {
 
-			match := strings.Index(rpath, l.LocalRoot)
-			if match == index || (rpath == "content/" && l.LocalRoot == "./") {
+				rpath, _ := filepath.Split(relpath)
+				rpath = filepath.ToSlash(rpath)
 
-				if locale != l.Locale {
-					useFile = false
+				match := strings.Index(rpath, l.LocalRoot)
+				if match == index || (rpath == "content/" && l.LocalRoot == "./") {
+
+					if locale != l.Locale {
+						useFile = false
+					}
 				}
 			}
 		}
 
 		if useFile {
+
+			for _, m := range manifest.FileRules.Mappings {
+
+				localPath := strings.TrimLeft(m.LocalPath, ".")
+				localPath = strings.TrimLeft(m.LocalPath, "/")
+				localPath = filepath.ToSlash(localPath)
+
+				installPath := strings.TrimLeft(m.InstallPath, ".")
+				installPath = strings.TrimLeft(m.InstallPath, "/")
+				installPath = filepath.ToSlash(installPath)
+
+				match, err := filepath.Match(localPath, relpath)
+				if match && err == nil {
+
+					_, fn := filepath.Split(relpath)
+					relpath = filepath.Join(installPath, fn)
+				}
+			}
+
 			info.Files = append(info.Files, relpath)
 		}
 	}
