@@ -619,7 +619,7 @@ func UpdateCmd(context echo.Context) error {
 		}
 
 		useFile := true
-		
+
 		if locale != "" {
 
 			index := len("content/")
@@ -640,25 +640,6 @@ func UpdateCmd(context echo.Context) error {
 		}
 
 		if useFile {
-
-			for _, m := range manifest.FileRules.Mappings {
-
-				localPath := strings.TrimLeft(m.LocalPath, ".")
-				localPath = strings.TrimLeft(m.LocalPath, "/")
-				localPath = filepath.ToSlash(localPath)
-
-				installPath := strings.TrimLeft(m.InstallPath, ".")
-				installPath = strings.TrimLeft(m.InstallPath, "/")
-				installPath = filepath.ToSlash(installPath)
-
-				match, err := filepath.Match(localPath, relpath)
-				if match && err == nil {
-
-					_, fn := filepath.Split(relpath)
-					relpath = filepath.Join(installPath, fn)
-				}
-			}
-
 			info.Files = append(info.Files, relpath)
 		}
 	}
