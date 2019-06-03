@@ -237,19 +237,21 @@ func doFtp(ctx *context.StoolContext, c *cli.Context) error {
 			return fmt.Errorf("Invalid ftp url")
 		}
 
-		if !strings.EqualFold(u.Scheme, "ftp") {
+		if strings.EqualFold(u.Scheme, "ftp") {
 
 			err = ftp.Upload(args.FtpUrl, args.SourceDir)
 			if err != nil {
 				return err
 			}
 
-		} else if !strings.EqualFold(u.Scheme, "sftp") {
+		} else if strings.EqualFold(u.Scheme, "sftp") {
 
 			err := sftp.Upload(args.FtpUrl, args.SourceDir)
 			if err != nil {
 				return err
 			}
+		} else {
+			return fmt.Errorf("Invalid url")
 		}
 	} else {
 		return fmt.Errorf("-url flag is required")
