@@ -20,7 +20,7 @@ import (
 // UploadToFTP upload all files from sourceDir recursive
 // User, password and releative ftp path should be set in ftpUrl.
 // ftp://ftpuser:ftppass@ftp.protocol.local:21/cordtest/
-func Upload(ftpUrl, sourceDir string) (cerr error) {
+func Upload(ftpUrl, sourceDir string, outputDir string) (cerr error) {
 
 	fmt.Println("Uploading to FTP Server ...")
 
@@ -67,6 +67,7 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 	defer conn.Logout()
 
 	ftpRoot := u.Path
+	ftpRoot = filepath.Join(ftpRoot, outputDir)
 	conn.RemoveDirRecur(ftpRoot)
 
 	stopCh := make(chan struct{})
@@ -80,6 +81,9 @@ func Upload(ftpUrl, sourceDir string) (cerr error) {
 	}()
 
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
+	if dir, _ := utils.IsDirectory(fullSourceDir); !dir {
+		fullSourceDir, _ = filepath.Split(fullSourceDir)
+	}
 
 	bar := uiprogress.AddBar(4).AppendCompleted().PrependElapsed()
 
