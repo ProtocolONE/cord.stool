@@ -17,7 +17,7 @@ import (
 )
 
 // Upload ...
-func Upload(sftpUrl, sourceDir string) error {
+func Upload(sftpUrl, sourceDir string, outputDir string) error {
 
 	fmt.Println("Uploading to SFTP Server ...")
 
@@ -94,6 +94,9 @@ func Upload(sftpUrl, sourceDir string) error {
 	}()
 
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
+	if dir, _ := utils.IsDirectory(fullSourceDir); !dir {
+		fullSourceDir, _ = filepath.Split(fullSourceDir)
+	}
 
 	bar := uiprogress.AddBar(5).AppendCompleted().PrependElapsed()
 

@@ -67,6 +67,9 @@ func Upload(args Args) error {
 	}()
 
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
+	if dir, _ := utils.IsDirectory(fullSourceDir); !dir {
+		fullSourceDir, _ = filepath.Split(fullSourceDir)
+	}
 
 	_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
 

@@ -192,3 +192,13 @@ func FileCount(rootDir string) (res int, err error) {
 
 	return res, r
 }
+
+func IsDirectory(path string) (bool, error) {
+
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	return fileInfo.IsDir(), err
+}

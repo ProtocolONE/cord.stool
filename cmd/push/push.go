@@ -239,14 +239,14 @@ func doFtp(ctx *context.StoolContext, c *cli.Context) error {
 
 		if strings.EqualFold(u.Scheme, "ftp") {
 
-			err = ftp.Upload(args.FtpUrl, args.SourceDir)
+			err = ftp.Upload(args.FtpUrl, args.SourceDir, args.OutputDir)
 			if err != nil {
 				return err
 			}
 
 		} else if strings.EqualFold(u.Scheme, "sftp") {
 
-			err := sftp.Upload(args.FtpUrl, args.SourceDir)
+			err := sftp.Upload(args.FtpUrl, args.SourceDir, args.OutputDir)
 			if err != nil {
 				return err
 			}
