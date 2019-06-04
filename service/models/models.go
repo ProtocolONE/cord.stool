@@ -261,12 +261,36 @@ type ConfigFileRules struct {
 	Exclusions []ConfigExclusion `json:"exclusions"`
 }
 
+type ConfigRegistryKey struct {
+	Key   string `json:"key"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type ConfigInstallScript struct {
+	Name                  string            `json:"name"`
+	Executable            string            `json:"executable"`
+	Arguments             []string          `json:"arguments"`
+	RequiresAdmin         bool              `json:"requires_admin"`
+	CompletionRegistryKey ConfigRegistryKey `json:"completion_registry_key"`
+}
+
+type ConfigLaunchOption struct {
+	Name       string   `json:"name"`
+	Executable string   `json:"executable"`
+	Arguments  []string `json:"arguments"`
+	WorkingDir string   `json:"working_dir"`
+}
+
 type ConfigManifest struct {
-	Label     string          `json:"label"`
-	Platform  string          `json:"platform"`
-	Locales   []ConfigLocale  `json:"locales"`
-	LocalRoot string          `json:"local_root"`
-	FileRules ConfigFileRules `json:"file_rules"`
+	Label          string                `json:"label"`
+	Platform       string                `json:"platform"`
+	Locales        []ConfigLocale        `json:"locales"`
+	LocalRoot      string                `json:"local_root"`
+	FileRules      ConfigFileRules       `json:"file_rules"`
+	InstallScripts []ConfigInstallScript `json:"install_scripts"`
+	RegistryKeys   []ConfigRegistryKey   `json:"registry_keys"`
+	LaunchOptions  []ConfigLaunchOption  `json:"launch_options"`
 }
 
 type ConfigApplication struct {

@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"cord.stool/cordapi"
 	"cord.stool/service/core/utils"
@@ -16,6 +18,8 @@ import (
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
+
+	"golang.org/x/sys/windows/registry"
 )
 
 var _bar *uiprogress.Bar
@@ -49,7 +53,7 @@ func Update(args cord.Args) error {
 
 	_barTotal.Incr()
 
-	_barTotal.Total = len(info.Files) + 1
+	_barTotal.Total = len(info.Files) + 1 + 1
 	_totalTitle = "Total progress"
 
 	_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
@@ -98,6 +102,25 @@ func Update(args cord.Args) error {
 		_barTotal.Incr()
 	}
 
+	_bar.Set(0)
+	_bar.Total = 2
+	_curTitle = "Installing game ..."
+
+	install(args.TargetDir, manifest)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+
+	addRegKeys(manifest)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+	_barTotal.Incr()
+
 	_curTitle = "Finished"
 	uiprogress.Stop()
 
@@ -123,7 +146,7 @@ func downloadAndSave(api *cordapi.CordAPIManager, buildID string, source string,
 
 		att := getAttributes(source, manifest)
 		for _, a := range att {
-			
+
 			if a == "user_data" {
 				userData = true
 			}
@@ -144,7 +167,7 @@ func downloadAndSave(api *cordapi.CordAPIManager, buildID string, source string,
 
 	fpath = path.Join(fpath, fname)
 
-	 _, err = os.Stat(fpath)
+	_, err = os.Stat(fpath)
 	if os.IsNotExist(err) || !userData {
 
 		err = ioutil.WriteFile(fpath, data.FileData, 0777)
@@ -195,7 +218,7 @@ func mapPath(fpath string, manifest *models.ConfigManifest) string {
 func getAttributes(fpath string, manifest *models.ConfigManifest) []string {
 
 	fpath = filepath.ToSlash(fpath)
-	
+
 	for _, p := range manifest.FileRules.Properties {
 
 		prop := strings.TrimLeft(p.InstallPath, ".")
@@ -208,6 +231,68 @@ func getAttributes(fpath string, manifest *models.ConfigManifest) []string {
 			return p.Attributes
 		}
 	}
+
+	return nil
+}
+
+func addRegKeys(manifest *models.ConfigManifest) error {
+
+	for _, rk := range manifest.RegistryKeys {
+
+		k, _, err := registry.CreateKey(registry.CURRENT_USER, rk.Key, registry.WRITE)
+		if err != nil {
+			return nil
+		}
+		defer k.Close()
+
+		err = k.SetStringValue(rk.Name, rk.Value)
+		if err != nil {
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func checkCompletion(regKey models.ConfigRegistryKey) (bool, error) {
+
+	k, err := registry.OpenKey(registry.CURRENT_USER, regKey.Key, registry.QUERY_VALUE)
+	if err != nil {
+		return false, nil
+	}
+	defer k.Close()
+
+	s, _, err := k.GetStringValue(regKey.Name)
+	if err != nil {
+		return false, nil
+	}
+
+	return s == regKey.Value, nil
+}
+
+func install(targetDir string, manifest *models.ConfigManifest) error {
+
+	for _, scr := range manifest.InstallScripts {
+
+		fpath := filepath.Join(targetDir, "content", scr.Executable)
+		_, err := exec.Command(fpath, scr.Arguments...).Output()
+		if err != nil {
+			return err
+		}
+
+		completion := false
+
+		for !completion {
+
+			time.Sleep(1 * time.Second)
+			completion, err = checkCompletion(scr.CompletionRegistryKey)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	_bar.Incr()
 
 	return nil
 }
