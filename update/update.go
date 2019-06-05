@@ -15,11 +15,10 @@ import (
 	"cord.stool/service/core/utils"
 	"cord.stool/service/models"
 	"cord.stool/upload/cord"
+	utils2 "cord.stool/utils"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
-
-	"golang.org/x/sys/windows/registry"
 )
 
 var _bar *uiprogress.Bar
@@ -103,17 +102,24 @@ func Update(args cord.Args) error {
 	}
 
 	_bar.Set(0)
-	_bar.Total = 2
+	_bar.Total = 3
 	_curTitle = "Installing game ..."
 
-	install(args.TargetDir, manifest)
+	downloadRedist(manifest)
 	if err != nil {
 		return err
 	}
 
 	_bar.Incr()
 
-	addRegKeys(manifest)
+	err = install(args.TargetDir, manifest)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+
+	err = utils2.AddRegKeys(manifest)
 	if err != nil {
 		return err
 	}
@@ -235,47 +241,12 @@ func getAttributes(fpath string, manifest *models.ConfigManifest) []string {
 	return nil
 }
 
-func addRegKeys(manifest *models.ConfigManifest) error {
-
-	for _, rk := range manifest.RegistryKeys {
-
-		k, _, err := registry.CreateKey(registry.CURRENT_USER, rk.Key, registry.WRITE)
-		if err != nil {
-			return nil
-		}
-		defer k.Close()
-
-		err = k.SetStringValue(rk.Name, rk.Value)
-		if err != nil {
-			return nil
-		}
-	}
-
-	return nil
-}
-
-func checkCompletion(regKey models.ConfigRegistryKey) (bool, error) {
-
-	k, err := registry.OpenKey(registry.CURRENT_USER, regKey.Key, registry.QUERY_VALUE)
-	if err != nil {
-		return false, nil
-	}
-	defer k.Close()
-
-	s, _, err := k.GetStringValue(regKey.Name)
-	if err != nil {
-		return false, nil
-	}
-
-	return s == regKey.Value, nil
-}
-
 func install(targetDir string, manifest *models.ConfigManifest) error {
 
 	for _, scr := range manifest.InstallScripts {
 
 		fpath := filepath.Join(targetDir, "content", scr.Executable)
-		_, err := exec.Command(fpath, scr.Arguments...).Output()
+		err := utils2.RunCommand(scr.RequiresAdmin, fpath, scr.Arguments...)
 		if err != nil {
 			return err
 		}
@@ -284,15 +255,75 @@ func install(targetDir string, manifest *models.ConfigManifest) error {
 
 		for !completion {
 
-			time.Sleep(1 * time.Second)
-			completion, err = checkCompletion(scr.CompletionRegistryKey)
+			completion, err = utils2.CheckCompletion(scr.CompletionRegistryKey)
 			if err != nil {
 				return err
 			}
+			time.Sleep(1 * time.Second)
 		}
 	}
 
 	_bar.Incr()
+
+	return nil
+}
+
+func downloadRedist(manifest *models.ConfigManifest) error {
+
+	for _, r := range manifest.Redistributables {
+
+		url := ""
+
+		switch r {
+		case models.Directx_june_2010:
+			url = "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe"
+		case models.Vcredist_2005_x86:
+			url = "https://download.microsoft.com/download/d/3/4/d342efa6-3266-4157-a2ec-5174867be706/vcredist_x86.exe"
+		case models.Vcredist_2008_sp1_x86:
+			url = "https://download.microsoft.com/download/d/d/9/dd9a82d0-52ef-40db-8dab-795376989c03/vcredist_x86.exe"
+		case models.Vcredist_2010_x64:
+			url = "https://download.microsoft.com/download/3/2/2/3224B87F-CFA0-4E70-BDA3-3DE650EFEBA5/vcredist_x64.exe"
+		case models.Vcredist_2010_x86:
+			url = "https://download.microsoft.com/download/5/B/C/5BC5DBB3-652D-4DCE-B14A-475AB85EEF6E/vcredist_x86.exe"
+		case models.Vcredist_2012_update_4_x64:
+			url = ""
+		case models.Vcredist_2012_update_4_x86:
+			url = ""
+		case models.Vcredist_2013_x64:
+			url = "https://aka.ms/highdpimfc2013x64enu"
+		case models.Vcredist_2013_x86:
+			url = "https://aka.ms/highdpimfc2013x86enu"
+		case models.Vcredist_2015_x64:
+			url = "https://aka.ms/vs/16/release/vc_redist.x64.exe"
+		case models.Vcredist_2015_x86:
+			url = "https://aka.ms/vs/16/release/vc_redist.x86.exe"
+		case models.Vcredist_2017_x64:
+			url = "https://aka.ms/vs/16/release/vc_redist.x64.exe"
+		case models.Vcredist_2017_x86:
+			url = "https://aka.ms/vs/16/release/vc_redist.x86.exe"
+		case models.Xnafx_40:
+			url = "https://download.microsoft.com/download/A/C/2/AC2C903B-E6E8-42C2-9FD7-BEBAC362A930/xnafx40_redist.msi"
+		}
+
+		if url != "" {
+
+			tmpDir, err := ioutil.TempDir(os.TempDir(), "p1-")
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(tmpDir)
+
+			_, fname := filepath.Split(url)
+			tmpfn := filepath.Join(tmpDir, fname)
+
+			err = utils2.DownloadFile(tmpfn, url)
+			if err != nil {
+				return err
+			}
+
+			exec.Command(tmpfn).Run()
+		}
+	}
 
 	return nil
 }

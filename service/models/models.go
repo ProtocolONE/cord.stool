@@ -55,6 +55,23 @@ const (
 	Linux_Folder    = ".linux"
 )
 
+const (
+	Directx_june_2010          = "directx_june_2010"
+	Vcredist_2005_x86          = "vcredist_2005_x86"
+	Vcredist_2008_sp1_x86      = "vcredist_2008_sp1_x86"
+	Vcredist_2010_x64          = "vcredist_2010_x64"
+	Vcredist_2010_x86          = "vcredist_2010_x86"
+	Vcredist_2012_update_4_x64 = "vcredist_2012_update_4_x64"
+	Vcredist_2012_update_4_x86 = "vcredist_2012_update_4_x86"
+	Vcredist_2013_x64          = "vcredist_2013_x64"
+	Vcredist_2013_x86          = "vcredist_2013_x86"
+	Vcredist_2015_x64          = "vcredist_2015_x64"
+	Vcredist_2015_x86          = "vcredist_2015_x86"
+	Vcredist_2017_x64          = "vcredist_2017_x64"
+	Vcredist_2017_x86          = "vcredist_2017_x86"
+	Xnafx_40                   = "xnafx_40"
+)
+
 type AppKey struct {
 	PrivateKeyPath string `json:"private_key_path"`
 	PublicKeyPath  string `json:"public_key_path"`
@@ -283,14 +300,15 @@ type ConfigLaunchOption struct {
 }
 
 type ConfigManifest struct {
-	Label          string                `json:"label"`
-	Platform       string                `json:"platform"`
-	Locales        []ConfigLocale        `json:"locales"`
-	LocalRoot      string                `json:"local_root"`
-	FileRules      ConfigFileRules       `json:"file_rules"`
-	InstallScripts []ConfigInstallScript `json:"install_scripts"`
-	RegistryKeys   []ConfigRegistryKey   `json:"registry_keys"`
-	LaunchOptions  []ConfigLaunchOption  `json:"launch_options"`
+	Label            string                `json:"label"`
+	Platform         string                `json:"platform"`
+	Locales          []ConfigLocale        `json:"locales"`
+	LocalRoot        string                `json:"local_root"`
+	Redistributables []string              `json:"redistributables"`
+	FileRules        ConfigFileRules       `json:"file_rules"`
+	InstallScripts   []ConfigInstallScript `json:"install_scripts"`
+	RegistryKeys     []ConfigRegistryKey   `json:"registry_keys"`
+	LaunchOptions    []ConfigLaunchOption  `json:"launch_options"`
 }
 
 type ConfigApplication struct {

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	url2 "net/url"
+	"os"
 	"strings"
 
 	"cord.stool/service/models"
@@ -77,4 +78,25 @@ func BuldError(r io.Reader) error {
 
 	message, _ := ioutil.ReadAll(r)
 	return errors.New(string(message))
+}
+
+func DownloadFile(filepath string, url string) error {
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
 }
