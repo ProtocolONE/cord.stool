@@ -29,7 +29,7 @@ func buildFromFilePathEx(root string, ignoreFiles map[string]bool, pieceLength i
 
 	info = metainfo.Info{
 		PieceLength: pieceLength * 1024,
-		Name:        "live",
+		Name:        "content",
 		Files:       nil,
 	}
 
@@ -89,7 +89,7 @@ func buildFromFilePathEx(root string, ignoreFiles map[string]bool, pieceLength i
 	return
 }
 
-func CreateTorrent(rootDir string, targetFile string, announceList []string, urlList []string, pieceLength int64, silent bool) (err error) {
+func CreateTorrent(rootDir string, targetFile string, announceList []string, urlList []string, ignoreFiles map[string]bool, pieceLength int64, silent bool) (err error) {
 
 	if !silent {
 		fmt.Println("Creating torrent file ...")
@@ -125,12 +125,6 @@ func CreateTorrent(rootDir string, targetFile string, announceList []string, url
 
 	for _, u := range urlList {
 		mi.UrlList = append(mi.UrlList, u)
-	}
-
-	ignoreFiles := map[string]bool{
-		"update.crc.zip":  true,
-		"update.crc":      true,
-		"torrent.torrent": true,
 	}
 
 	info, err := buildFromFilePathEx(rootDir, ignoreFiles, pieceLength)

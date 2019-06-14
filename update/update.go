@@ -52,7 +52,7 @@ func UpdateEx(args cord.Args) error {
 
 	_barTotal.Incr()
 
-	_barTotal.Total = 1 + 1 + 1
+	_barTotal.Total = 1 + 1 + 1 + 1
 	_totalTitle = "Total progress"
 
 	_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
@@ -67,14 +67,17 @@ func UpdateEx(args cord.Args) error {
 	
 	_barTotal.Incr()
 
-	fpath, fname := filepath.Split(info.Config)
-	fpath = path.Join(args.TargetDir, fpath)
-	fpath = path.Join(fpath, fname)
+	/*err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
+	if err != nil {
+		return err
+	}*/
 
-	cfg, err := utils.ReadConfigFile(fpath, nil)
+	cfg, err := utils.ReadConfigData(info.ConfigData, nil)
 	if err != nil {
 		return err
 	}
+
+	_barTotal.Incr()
 
 	var manifest *models.ConfigManifest
 	manifest = nil

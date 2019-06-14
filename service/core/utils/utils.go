@@ -67,6 +67,8 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 		errorText = "Invalid platform name"
 	case models.ErrorInvalidBuildPlatform:
 		errorText = "The build platform is not matched the specified platform"
+	case models.ErrorConfigFileNotFound:
+		errorText = "Config file is not found"
 	default:
 		errorText = "Unknown error"
 	}
@@ -109,9 +111,9 @@ func ReadConfigData(data []byte, context *echo.Context) (*models.Config, error) 
 	return config, nil
 }
 
-func ReadConfigFile(path string, context *echo.Context) (*models.Config, error) {
+func ReadConfigFile(fpath string, context *echo.Context) (*models.Config, error) {
 
-	data, err := ioutil.ReadFile(path)
+	data, err := ioutil.ReadFile(fpath)
 	if err != nil {
 		if context != nil {
 			return nil, BuildInternalServerError(*context, models.ErrorFileIOFailure, err.Error())
@@ -120,6 +122,31 @@ func ReadConfigFile(path string, context *echo.Context) (*models.Config, error) 
 	}
 
 	return ReadConfigData(data, context)
+}
+
+func GetConfigManifest(fpath string, platform string, context *echo.Context) (*models.ConfigManifest, error) {
+
+	cfg, err := ReadConfigFile(fpath, context)
+	if err != nil {
+		return nil, err
+	}
+
+	var manifest *models.ConfigManifest
+	manifest = nil
+
+	for _, m := range cfg.Application.Manifests {
+
+		if m.Platform == platform {
+			manifest = &m
+			break
+		}
+	}
+
+	if manifest == nil {
+		return nil, BuildBadRequestError(*context, models.ErrorInvalidBuildPlatform, platform)
+	}
+
+	return manifest, nil
 }
 
 func GetUserStorage(clientID string) (string, error) {

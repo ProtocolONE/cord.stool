@@ -93,11 +93,14 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 
 	if args.SourceDir != "" {
 
+		ignoreFiles := map[string]bool{}
+
 		err := cord.CreateTorrent(
 			args.SourceDir,
 			args.TargetFile,
 			args.AnnounceList,
 			args.WebSeeds,
+			ignoreFiles,
 			args.PieceLength,
 			true,
 		)

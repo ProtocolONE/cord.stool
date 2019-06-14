@@ -29,6 +29,11 @@ const (
 	ErrorBuildIsNotPublished       = 22
 	ErrorInvalidPlatformName       = 23
 	ErrorInvalidBuildPlatform      = 24
+	ErrorConfigFileNotFound        = 25
+)
+
+const (
+	ErrorTorrentAlreadyExists      = 12
 )
 
 const (
@@ -249,7 +254,7 @@ type UpdateInfo struct {
 
 type UpdateInfoEx struct {
 	BuildID string   `json:"build_id"`
-	Config  string   `json:"config"`
+	ConfigData  []byte   `json:"configdata"`
 	TorrentData   []byte `json:"torrentdata"`
 }
 

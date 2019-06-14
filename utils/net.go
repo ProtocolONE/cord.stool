@@ -68,6 +68,17 @@ func httpRequest(method string, url string, token string, contentType string, ob
 	return client.Do(req)
 }
 
+func GetModelError(r io.Reader) *models.Error {
+
+	errorRes := new(models.Error)
+	decoder := json.NewDecoder(r)
+	if decoder.Decode(&errorRes) != nil {
+		return nil
+	}
+
+	return errorRes
+}
+
 func BuldError(r io.Reader) error {
 
 	errorRes := new(models.Error)

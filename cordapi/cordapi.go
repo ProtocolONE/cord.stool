@@ -272,7 +272,11 @@ func addTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return res.StatusCode, utils.BuldError(res.Body)
+
+		merr := utils.GetModelError(res.Body)
+		if merr == nil || merr.Code != models.ErrorTorrentAlreadyExists {
+			return res.StatusCode, utils.BuldError(res.Body)
+		}
 	}
 
 	return res.StatusCode, nil

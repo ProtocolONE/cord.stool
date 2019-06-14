@@ -513,15 +513,33 @@ func PublishBuildCmd(context echo.Context) error {
 	}
 
 	platform := context.QueryParam("platform")
+
 	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), build.ID, platform, context, false)
 	if err != nil {
 		return err
 	}
 
 	builtinAnnounceList := []string{
-		"http://31.25.227.94:6969/announce",
-		"udp://31.25.227.94:6969",
+		"http://192.168.2.241:6969/announce",
+		"udp://192.168.2.241:6969",
 	}
+
+	/*files, err := utils2.GetAllFiles(path.Join(fpath, "content"))
+	if !ok {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	manifest, err := utils.GetConfigManifest(path.Join(fpath, "config.json"), platform, &context)
+	if err != nil {
+		return err
+	}
+
+	ignoreFiles, err := getIgnoreFiles(manifest, fpath, files, context)
+	if err != nil {
+		return err
+	}*/
+
+	ignoreFiles := map[string]bool{}
 
 	targetFile := path.Join(fpath, "torrent.torrent")
 	fpath = path.Join(fpath, "content")
@@ -531,6 +549,7 @@ func PublishBuildCmd(context echo.Context) error {
 		targetFile,
 		builtinAnnounceList,
 		nil,
+		ignoreFiles,
 		512,
 		true,
 	)
@@ -556,6 +575,75 @@ func PublishBuildCmd(context echo.Context) error {
 	}
 
 	return context.JSON(http.StatusOK, result)
+}
+
+/*func getIgnoreFiles(manifest *models.ConfigManifest, fpath string, files []string, context echo.Context) (map[string]bool, error) {
+
+	result := make(map[string]bool)
+
+	needFiles, err := filterFiles(manifest, locale, fpath, files, context)
+	if err != nil {
+		return nil, err
+	}
+
+	IgnoreFile := true
+
+	for _, f := range files {
+
+		for _, nf := range needFiles {
+
+			if f == nf {
+				IgnoreFile = false
+				break
+			}
+		}
+
+		if IgnoreFile {
+			result[f] = true
+		}
+	}
+
+	return result, nil
+}*/
+
+func filterFiles(manifest *models.ConfigManifest, locale string, fpath string, files []string, context echo.Context) ([]string, error) {
+
+	var result []string
+
+	for _, f := range files {
+
+		relpath, err := filepath.Rel(fpath, f)
+		if err != nil {
+			return nil, utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+		}
+
+		useFile := true
+
+		if locale != "" {
+
+			index := len("content/")
+
+			for _, l := range manifest.Locales {
+
+				rpath, _ := filepath.Split(relpath)
+				rpath = filepath.ToSlash(rpath)
+
+				match := strings.Index(rpath, l.LocalRoot)
+				if match == index || (rpath == "content/" && l.LocalRoot == "./") {
+
+					if locale != l.Locale {
+						useFile = false
+					}
+				}
+			}
+		}
+
+		if useFile {
+			result = append(result, relpath)
+		}
+	}
+
+	return result, nil
 }
 
 func UpdateCmd(context echo.Context) error {
@@ -591,57 +679,14 @@ func UpdateCmd(context echo.Context) error {
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
-	cfg, err := utils.ReadConfigFile(path.Join(fpath, info.Config), &context)
+	manifest, err := utils.GetConfigManifest(path.Join(fpath, info.Config), platform, &context)
 	if err != nil {
 		return err
 	}
 
-	var manifest *models.ConfigManifest
-	manifest = nil
-
-	for _, m := range cfg.Application.Manifests {
-
-		if m.Platform == platform {
-			manifest = &m
-			break
-		}
-	}
-
-	if manifest == nil {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidBuildPlatform, platform)
-	}
-
-	for _, f := range files {
-
-		relpath, err := filepath.Rel(fpath, f)
-		if err != nil {
-			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-		}
-
-		useFile := true
-
-		if locale != "" {
-
-			index := len("content/")
-
-			for _, l := range manifest.Locales {
-
-				rpath, _ := filepath.Split(relpath)
-				rpath = filepath.ToSlash(rpath)
-
-				match := strings.Index(rpath, l.LocalRoot)
-				if match == index || (rpath == "content/" && l.LocalRoot == "./") {
-
-					if locale != l.Locale {
-						useFile = false
-					}
-				}
-			}
-		}
-
-		if useFile {
-			info.Files = append(info.Files, relpath)
-		}
+	info.Files, err = filterFiles(manifest, locale, fpath, files, context)
+	if err != nil {
+		return err
 	}
 
 	return context.JSON(http.StatusOK, info)
@@ -690,6 +735,11 @@ func UpdateInfoCmd(context echo.Context) error {
 		return err
 	}
 
+	configFile := path.Join(fpath, "config.json")
+	if _, err := os.Stat(configFile); os.IsNotExist(err) { // the file is not exist
+		return utils.BuildBadRequestError(context, models.ErrorConfigFileNotFound, "")
+	}
+
 	torrentFile := path.Join(fpath, "torrent.torrent")
 	if _, err := os.Stat(torrentFile); os.IsNotExist(err) { // the file is not exist
 		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
@@ -697,7 +747,12 @@ func UpdateInfoCmd(context echo.Context) error {
 
 	info := &models.UpdateInfoEx{}
 	info.BuildID = result.LiveBuild
-	info.Config = path.Join(fpath, "config.json")
+
+	info.ConfigData, err = ioutil.ReadFile(configFile)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
 	info.TorrentData, err = ioutil.ReadFile(torrentFile)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
