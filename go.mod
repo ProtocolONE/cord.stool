@@ -2,11 +2,13 @@ module cord.stool
 
 require (
 	github.com/akamai/netstoragekit-golang v0.0.0-20170703043328-78536ade4f6d
+	github.com/anacrolix/envpprof v0.0.0-20180404065416-323002cec2fa
 	github.com/anacrolix/missinggo v1.1.0
 	github.com/anacrolix/torrent v1.1.4
 	github.com/aristanetworks/goarista v0.0.0-20190514202536-8f808a500156 // indirect
 	github.com/aws/aws-sdk-go v1.19.34
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/dustin/go-humanize v1.0.0
 	github.com/efarrer/iothrottler v0.0.0-20141121142253-60e7e547c7fe // indirect
 	github.com/getlantern/context v0.0.0-20190109183933-c447772a6520 // indirect
 	github.com/getlantern/errors v0.0.0-20190325191628-abdb3e3e36f7 // indirect
@@ -29,6 +31,9 @@ require (
 	github.com/itchio/kompress v0.0.0-20180114163554-a19876f8c9b7 // indirect
 	github.com/itchio/savior v0.0.0-20190430155913-9d507713b837
 	github.com/itchio/wharf v0.0.0-20181213155255-5c074d8f87a4
+	github.com/jackpal/Taipei-Torrent v0.0.0-20181130023226-6808fdfe24b4
+	github.com/jackpal/gateway v1.0.5 // indirect
+	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
 	github.com/jgallagher/gosaca v0.0.0-20130226042358-754749770f08 // indirect
 	github.com/jlaffaye/ftp v0.0.0-20190519203911-8f5b34ce006f
 	github.com/kelseyhightower/envconfig v1.3.0
@@ -38,6 +43,8 @@ require (
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8 // indirect
 	github.com/mattn/go-colorable v0.1.1 // indirect
+	github.com/nictuku/dht v0.0.0-20190424204932-20d30c21bd4c
+	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190227141107-8c4636f812cc // indirect
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.8.1
@@ -53,6 +60,7 @@ require (
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
+	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
 	golang.org/x/sys v0.0.0-20190602015325-4c4f7f33c9ed
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637

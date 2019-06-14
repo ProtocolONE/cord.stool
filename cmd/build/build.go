@@ -238,6 +238,7 @@ func doUpdate(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("-target flag is required")
 	}
 
+	return update.UpdateEx(args.cordArgs)
 	return update.Update(args.cordArgs)
 }
 

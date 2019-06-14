@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"os"
 
 	"github.com/labstack/echo"
 )
@@ -518,9 +519,8 @@ func PublishBuildCmd(context echo.Context) error {
 	}
 
 	builtinAnnounceList := []string{
-		"udp://tracker.openbittorrent.com:80",
-		"udp://tracker.publicbt.com:80",
-		"udp://tracker.istole.it:6969",
+		"http://31.25.227.94:6969/announce",
+		"udp://31.25.227.94:6969",
 	}
 
 	targetFile := path.Join(fpath, "torrent.torrent")
@@ -671,4 +671,37 @@ func DownloadCmd(context echo.Context) error {
 	}
 
 	return context.JSON(http.StatusOK, downloadRes)
+}
+
+func UpdateInfoCmd(context echo.Context) error {
+
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
+	}
+
+	if result.LiveBuild == "" {
+		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
+	}
+
+	platform := context.QueryParam("platform")
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), result.LiveBuild, platform, context, false)
+	if err != nil {
+		return err
+	}
+
+	torrentFile := path.Join(fpath, "torrent.torrent")
+	if _, err := os.Stat(torrentFile); os.IsNotExist(err) { // the file is not exist
+		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
+	}
+
+	info := &models.UpdateInfoEx{}
+	info.BuildID = result.LiveBuild
+	info.Config = path.Join(fpath, "config.json")
+	info.TorrentData, err = ioutil.ReadFile(torrentFile)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	return context.JSON(http.StatusOK, info)
 }

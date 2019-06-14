@@ -17,5 +17,6 @@ func InitCmdRoutes(e *echo.Echo) {
 	e.POST("/api/v1/file/patch", controllers.ApplyPatchCmd, authentication.RequireTokenAuthentication)
 
 	e.GET("/api/v1/file/update", controllers.UpdateCmd, authentication.RequireTokenAuthentication)
+	e.GET("/api/v1/file/update-info", controllers.UpdateInfoCmd, authentication.RequireTokenAuthentication)
 	e.GET("/api/v1/file/download", controllers.DownloadCmd, authentication.RequireTokenAuthentication)
 }

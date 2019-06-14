@@ -247,6 +247,12 @@ type UpdateInfo struct {
 	Files   []string `json:"files"`
 }
 
+type UpdateInfoEx struct {
+	BuildID string   `json:"build_id"`
+	Config  string   `json:"config"`
+	TorrentData   []byte `json:"torrentdata"`
+}
+
 type DownloadCmd struct {
 	FilePath string `json:"filepath"`
 	FileData []byte `json:"filedata"`

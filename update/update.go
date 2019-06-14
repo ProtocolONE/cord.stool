@@ -26,6 +26,101 @@ var _barTotal *uiprogress.Bar
 var _curTitle string
 var _totalTitle string
 
+func UpdateEx(args cord.Args) error {
+
+	fmt.Println("Updating game ...")
+
+	uiprogress.Start()
+	_barTotal = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
+	_barTotal.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(_totalTitle, 35)
+	})
+	_totalTitle = "Getting update info"
+
+	api := cordapi.NewCordAPI(args.Url)
+	err := api.Login(args.Login, args.Password)
+	if err != nil {
+		return err
+	}
+
+	_barTotal.Incr()
+
+	info, err := api.GetUpdateInfoEx(args.GameID, args.BranchName, args.Locale, args.Platform)
+	if err != nil {
+		return err
+	}
+
+	_barTotal.Incr()
+
+	_barTotal.Total = 1 + 1 + 1
+	_totalTitle = "Total progress"
+
+	_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
+	_bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(_curTitle, 35)
+	})
+	
+	err = startDownLoad(info.TorrentData, args.TargetDir)
+	if err != nil {
+		return err
+	}
+	
+	_barTotal.Incr()
+
+	fpath, fname := filepath.Split(info.Config)
+	fpath = path.Join(args.TargetDir, fpath)
+	fpath = path.Join(fpath, fname)
+
+	cfg, err := utils.ReadConfigFile(fpath, nil)
+	if err != nil {
+		return err
+	}
+
+	var manifest *models.ConfigManifest
+	manifest = nil
+
+	for _, m := range cfg.Application.Manifests {
+
+		if m.Platform == args.Platform {
+			manifest = &m
+			break
+		}
+	}
+
+	_bar.Set(0)
+	_bar.Total = 3
+	_curTitle = "Installing game ..."
+
+	downloadRedist(manifest)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+
+	err = install(args.TargetDir, manifest)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+
+	err = utils2.AddRegKeys(manifest)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+	_barTotal.Incr()
+
+	_curTitle = "Finished"
+	uiprogress.Stop()
+
+	fmt.Println("Update completed.")
+
+	return nil
+}
+
 func Update(args cord.Args) error {
 
 	fmt.Println("Updating game ...")
@@ -52,7 +147,7 @@ func Update(args cord.Args) error {
 
 	_barTotal.Incr()
 
-	_barTotal.Total = len(info.Files) + 1 + 1
+	_barTotal.Total = len(info.Files) + 1 + 1 + 1
 	_totalTitle = "Total progress"
 
 	_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
