@@ -11,11 +11,11 @@ import (
 
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
-	"os"
 
 	"github.com/labstack/echo"
 )
@@ -519,10 +519,7 @@ func PublishBuildCmd(context echo.Context) error {
 		return err
 	}
 
-	builtinAnnounceList := []string{
-		"http://192.168.2.241:6969/announce",
-		"udp://192.168.2.241:6969",
-	}
+	builtinAnnounceList := strings.Split(config.Get().Tracker.TrackersList, ";")
 
 	/*files, err := utils2.GetAllFiles(path.Join(fpath, "content"))
 	if !ok {

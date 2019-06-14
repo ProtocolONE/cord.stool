@@ -5,7 +5,7 @@ package utils
 import (
 	"os"
 	"os/exec"
-	
+
 	"cord.stool/service/models"
 )
 

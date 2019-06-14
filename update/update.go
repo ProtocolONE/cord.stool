@@ -55,16 +55,13 @@ func UpdateEx(args cord.Args) error {
 	_barTotal.Total = 1 + 1 + 1 + 1
 	_totalTitle = "Total progress"
 
-	_bar = uiprogress.AddBar(3).AppendCompleted().PrependElapsed()
-	_bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize(_curTitle, 35)
-	})
-	
-	err = startDownLoad(info.TorrentData, args.TargetDir)
+	_bar = uiprogress.AddBar(1).AppendCompleted().PrependElapsed()
+
+	err = startDownLoad(info.TorrentData, args.TargetDir, _bar)
 	if err != nil {
 		return err
 	}
-	
+
 	_barTotal.Incr()
 
 	/*err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
@@ -89,6 +86,10 @@ func UpdateEx(args cord.Args) error {
 			break
 		}
 	}
+
+	_bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(_curTitle, 35)
+	})
 
 	_bar.Set(0)
 	_bar.Total = 3

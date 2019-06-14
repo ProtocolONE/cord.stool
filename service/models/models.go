@@ -33,7 +33,7 @@ const (
 )
 
 const (
-	ErrorTorrentAlreadyExists      = 12
+	ErrorTorrentAlreadyExists = 12
 )
 
 const (
@@ -253,9 +253,9 @@ type UpdateInfo struct {
 }
 
 type UpdateInfoEx struct {
-	BuildID string   `json:"build_id"`
-	ConfigData  []byte   `json:"configdata"`
-	TorrentData   []byte `json:"torrentdata"`
+	BuildID     string `json:"build_id"`
+	ConfigData  []byte `json:"configdata"`
+	TorrentData []byte `json:"torrentdata"`
 }
 
 type DownloadCmd struct {

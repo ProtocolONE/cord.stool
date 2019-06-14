@@ -1,13 +1,13 @@
 package update
 
 import (
+	"bytes"
 	"fmt"
-	"os"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	"bytes"
 	//"log"
 
 	"github.com/anacrolix/envpprof"
@@ -15,10 +15,11 @@ import (
 	"github.com/anacrolix/torrent/metainfo"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 )
 
 func exitSignalHandlers(client *torrent.Client) {
-	
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	for {
@@ -27,10 +28,12 @@ func exitSignalHandlers(client *torrent.Client) {
 	}
 }
 
-func torrentBar(t *torrent.Torrent) {
+func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar) {
 
-	bar := uiprogress.AddBar(1)
-	bar.AppendCompleted()
+	bar.PrependFunc(func(*uiprogress.Bar) string {
+		return strutil.Resize("Downloading ...", 35)
+	})
+
 	bar.AppendFunc(func(*uiprogress.Bar) (ret string) {
 		select {
 		case <-t.GotInfo():
@@ -45,9 +48,7 @@ func torrentBar(t *torrent.Torrent) {
 			return fmt.Sprintf("downloading (%s/%s)", humanize.Bytes(uint64(t.BytesCompleted())), humanize.Bytes(uint64(t.Info().TotalLength())))
 		}
 	})
-	bar.PrependFunc(func(*uiprogress.Bar) string {
-		return t.Name()
-	})
+
 	go func() {
 		<-t.GotInfo()
 		tl := int(t.Info().TotalLength())
@@ -64,13 +65,12 @@ func torrentBar(t *torrent.Torrent) {
 	}()
 
 	bar.Set(bar.Total)
-	//uiprogress.Stop()
 }
 
-func addTorrents(client *torrent.Client, torrentData []byte) error {
-	
+func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar) error {
+
 	reader := bytes.NewReader(torrentData)
-	
+
 	mi, err := metainfo.Load(reader)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func addTorrents(client *torrent.Client, torrentData []byte) error {
 		return err
 	}
 
-	torrentBar(t)
+	torrentBar(t, bar)
 
 	go func() {
 		<-t.GotInfo()
@@ -91,20 +91,20 @@ func addTorrents(client *torrent.Client, torrentData []byte) error {
 	return nil
 }
 
-func startDownLoad(torrentData []byte, output string) error {
+func startDownLoad(torrentData []byte, output string, bar *uiprogress.Bar) error {
 
 	old := os.Stdout
-  	_, w, _ := os.Pipe()
+	_, w, _ := os.Pipe()
 	os.Stdout = w
-	  
-	defer  w.Close()
-	f := func () {os.Stdout = old}
-  	defer f()
+
+	defer w.Close()
+	f := func() { os.Stdout = old }
+	defer f()
 
 	//log.SetOutput(os.NewFile(uintptr(0), "NUL"))
 
 	defer envpprof.Stop()
-	
+
 	clientConfig := torrent.NewDefaultClientConfig()
 
 	clientConfig.DataDir = output
@@ -117,7 +117,7 @@ func startDownLoad(torrentData []byte, output string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	defer client.Close()
 	go exitSignalHandlers(client)
 
@@ -125,7 +125,7 @@ func startDownLoad(torrentData []byte, output string) error {
 		client.WriteStatus(w)
 	})
 
-	err = addTorrents(client, torrentData)
+	err = addTorrents(client, torrentData, bar)
 	if err != nil {
 		return err
 	}
