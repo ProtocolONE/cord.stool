@@ -31,7 +31,7 @@ func exitSignalHandlers(client *torrent.Client) {
 func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar) {
 
 	bar.PrependFunc(func(*uiprogress.Bar) string {
-		return strutil.Resize("Downloading ...", 35)
+		return strutil.Resize("Downloading", 35)
 	})
 
 	bar.AppendFunc(func(*uiprogress.Bar) (ret string) {
