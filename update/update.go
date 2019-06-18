@@ -38,6 +38,9 @@ func newStateConsumer() *state.Consumer {
 }
 
 func ProgressLabel(label string) {
+
+	//_, fn := filepath.Split(label)
+	//_curTitle = fn
 }
 
 func PauseProgress() {
@@ -49,7 +52,7 @@ func ResumeProgress() {
 func Progress(alpha float64) {
 
 	_bar.Set(int(100 * alpha))
-	_barTotal.Set(int(5*alpha) + (_barTotal.Total - 7))
+	//_barTotal.Set(int(5*alpha) + (_barTotal.Total - 7))
 }
 
 func Logl(level string, msg string) {
@@ -59,7 +62,7 @@ func UpdateEx(args cord.Args) error {
 
 	fmt.Println("Updating game ...")
 
-	usePatch := isGameInstalled(args.TargetDir)
+	gameVer := getGameVersion(args.TargetDir)
 
 	uiprogress.Start()
 	_barTotal = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
@@ -70,8 +73,11 @@ func UpdateEx(args cord.Args) error {
 	_barTotal.Total = 1 + 1 + 1 + 1
 
 	_bar = uiprogress.AddBar(1).AppendCompleted().PrependElapsed()
+	_bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(_curTitle, 35)
+	})
 
-	if usePatch {
+	if gameVer != "" {
 		_barTotal.Total++
 		_bar.Total = 101
 	}
@@ -87,24 +93,22 @@ func UpdateEx(args cord.Args) error {
 	var info *models.UpdateInfoEx
 	contentPath := path.Join(args.TargetDir, "content")
 
-	if isGameInstalled(args.TargetDir) {
-		
-		_curTitle = "Computing signature ..."
-		signData, err := utils2.CreateSignature(contentPath, newStateConsumer())
+	if gameVer != "" {
+
+		info, err = api.GetUpdatePatch(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
 		if err != nil {
-			return err
+			gameVer = "" // try to download whole build
 		}
+	}
 
-		//send to server and get torrent patch
-
-	} else {
+	if gameVer == "" {
 
 		info, err = api.GetUpdateInfoEx(args.GameID, args.BranchName, args.Locale, args.Platform)
 		if err != nil {
 			return err
 		}
 	}
-	
+
 	_barTotal.Incr()
 	_totalTitle = "Total progress"
 
@@ -115,22 +119,17 @@ func UpdateEx(args cord.Args) error {
 
 	_barTotal.Incr()
 
-	if usePatch {
+	if gameVer != "" {
 
-		patchFile := path.Join(args.TargetDir, "patch.torrent")
+		patchFile := path.Join(args.TargetDir, "patch_for_"+gameVer+".torrent")
 		defer os.Remove(patchFile)
-		
-		patchData, err := ioutil.ReadFile(patchFile)
-		if err != nil {
-			return err
-		}
 
 		_curTitle = "Applying patch ..."
-		err = utils2.ApplyPatch(contentPath, patchData, newStateConsumer())
+		err = utils2.ApplyPatchFile(contentPath, patchFile, newStateConsumer())
 		if err != nil {
 			return err
 		}
-		
+
 		_barTotal.Incr()
 	}
 
@@ -156,10 +155,6 @@ func UpdateEx(args cord.Args) error {
 			break
 		}
 	}
-
-	_bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize(_curTitle, 35)
-	})
 
 	_bar.Set(0)
 	_bar.Total = 3
@@ -193,6 +188,15 @@ func UpdateEx(args cord.Args) error {
 	fmt.Println("Update completed.")
 
 	return nil
+}
+
+func getGameVersion(target string) string {
+
+	if isGameInstalled(target) {
+		return "1.0"
+	}
+
+	return ""
 }
 
 func isGameInstalled(target string) bool {

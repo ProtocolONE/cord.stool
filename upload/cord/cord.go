@@ -36,8 +36,6 @@ type Args = struct {
 	Config     string
 	Locale     string
 	Platform   string
-	Patch      bool
-	Hash       bool
 	Wharf      bool
 	Force      bool
 }
@@ -259,11 +257,7 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, manife
 
 	f, e := utils.EnumFilesRecursive(fullSourceDir, stopCh)
 
-	if args.Hash {
-		_bar.Total = 4
-	} else {
-		_bar.Total = 3
-	}
+	_bar.Total = 3
 
 	_barTotal.Incr()
 
@@ -295,21 +289,6 @@ func upload(api *cordapi.CordAPIManager, args Args, fullSourceDir string, manife
 	return nil
 }
 
-func compareHash(api *cordapi.CordAPIManager, path string, buildid string, fpath string, fname string) (bool, error) {
-
-	hash, err := utils.Md5(path)
-	if err != nil {
-		return false, errors.New("Hash calculating error: " + err.Error())
-	}
-
-	cmpRes, err := api.CmpHash(&models.CompareHashCmd{BuildID: buildid, FilePath: fpath, FileName: fname, FileHash: hash})
-	if err != nil {
-		return false, err
-	}
-
-	return cmpRes.Equal, nil
-}
-
 func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source string, config bool, manifest models.ConfigManifest) error {
 
 	_bar.Incr()
@@ -329,21 +308,6 @@ func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source stri
 		fpath = strings.TrimRight(fpath, "/\\")
 	}
 
-	if args.Hash {
-
-		r, err := compareHash(api, path, args.BuildID, fpath, fname)
-		if err != nil {
-			return errors.New("Compare hash error: " + err.Error())
-		}
-
-		_bar.Incr()
-
-		if r {
-			_bar.Incr()
-			return nil // no need to upload
-		}
-	}
-
 	filedata, err := ioutil.ReadFile(path)
 	if err != nil {
 		return errors.New("Cannot read file: " + err.Error())
@@ -351,7 +315,7 @@ func uploadFile(api *cordapi.CordAPIManager, args Args, path string, source stri
 
 	_bar.Incr()
 
-	err = api.Upload(&models.UploadCmd{BuildID: args.BuildID, FilePath: fpath, FileName: fname, FileData: filedata, Patch: args.Patch, Config: config, Platform: manifest.Platform})
+	err = api.Upload(&models.UploadCmd{BuildID: args.BuildID, FilePath: fpath, FileName: fname, FileData: filedata, Config: config, Platform: manifest.Platform})
 	if err != nil {
 		return err
 	}

@@ -643,7 +643,7 @@ func filterFiles(manifest *models.ConfigManifest, locale string, fpath string, f
 	return result, nil
 }
 
-func UpdateCmd(context echo.Context) error {
+func GetUpdateCmd(context echo.Context) error {
 
 	result, ok, err := findBranch(context, "id", "name", "gid")
 	if !ok {
@@ -715,7 +715,7 @@ func DownloadCmd(context echo.Context) error {
 	return context.JSON(http.StatusOK, downloadRes)
 }
 
-func UpdateInfoCmd(context echo.Context) error {
+func GetUpdateInfoCmd(context echo.Context) error {
 
 	result, ok, err := findBranch(context, "id", "name", "gid")
 	if !ok {
@@ -758,7 +758,7 @@ func UpdateInfoCmd(context echo.Context) error {
 	return context.JSON(http.StatusOK, info)
 }
 
-func GetPatchCmd(context echo.Context) error {
+func GetUpdatePatchCmd(context echo.Context) error {
 
 	result, ok, err := findBranch(context, "id", "name", "gid")
 	if !ok {
@@ -769,11 +769,11 @@ func GetPatchCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
 	}
 
-	reqCmp := &models.GetPatchCmd{}
+	/*reqCmp := &models.GetPatchCmd{}
 	err = context.Bind(reqCmp)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
-	}
+	}*/
 
 	platform := context.QueryParam("platform")
 	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), result.LiveBuild, platform, context, false)
@@ -786,9 +786,10 @@ func GetPatchCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorConfigFileNotFound, "")
 	}
 
-	torrentFile := path.Join(fpath, "torrent.torrent")
+	version := context.QueryParam("ver")
+	torrentFile := path.Join(fpath, "patch_for_"+version+".torrent")
 	if _, err := os.Stat(torrentFile); os.IsNotExist(err) { // the file is not exist
-		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
+		return utils.BuildBadRequestError(context, models.ErrorNoUpdateAvailable, version)
 	}
 
 	info := &models.UpdateInfoEx{}

@@ -4,7 +4,6 @@ import (
 	"cord.stool/service/core/utils"
 	"cord.stool/service/models"
 	utils2 "cord.stool/utils"
-	"cord.stool/xdelta"
 
 	"io/ioutil"
 	"net/http"
@@ -52,37 +51,9 @@ func UploadCmd(context echo.Context) error {
 
 	fpath = path.Join(fpath, reqUpload.FileName)
 
-	if reqUpload.Patch {
-
-		fpath = fpath[0:(len(fpath) - len(".diff"))]
-		patchfile, err := ioutil.TempFile(os.TempDir(), "patch")
-		if err != nil {
-			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-		}
-		defer os.Remove(patchfile.Name())
-		patchfile.Close()
-
-		err = ioutil.WriteFile(patchfile.Name(), reqUpload.FileData, 0777)
-		if err != nil {
-			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-		}
-
-		fpathold := fpath
-		if _, err := os.Stat(fpathold); os.IsNotExist(err) { // the file is not exist
-			fpathold = "NUL" // fake name
-		}
-
-		err = xdelta.DecodeDiff(fpathold, fpath, patchfile.Name())
-		if err != nil {
-			return utils.BuildInternalServerError(context, models.ErrorApplyPatch, err.Error())
-		}
-
-	} else {
-
-		err = ioutil.WriteFile(fpath, reqUpload.FileData, 0777)
-		if err != nil {
-			return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-		}
+	err = ioutil.WriteFile(fpath, reqUpload.FileData, 0777)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
 	return context.NoContent(http.StatusOK)

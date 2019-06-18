@@ -1036,3 +1036,45 @@ func getUpdateInfoEx(host string, token string, gameID string, branch string, lo
 
 	return info, res.StatusCode, nil
 }
+
+func (manager *CordAPIManager) GetUpdatePatch(gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfoEx, error) {
+
+	res, sc, err := getUpdatePatch(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = getUpdatePatch(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func getUpdatePatch(host string, token string, gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfoEx, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/file/update-patch?gid="+gameID+"&name="+branch+"&locale="+locale+"&platform="+platform+"&ver="+ver, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	info := new(models.UpdateInfoEx)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&info)
+
+	return info, res.StatusCode, nil
+}

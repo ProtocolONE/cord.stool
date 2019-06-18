@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"context"
 
 	"github.com/itchio/savior/seeksource"
 	"github.com/itchio/wharf/eos"
@@ -13,8 +13,8 @@ import (
 	"github.com/itchio/wharf/pwr"
 	"github.com/itchio/wharf/state"
 	"github.com/itchio/wharf/tlc"
-	"github.com/itchio/wharf/wsync"
 	"github.com/itchio/wharf/wire"
+	"github.com/itchio/wharf/wsync"
 )
 
 var ignoredPaths = []string{
@@ -47,28 +47,21 @@ func compressionSettings() *pwr.CompressionSettings {
 	}
 }
 
-func CreateSignature(source string, consumer *state.Consumer) ([]byte, error) {
+func CreateSignatureFile(source string, signatureFile string, consumer *state.Consumer) error {
 
 	container, err := tlc.WalkAny(source, &tlc.WalkOpts{Filter: filterPaths})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	pool, err := pools.New(container, source)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	signFile, err := ioutil.TempFile(os.TempDir(), "sign")
+	signatureWriter, err := os.Create(signatureFile)
 	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(signFile.Name())
-	signFile.Close()
-
-	signatureWriter, err := os.Create(signFile.Name())
-	if err != nil {
-		return nil, err
+		return err
 	}
 	defer signatureWriter.Close()
 
@@ -78,7 +71,7 @@ func CreateSignature(source string, consumer *state.Consumer) ([]byte, error) {
 
 	sigWire, err := pwr.CompressWire(rawSigWire, compressionSettings())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	sigWire.WriteMessage(container)
@@ -91,10 +84,27 @@ func CreateSignature(source string, consumer *state.Consumer) ([]byte, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = sigWire.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreateSignatureData(source string, consumer *state.Consumer) ([]byte, error) {
+
+	signFile, err := ioutil.TempFile(os.TempDir(), "sign")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(signFile.Name())
+	signFile.Close()
+
+	err = CreateSignatureFile(source, signFile.Name(), consumer)
 	if err != nil {
 		return nil, err
 	}
@@ -107,22 +117,9 @@ func CreateSignature(source string, consumer *state.Consumer) ([]byte, error) {
 	return signData, nil
 }
 
-func GetSignatureInfo(singData []byte, consumer *state.Consumer) (*pwr.SignatureInfo, error) {
+func GetSignatureInfoFromFile(signatureFile string, consumer *state.Consumer) (*pwr.SignatureInfo, error) {
 
-	singFile, err := ioutil.TempFile(os.TempDir(), "sign")
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(singFile.Name())
-	singFile.Close()
-
-	err = ioutil.WriteFile(singFile.Name(), singData, 0777)
-	if err != nil {
-		return nil, err
-	}
-	singFile.Close()
-
-	sigReader, err := eos.Open(singFile.Name(), option.WithConsumer(consumer))
+	sigReader, err := eos.Open(signatureFile, option.WithConsumer(consumer))
 	if err != nil {
 		return nil, err
 	}
@@ -142,42 +139,58 @@ func GetSignatureInfo(singData []byte, consumer *state.Consumer) (*pwr.Signature
 	return signatureInfo, nil
 }
 
-func CreatePatch(source string, signatureInfo *pwr.SignatureInfo, consumer *state.Consumer) ([]byte, error) {
+func GetSignatureInfoFromData(singData []byte, consumer *state.Consumer) (*pwr.SignatureInfo, error) {
+
+	singFile, err := ioutil.TempFile(os.TempDir(), "sign")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(singFile.Name())
+	singFile.Close()
+
+	err = ioutil.WriteFile(singFile.Name(), singData, 0777)
+	if err != nil {
+		return nil, err
+	}
+	singFile.Close()
+
+	signatureInfo, err := GetSignatureInfoFromFile(singFile.Name(), consumer)
+	if err != nil {
+		return nil, err
+	}
+
+	return signatureInfo, nil
+}
+
+func CreatePatchFile(source string, patchFile string, signatureInfo *pwr.SignatureInfo, consumer *state.Consumer) error {
 
 	sourceContainer, err := tlc.WalkAny(source, &tlc.WalkOpts{Filter: filterPaths})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var sourcePool wsync.Pool
 	sourcePool, err = pools.New(sourceContainer, source)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	patchFile, err := ioutil.TempFile(os.TempDir(), "patch")
+	patchWriter, err := os.Create(patchFile)
 	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(patchFile.Name())
-	patchFile.Close()
-
-	patchWriter, err := os.Create(patchFile.Name())
-	if err != nil {
-		return nil, err
+		return err
 	}
 	defer patchWriter.Close()
 
 	signFile, err := ioutil.TempFile(os.TempDir(), "sign")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer os.Remove(signFile.Name())
 	signFile.Close()
 
 	signatureWriter, err := os.Create(signFile.Name())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer signatureWriter.Close()
 
@@ -194,6 +207,23 @@ func CreatePatch(source string, signatureInfo *pwr.SignatureInfo, consumer *stat
 
 	err = dctx.WritePatch(context.Background(), patchWriter, signatureWriter)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreatePatchData(source string, signatureInfo *pwr.SignatureInfo, consumer *state.Consumer) ([]byte, error) {
+
+	patchFile, err := ioutil.TempFile(os.TempDir(), "patch")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(patchFile.Name())
+	patchFile.Close()
+
+	err = CreatePatchFile(source, patchFile.Name(), signatureInfo, consumer)
+	if err != nil {
 		return nil, err
 	}
 
@@ -205,7 +235,41 @@ func CreatePatch(source string, signatureInfo *pwr.SignatureInfo, consumer *stat
 	return patchData, nil
 }
 
-func ApplyPatch(target string, patchData []byte, consumer *state.Consumer) error {
+func ApplyPatchFile(target string, patchFile string, consumer *state.Consumer) error {
+
+	patchReader, err := eos.Open(patchFile)
+	if err != nil {
+		return err
+	}
+
+	actx := &pwr.ApplyContext{
+		TargetPath: target,
+		OutputPath: target,
+		DryRun:     false,
+		InPlace:    false,
+		Signature:  nil,
+		WoundsPath: "",
+		StagePath:  "",
+		HealPath:   "",
+		Consumer:   consumer,
+	}
+
+	patchSource := seeksource.FromFile(patchReader)
+
+	_, err = patchSource.Resume(nil)
+	if err != nil {
+		return err
+	}
+
+	err = actx.ApplyPatch(patchSource)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ApplyPatchData(target string, patchData []byte, consumer *state.Consumer) error {
 
 	patchFile, err := ioutil.TempFile(os.TempDir(), "patch")
 	if err != nil {
@@ -220,31 +284,7 @@ func ApplyPatch(target string, patchData []byte, consumer *state.Consumer) error
 	}
 	patchFile.Close()
 
-	patchReader, err := eos.Open(patchFile.Name())
-	if err != nil {
-		return err
-	}
-
-	actx := &pwr.ApplyContext{
-		TargetPath: target,
-		OutputPath: target,
-		DryRun:     false,
-		InPlace:    false,
-		Signature:  nil,
-		WoundsPath: "",
-		StagePath:  "",
-		HealPath:   "",
-		Consumer: consumer,
-	}
-
-	patchSource := seeksource.FromFile(patchReader)
-
-	_, err = patchSource.Resume(nil)
-	if err != nil {
-		return err
-	}
-
-	err = actx.ApplyPatch(patchSource)
+	err = ApplyPatchFile(target, patchFile.Name(), consumer)
 	if err != nil {
 		return err
 	}

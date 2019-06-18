@@ -30,6 +30,7 @@ const (
 	ErrorInvalidPlatformName       = 23
 	ErrorInvalidBuildPlatform      = 24
 	ErrorConfigFileNotFound        = 25
+	ErrorNoUpdateAvailable         = 26
 )
 
 const (
@@ -126,7 +127,6 @@ type UploadCmd struct {
 	FilePath string `json:"filepath"`
 	FileName string `json:"filename"`
 	FileData []byte `json:"filedata"`
-	Patch    bool   `json:"patch"`
 	Config   bool   `json:"config"`
 	Platform string `json:"platform"`
 }
@@ -264,7 +264,7 @@ type DownloadCmd struct {
 }
 
 type GetPatchCmd struct {
-	SignData   []byte `json:"signdata"`
+	SignData []byte `json:"signdata"`
 }
 
 type ConfigLocale struct {

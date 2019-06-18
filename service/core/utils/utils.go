@@ -69,6 +69,8 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 		errorText = "The build platform is not matched the specified platform"
 	case models.ErrorConfigFileNotFound:
 		errorText = "Config file is not found"
+	case models.ErrorNoUpdateAvailable:
+		errorText = "There is not update for specified version"
 	default:
 		errorText = "Unknown error"
 	}
