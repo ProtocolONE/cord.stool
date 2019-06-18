@@ -15,7 +15,7 @@ import (
 	"github.com/anacrolix/torrent/metainfo"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/gosuri/uiprogress"
-	"github.com/gosuri/uiprogress/util/strutil"
+	//"github.com/gosuri/uiprogress/util/strutil"
 )
 
 func exitSignalHandlers(client *torrent.Client) {
@@ -30,9 +30,10 @@ func exitSignalHandlers(client *torrent.Client) {
 
 func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar) {
 
-	bar.PrependFunc(func(*uiprogress.Bar) string {
+	bar.Set(0)
+	/*bar.PrependFunc(func(*uiprogress.Bar) string {
 		return strutil.Resize("Downloading", 35)
-	})
+	})*/
 
 	bar.AppendFunc(func(*uiprogress.Bar) (ret string) {
 		select {

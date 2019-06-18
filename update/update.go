@@ -62,26 +62,26 @@ func UpdateEx(args cord.Args) error {
 
 	fmt.Println("Updating game ...")
 
-	gameVer := getGameVersion(args.TargetDir)
+	gameVer := getGameVersion(args.TargetDir, args.Platform)
 
 	uiprogress.Start()
 	_barTotal = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
 	_barTotal.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize(_totalTitle, 35)
 	})
-	_totalTitle = "Getting update info"
-	_barTotal.Total = 1 + 1 + 1 + 1
+	_totalTitle = "Total progress"
+	_barTotal.Total = 5
 
-	_bar = uiprogress.AddBar(1).AppendCompleted().PrependElapsed()
+	_bar = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
 	_bar.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize(_curTitle, 35)
 	})
 
 	if gameVer != "" {
 		_barTotal.Total++
-		_bar.Total = 101
 	}
 
+	_curTitle = "Getting update info"
 	api := cordapi.NewCordAPI(args.Url)
 	err := api.Login(args.Login, args.Password)
 	if err != nil {
@@ -89,6 +89,7 @@ func UpdateEx(args cord.Args) error {
 	}
 
 	_barTotal.Incr()
+	_bar.Incr()
 
 	var info *models.UpdateInfoEx
 	contentPath := path.Join(args.TargetDir, "content")
@@ -110,7 +111,8 @@ func UpdateEx(args cord.Args) error {
 	}
 
 	_barTotal.Incr()
-	_totalTitle = "Total progress"
+	_bar.Incr()
+	_curTitle = "Downloading"
 
 	err = startDownLoad(info.TorrentData, args.TargetDir, _bar)
 	if err != nil {
@@ -121,11 +123,13 @@ func UpdateEx(args cord.Args) error {
 
 	if gameVer != "" {
 
-		patchFile := path.Join(args.TargetDir, "patch_for_"+gameVer+".torrent")
+		patchFile := path.Join(args.TargetDir, "patch_for_"+gameVer+"_"+args.Platform+".bin")
 		defer os.Remove(patchFile)
 
+		_bar.Total = 100
 		_curTitle = "Applying patch ..."
-		err = utils2.ApplyPatchFile(contentPath, patchFile, newStateConsumer())
+
+		err = utils2.ApplyPatchFile(contentPath, contentPath, patchFile, newStateConsumer())
 		if err != nil {
 			return err
 		}
@@ -133,10 +137,10 @@ func UpdateEx(args cord.Args) error {
 		_barTotal.Incr()
 	}
 
-	/*err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
+	err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
 	if err != nil {
 		return err
-	}*/
+	}
 
 	cfg, err := utils.ReadConfigData(info.ConfigData, nil)
 	if err != nil {
@@ -190,19 +194,26 @@ func UpdateEx(args cord.Args) error {
 	return nil
 }
 
-func getGameVersion(target string) string {
+func getGameVersion(target string, platform string) string {
 
-	if isGameInstalled(target) {
-		return "1.0"
+	res, err := utils2.IsDirectoryEmpty(path.Join(target, "content"))
+	if res != false || err != nil {
+		return ""
+	}
+
+	cfg, err := utils.ReadConfigFile(path.Join(target, "config.json"), nil)
+	if err != nil {
+		return ""
+	}
+
+	for _, m := range cfg.Application.Manifests {
+
+		if m.Platform == platform {
+			return m.Version
+		}
 	}
 
 	return ""
-}
-
-func isGameInstalled(target string) bool {
-
-	res, err := utils2.IsDirectoryEmpty(target)
-	return res == false && err == nil
 }
 
 func Update(args cord.Args) error {

@@ -235,7 +235,7 @@ func CreatePatchData(source string, signatureInfo *pwr.SignatureInfo, consumer *
 	return patchData, nil
 }
 
-func ApplyPatchFile(target string, patchFile string, consumer *state.Consumer) error {
+func ApplyPatchFile(target string, output string, patchFile string, consumer *state.Consumer) error {
 
 	patchReader, err := eos.Open(patchFile)
 	if err != nil {
@@ -244,9 +244,9 @@ func ApplyPatchFile(target string, patchFile string, consumer *state.Consumer) e
 
 	actx := &pwr.ApplyContext{
 		TargetPath: target,
-		OutputPath: target,
+		OutputPath: output,
 		DryRun:     false,
-		InPlace:    false,
+		InPlace:    target == output,
 		Signature:  nil,
 		WoundsPath: "",
 		StagePath:  "",
@@ -269,7 +269,7 @@ func ApplyPatchFile(target string, patchFile string, consumer *state.Consumer) e
 	return nil
 }
 
-func ApplyPatchData(target string, patchData []byte, consumer *state.Consumer) error {
+func ApplyPatchData(target string, output string, patchData []byte, consumer *state.Consumer) error {
 
 	patchFile, err := ioutil.TempFile(os.TempDir(), "patch")
 	if err != nil {
@@ -284,7 +284,7 @@ func ApplyPatchData(target string, patchData []byte, consumer *state.Consumer) e
 	}
 	patchFile.Close()
 
-	err = ApplyPatchFile(target, patchFile.Name(), consumer)
+	err = ApplyPatchFile(target, output, patchFile.Name(), consumer)
 	if err != nil {
 		return err
 	}

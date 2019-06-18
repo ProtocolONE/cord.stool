@@ -787,7 +787,7 @@ func GetUpdatePatchCmd(context echo.Context) error {
 	}
 
 	version := context.QueryParam("ver")
-	torrentFile := path.Join(fpath, "patch_for_"+version+".torrent")
+	torrentFile := path.Join(fpath, "patch_for_"+version+"_"+platform+".torrent")
 	if _, err := os.Stat(torrentFile); os.IsNotExist(err) { // the file is not exist
 		return utils.BuildBadRequestError(context, models.ErrorNoUpdateAvailable, version)
 	}

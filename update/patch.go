@@ -11,7 +11,6 @@ import (
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
-	//"github.com/itchio/wharf/state"
 )
 
 /*var _bar *uiprogress.Bar

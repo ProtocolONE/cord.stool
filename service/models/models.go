@@ -316,6 +316,7 @@ type ConfigLaunchOption struct {
 
 type ConfigManifest struct {
 	Label            string                `json:"label"`
+	Version          string                `json:"version"`
 	Platform         string                `json:"platform"`
 	Locales          []ConfigLocale        `json:"locales"`
 	LocalRoot        string                `json:"local_root"`
