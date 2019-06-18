@@ -263,6 +263,10 @@ type DownloadCmd struct {
 	FileData []byte `json:"filedata"`
 }
 
+type GetPatchCmd struct {
+	SignData   []byte `json:"signdata"`
+}
+
 type ConfigLocale struct {
 	Label     string `json:"label"`
 	Locale    string `json:"locale"`

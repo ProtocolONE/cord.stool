@@ -27,6 +27,8 @@ require (
 	github.com/gosuri/uiprogress v0.0.1
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/itchio/arkive v0.0.0-20180910214514-fc46d4d216ca // indirect
+	github.com/itchio/dskompress v0.0.0-20180114183327-75b00f4ea5db // indirect
+	github.com/itchio/go-brotli v0.0.0-20180109133403-29899a447037 // indirect
 	github.com/itchio/httpkit v0.0.0-20190315213018-f7051ef34545 // indirect
 	github.com/itchio/kompress v0.0.0-20180114163554-a19876f8c9b7 // indirect
 	github.com/itchio/savior v0.0.0-20190430155913-9d507713b837

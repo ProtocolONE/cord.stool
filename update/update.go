@@ -19,6 +19,7 @@ import (
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
+	"github.com/itchio/wharf/state"
 )
 
 var _bar *uiprogress.Bar
@@ -26,9 +27,39 @@ var _barTotal *uiprogress.Bar
 var _curTitle string
 var _totalTitle string
 
+func newStateConsumer() *state.Consumer {
+	return &state.Consumer{
+		OnProgress:       Progress,
+		OnProgressLabel:  ProgressLabel,
+		OnPauseProgress:  PauseProgress,
+		OnResumeProgress: ResumeProgress,
+		OnMessage:        Logl,
+	}
+}
+
+func ProgressLabel(label string) {
+}
+
+func PauseProgress() {
+}
+
+func ResumeProgress() {
+}
+
+func Progress(alpha float64) {
+
+	_bar.Set(int(100 * alpha))
+	_barTotal.Set(int(5*alpha) + (_barTotal.Total - 7))
+}
+
+func Logl(level string, msg string) {
+}
+
 func UpdateEx(args cord.Args) error {
 
 	fmt.Println("Updating game ...")
+
+	usePatch := isGameInstalled(args.TargetDir)
 
 	uiprogress.Start()
 	_barTotal = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
@@ -36,6 +67,14 @@ func UpdateEx(args cord.Args) error {
 		return strutil.Resize(_totalTitle, 35)
 	})
 	_totalTitle = "Getting update info"
+	_barTotal.Total = 1 + 1 + 1 + 1
+
+	_bar = uiprogress.AddBar(1).AppendCompleted().PrependElapsed()
+
+	if usePatch {
+		_barTotal.Total++
+		_bar.Total = 101
+	}
 
 	api := cordapi.NewCordAPI(args.Url)
 	err := api.Login(args.Login, args.Password)
@@ -45,17 +84,29 @@ func UpdateEx(args cord.Args) error {
 
 	_barTotal.Incr()
 
-	info, err := api.GetUpdateInfoEx(args.GameID, args.BranchName, args.Locale, args.Platform)
-	if err != nil {
-		return err
+	var info *models.UpdateInfoEx
+	contentPath := path.Join(args.TargetDir, "content")
+
+	if isGameInstalled(args.TargetDir) {
+		
+		_curTitle = "Computing signature ..."
+		signData, err := utils2.CreateSignature(contentPath, newStateConsumer())
+		if err != nil {
+			return err
+		}
+
+		//send to server and get torrent patch
+
+	} else {
+
+		info, err = api.GetUpdateInfoEx(args.GameID, args.BranchName, args.Locale, args.Platform)
+		if err != nil {
+			return err
+		}
 	}
-
+	
 	_barTotal.Incr()
-
-	_barTotal.Total = 1 + 1 + 1 + 1
 	_totalTitle = "Total progress"
-
-	_bar = uiprogress.AddBar(1).AppendCompleted().PrependElapsed()
 
 	err = startDownLoad(info.TorrentData, args.TargetDir, _bar)
 	if err != nil {
@@ -63,6 +114,25 @@ func UpdateEx(args cord.Args) error {
 	}
 
 	_barTotal.Incr()
+
+	if usePatch {
+
+		patchFile := path.Join(args.TargetDir, "patch.torrent")
+		defer os.Remove(patchFile)
+		
+		patchData, err := ioutil.ReadFile(patchFile)
+		if err != nil {
+			return err
+		}
+
+		_curTitle = "Applying patch ..."
+		err = utils2.ApplyPatch(contentPath, patchData, newStateConsumer())
+		if err != nil {
+			return err
+		}
+		
+		_barTotal.Incr()
+	}
 
 	/*err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
 	if err != nil {
@@ -123,6 +193,12 @@ func UpdateEx(args cord.Args) error {
 	fmt.Println("Update completed.")
 
 	return nil
+}
+
+func isGameInstalled(target string) bool {
+
+	res, err := utils2.IsDirectoryEmpty(target)
+	return res == false && err == nil
 }
 
 func Update(args cord.Args) error {

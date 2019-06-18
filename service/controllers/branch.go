@@ -757,3 +757,52 @@ func UpdateInfoCmd(context echo.Context) error {
 
 	return context.JSON(http.StatusOK, info)
 }
+
+func GetPatchCmd(context echo.Context) error {
+
+	result, ok, err := findBranch(context, "id", "name", "gid")
+	if !ok {
+		return err
+	}
+
+	if result.LiveBuild == "" {
+		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
+	}
+
+	reqCmp := &models.GetPatchCmd{}
+	err = context.Bind(reqCmp)
+	if err != nil {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
+	}
+
+	platform := context.QueryParam("platform")
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), result.LiveBuild, platform, context, false)
+	if err != nil {
+		return err
+	}
+
+	configFile := path.Join(fpath, "config.json")
+	if _, err := os.Stat(configFile); os.IsNotExist(err) { // the file is not exist
+		return utils.BuildBadRequestError(context, models.ErrorConfigFileNotFound, "")
+	}
+
+	torrentFile := path.Join(fpath, "torrent.torrent")
+	if _, err := os.Stat(torrentFile); os.IsNotExist(err) { // the file is not exist
+		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
+	}
+
+	info := &models.UpdateInfoEx{}
+	info.BuildID = result.LiveBuild
+
+	info.ConfigData, err = ioutil.ReadFile(configFile)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	info.TorrentData, err = ioutil.ReadFile(torrentFile)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	return context.JSON(http.StatusOK, info)
+}
