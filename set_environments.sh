@@ -14,5 +14,6 @@ export PUBLIC_KEY_PATH="/home//testapp/test/cord.stool/service/config/keys/publi
 export JWT_EXPIRATION_DELTA=30
 export JWT_REFRESH_EXPIRATION_DELTA=72
 export STORAGE_ROOT_PATH="/home/testapp/test/server_storage"
+export TRACKERS_LIST="http://192.168.2.241:6969/announce;udp://192.168.2.241:6969"
 
 ./cord.stool service

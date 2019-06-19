@@ -29,9 +29,11 @@ func buildFromFilePathEx(root string, ignoreFiles map[string]bool, pieceLength i
 
 	info = metainfo.Info{
 		PieceLength: pieceLength * 1024,
-		Name:        "content",
+		Name:        "",
 		Files:       nil,
 	}
+
+	_, info.Name = filepath.Split(root)
 
 	progrssBar.Incr()
 	curProgressTitle = "Getting files info ..."

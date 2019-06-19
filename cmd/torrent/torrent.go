@@ -83,6 +83,8 @@ func Register(ctx *context.StoolContext) {
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
 
+	fmt.Println("Creating torrent ...")
+
 	if args.TargetFile == "" {
 		return fmt.Errorf("Path to torrent file is required")
 	}
@@ -118,5 +120,6 @@ func do(ctx *context.StoolContext, c *cli.Context) error {
 		}
 	}
 
+	fmt.Println("Torrent completed ...")
 	return nil
 }
