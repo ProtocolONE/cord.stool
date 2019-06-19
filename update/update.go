@@ -62,7 +62,11 @@ func UpdateEx(args cord.Args) error {
 
 	fmt.Println("Updating game ...")
 
+	usePatch := false
 	gameVer := getGameVersion(args.TargetDir, args.Platform)
+	if gameVer != "" {
+		usePatch = true
+	}
 
 	uiprogress.Start()
 	_barTotal = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
@@ -70,16 +74,12 @@ func UpdateEx(args cord.Args) error {
 		return strutil.Resize(_totalTitle, 35)
 	})
 	_totalTitle = "Total progress"
-	_barTotal.Total = 5
+	_barTotal.Total = 6
 
 	_bar = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
 	_bar.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize(_curTitle, 35)
 	})
-
-	if gameVer != "" {
-		_barTotal.Total++
-	}
 
 	_curTitle = "Getting update info"
 	api := cordapi.NewCordAPI(args.Url)
@@ -94,17 +94,19 @@ func UpdateEx(args cord.Args) error {
 	var info *models.UpdateInfoEx
 	contentPath := path.Join(args.TargetDir, "content")
 
-	if gameVer != "" {
+	if usePatch {
 
 		info, err = api.GetUpdatePatch(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
 		if err != nil {
-			gameVer = "" // try to download whole build
+			usePatch = false // try to download whole build
 		}
 	}
 
-	if gameVer == "" {
+	if !usePatch {
 
-		info, err = api.GetUpdateInfoEx(args.GameID, args.BranchName, args.Locale, args.Platform)
+		_barTotal.Incr()
+
+		info, err = api.GetUpdateInfoEx(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
 		if err != nil {
 			return err
 		}
@@ -121,7 +123,7 @@ func UpdateEx(args cord.Args) error {
 
 	_barTotal.Incr()
 
-	if gameVer != "" {
+	if usePatch {
 
 		patchFile := path.Join(args.TargetDir, "patch_for_"+gameVer+"_"+args.Platform+".bin")
 		defer os.Remove(patchFile)

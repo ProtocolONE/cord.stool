@@ -715,6 +715,23 @@ func DownloadCmd(context echo.Context) error {
 	return context.JSON(http.StatusOK, downloadRes)
 }
 
+func getBuildVersion(cfgFile string, platform string, context echo.Context) (string, error) {
+
+	cfg, err := utils.ReadConfigFile(cfgFile, &context)
+	if err != nil {
+		return "", err
+	}
+
+	for _, m := range cfg.Application.Manifests {
+
+		if m.Platform == platform {
+			return m.Version, nil
+		}
+	}
+
+	return "", nil
+}
+
 func GetUpdateInfoCmd(context echo.Context) error {
 
 	result, ok, err := findBranch(context, "id", "name", "gid")
@@ -733,6 +750,16 @@ func GetUpdateInfoCmd(context echo.Context) error {
 	}
 
 	configFile := path.Join(fpath, "config.json")
+	version := context.QueryParam("ver")
+	curver, err := getBuildVersion(configFile, platform, context)
+	if err != nil {
+		return err
+	}
+
+	if curver == version {
+		return utils.BuildBadRequestError(context, models.ErrorNoUpdateAvailable, "")
+	}
+
 	if _, err := os.Stat(configFile); os.IsNotExist(err) { // the file is not exist
 		return utils.BuildBadRequestError(context, models.ErrorConfigFileNotFound, "")
 	}
