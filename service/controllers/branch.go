@@ -521,21 +521,6 @@ func PublishBuildCmd(context echo.Context) error {
 
 	builtinAnnounceList := strings.Split(config.Get().Tracker.TrackersList, ";")
 
-	/*files, err := utils2.GetAllFiles(path.Join(fpath, "content"))
-	if !ok {
-		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-	}
-
-	manifest, err := utils.GetConfigManifest(path.Join(fpath, "config.json"), platform, &context)
-	if err != nil {
-		return err
-	}
-
-	ignoreFiles, err := getIgnoreFiles(manifest, fpath, files, context)
-	if err != nil {
-		return err
-	}*/
-
 	ignoreFiles := map[string]bool{}
 
 	targetFile := path.Join(fpath, "torrent.torrent")
@@ -573,35 +558,6 @@ func PublishBuildCmd(context echo.Context) error {
 
 	return context.JSON(http.StatusOK, result)
 }
-
-/*func getIgnoreFiles(manifest *models.ConfigManifest, fpath string, files []string, context echo.Context) (map[string]bool, error) {
-
-	result := make(map[string]bool)
-
-	needFiles, err := filterFiles(manifest, locale, fpath, files, context)
-	if err != nil {
-		return nil, err
-	}
-
-	IgnoreFile := true
-
-	for _, f := range files {
-
-		for _, nf := range needFiles {
-
-			if f == nf {
-				IgnoreFile = false
-				break
-			}
-		}
-
-		if IgnoreFile {
-			result[f] = true
-		}
-	}
-
-	return result, nil
-}*/
 
 func filterFiles(manifest *models.ConfigManifest, locale string, fpath string, files []string, context echo.Context) ([]string, error) {
 
@@ -755,10 +711,6 @@ func GetUpdateInfoCmd(context echo.Context) error {
 		return err
 	}
 
-	/*if currVer == context.QueryParam("ver") {
-		return utils.BuildBadRequestError(context, models.ErrorNoUpdateAvailable, "")
-	}*/
-
 	if _, err := os.Stat(configFile); os.IsNotExist(err) { // the file is not exist
 		return utils.BuildBadRequestError(context, models.ErrorConfigFileNotFound, "")
 	}
@@ -795,12 +747,6 @@ func GetUpdatePatchCmd(context echo.Context) error {
 	if result.LiveBuild == "" {
 		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
 	}
-
-	/*reqCmp := &models.GetPatchCmd{}
-	err = context.Bind(reqCmp)
-	if err != nil {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
-	}*/
 
 	platform := context.QueryParam("platform")
 	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), result.LiveBuild, platform, context, false)

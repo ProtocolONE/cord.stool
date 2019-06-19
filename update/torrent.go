@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
-	//"log"
 
 	"github.com/anacrolix/envpprof"
 	"github.com/anacrolix/torrent"
@@ -22,7 +21,6 @@ import (
 	humanize "github.com/dustin/go-humanize"
 	"github.com/edsrzf/mmap-go"
 	"github.com/gosuri/uiprogress"
-	//"github.com/gosuri/uiprogress/util/strutil"
 )
 
 func exitSignalHandlers(client *torrent.Client) {
@@ -38,9 +36,6 @@ func exitSignalHandlers(client *torrent.Client) {
 func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar) {
 
 	bar.Set(0)
-	/*bar.PrependFunc(func(*uiprogress.Bar) string {
-		return strutil.Resize("Downloading", 35)
-	})*/
 
 	bar.AppendFunc(func(*uiprogress.Bar) (ret string) {
 		select {
@@ -117,8 +112,6 @@ func StartDownLoad(torrentData []byte, output string, bar *uiprogress.Bar) error
 	defer w.Close()
 	f := func() { os.Stdout = old }
 	defer f()
-
-	//log.SetOutput(os.NewFile(uintptr(0), "NUL"))
 
 	defer envpprof.Stop()
 
@@ -200,7 +193,6 @@ func verifyTorrent(info *metainfo.Info, source string, bar *uiprogress.Bar) erro
 		if !good {
 			return fmt.Errorf("hash mismatch at piece %d", i)
 		}
-		//fmt.Printf("%d: %x: %v\n", i, p.Hash(), good)
 		bar.Incr()
 	}
 	return nil

@@ -3,48 +3,14 @@ package update
 import (
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
-	//"time"
 	"os"
+	"path/filepath"
 
 	"cord.stool/utils"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 )
-
-/*var _bar *uiprogress.Bar
-var _barTotal *uiprogress.Bar
-var _curTitle string
-var _totalTitle string
-
-func newStateConsumer() *state.Consumer {
-	return &state.Consumer{
-		OnProgress:       progress,
-		OnProgressLabel:  progressLabel,
-		OnPauseProgress:  pauseProgress,
-		OnResumeProgress: resumeProgress,
-		OnMessage:        logl,
-	}
-}
-
-func progressLabel(label string) {
-}
-
-func pauseProgress() {
-}
-
-func resumeProgress() {
-}
-
-func progress(alpha float64) {
-
-	_bar.Set(int(100 * alpha))
-	_barTotal.Set(int(5*alpha) + (_barTotal.Total - 7))
-}
-
-func logl(level string, msg string) {
-}*/
 
 func CreatePatch(sourceOldDir string, sourceNewDir string, patchFile string) error {
 
@@ -86,8 +52,6 @@ func CreatePatch(sourceOldDir string, sourceNewDir string, patchFile string) err
 	defer os.Remove(signFile.Name())
 	signFile.Close()
 
-	//time.Sleep(2 * time.Second)
-	//_bar.Incr()
 	_barTotal.Incr()
 
 	err = utils.CreateSignatureFile(fullSourceOldDir, signFile.Name(), newStateConsumer())
@@ -95,8 +59,6 @@ func CreatePatch(sourceOldDir string, sourceNewDir string, patchFile string) err
 		return err
 	}
 
-	//time.Sleep(2 * time.Second)
-	//_bar.Incr()
 	_barTotal.Incr()
 
 	signInfo, err := utils.GetSignatureInfoFromFile(signFile.Name(), newStateConsumer())
@@ -104,21 +66,16 @@ func CreatePatch(sourceOldDir string, sourceNewDir string, patchFile string) err
 		return err
 	}
 
-	//time.Sleep(2 * time.Second)
-	//_bar.Incr()
 	_barTotal.Incr()
 
 	_curTitle = "Creating patch ..."
 	_bar.Set(0)
-	//_bar.Total = 1
 
 	err = utils.CreatePatchFile(fullSourceNewDir, fullPatchFile, signInfo, newStateConsumer())
 	if err != nil {
 		return err
 	}
 
-	//time.Sleep(2 * time.Second)
-	//_bar.Incr()
 	_barTotal.Incr()
 
 	_totalTitle = "Finished"

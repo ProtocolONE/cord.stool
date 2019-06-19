@@ -14,9 +14,9 @@ func CreateBranch(url string, login string, password string, name string, gameID
 	fmt.Printf("Creating branch ...\n")
 
 	_, err := games.GetGameInfo(qilinUrl, gameID)
-	/*if err != nil {
+	if err != nil {
 		return fmt.Errorf("Cannot get game info: %v", err)
-	}*/
+	}
 
 	api := cordapi.NewCordAPI(url)
 	err = api.Login(login, password)
@@ -137,17 +137,6 @@ func PublishBuild(url string, login string, password string, gameID string, bran
 	if err != nil {
 		return err
 	}
-
-	/*build, err := api.GetBuild(buildId)
-	if err != nil {
-		return err
-	}
-
-	brn.LiveBuild = build.ID
-	err = api.UpdateBranch(brn)
-	if err != nil {
-		return err
-	}*/
 
 	fmt.Printf("Branch \"%s\" with id %s has published build with id %s\n", brn.Name, brn.ID, brn.LiveBuild)
 	return nil
