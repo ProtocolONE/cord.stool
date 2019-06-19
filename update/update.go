@@ -114,11 +114,30 @@ func UpdateEx(args cord.Args) error {
 
 	_barTotal.Incr()
 	_bar.Incr()
-	_curTitle = "Downloading"
 
-	err = startDownLoad(info.TorrentData, args.TargetDir, _bar)
-	if err != nil {
-		return err
+	torrentFile := path.Join(args.TargetDir, "torrent.torrent")
+
+	if gameVer == info.Version {
+
+		_curTitle = "Checking"
+
+		err = VerifyTorrentFile(torrentFile, args.TargetDir, _bar)
+		if err != nil {
+
+			_curTitle = "Downloading"
+			err = StartDownLoadFile(torrentFile, args.TargetDir, _bar)
+			if err != nil {
+				return err
+			}
+		}
+
+	} else {
+
+		_curTitle = "Downloading"
+		err = StartDownLoad(info.TorrentData, args.TargetDir, _bar)
+		if err != nil {
+			return err
+		}
 	}
 
 	_barTotal.Incr()
@@ -139,16 +158,30 @@ func UpdateEx(args cord.Args) error {
 		_barTotal.Incr()
 	}
 
+	_bar.Set(0)
+	_bar.Total = 3
+	_curTitle = "Preparing to install ..."
+
+	err = ioutil.WriteFile(torrentFile, info.TorrentData, 0777)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+
 	err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
 	if err != nil {
 		return err
 	}
+
+	_bar.Incr()
 
 	cfg, err := utils.ReadConfigData(info.ConfigData, nil)
 	if err != nil {
 		return err
 	}
 
+	_bar.Incr()
 	_barTotal.Incr()
 
 	var manifest *models.ConfigManifest

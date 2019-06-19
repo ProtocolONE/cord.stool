@@ -750,15 +750,14 @@ func GetUpdateInfoCmd(context echo.Context) error {
 	}
 
 	configFile := path.Join(fpath, "config.json")
-	version := context.QueryParam("ver")
-	curver, err := getBuildVersion(configFile, platform, context)
+	currVer, err := getBuildVersion(configFile, platform, context)
 	if err != nil {
 		return err
 	}
 
-	if curver == version {
+	/*if currVer == context.QueryParam("ver") {
 		return utils.BuildBadRequestError(context, models.ErrorNoUpdateAvailable, "")
-	}
+	}*/
 
 	if _, err := os.Stat(configFile); os.IsNotExist(err) { // the file is not exist
 		return utils.BuildBadRequestError(context, models.ErrorConfigFileNotFound, "")
@@ -771,6 +770,7 @@ func GetUpdateInfoCmd(context echo.Context) error {
 
 	info := &models.UpdateInfoEx{}
 	info.BuildID = result.LiveBuild
+	info.Version = currVer
 
 	info.ConfigData, err = ioutil.ReadFile(configFile)
 	if err != nil {

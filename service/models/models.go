@@ -254,6 +254,7 @@ type UpdateInfo struct {
 
 type UpdateInfoEx struct {
 	BuildID     string `json:"build_id"`
+	Version     string `json:"version"`
 	ConfigData  []byte `json:"configdata"`
 	TorrentData []byte `json:"torrentdata"`
 }

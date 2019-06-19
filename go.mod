@@ -7,8 +7,10 @@ require (
 	github.com/anacrolix/torrent v1.1.4
 	github.com/aristanetworks/goarista v0.0.0-20190514202536-8f808a500156 // indirect
 	github.com/aws/aws-sdk-go v1.19.34
+	github.com/bradfitz/iter v0.0.0-20190303215204-33e6a9893b0c
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dustin/go-humanize v1.0.0
+	github.com/edsrzf/mmap-go v1.0.0
 	github.com/efarrer/iothrottler v0.0.0-20141121142253-60e7e547c7fe // indirect
 	github.com/getlantern/context v0.0.0-20190109183933-c447772a6520 // indirect
 	github.com/getlantern/errors v0.0.0-20190325191628-abdb3e3e36f7 // indirect
