@@ -20,8 +20,8 @@ func Register(ctx *context.StoolContext) {
 
 	cmd := cli.Command{
 		Name:        "build",
-		Usage:       "Manages builds",
-		Description: "Manages builds",
+		Usage:       "Manage builds",
+		Description: "Manage builds",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -238,7 +238,6 @@ func doUpdate(ctx *context.StoolContext, c *cli.Context) error {
 		return fmt.Errorf("-target flag is required")
 	}
 
-	return update.UpdateEx(args.cordArgs)
 	return update.Update(args.cordArgs)
 }
 

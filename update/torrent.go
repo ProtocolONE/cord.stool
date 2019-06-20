@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -130,10 +129,6 @@ func StartDownLoad(torrentData []byte, output string, bar *uiprogress.Bar) error
 
 	defer client.Close()
 	go exitSignalHandlers(client)
-
-	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		client.WriteStatus(w)
-	})
 
 	err = addTorrents(client, torrentData, bar)
 	if err != nil {

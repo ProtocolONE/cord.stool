@@ -20,8 +20,8 @@ func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
 		Name:        "games",
 		ShortName:   "g",
-		Usage:       "Manages games",
-		Description: "Manages games",
+		Usage:       "Manage games",
+		Description: "Manage games",
 
 		Subcommands: cli.Commands{
 			cli.Command{

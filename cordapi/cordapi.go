@@ -911,9 +911,9 @@ func publishBuild(host string, token string, gameID string, branch string, build
 	return branchdRes, res.StatusCode, nil
 }
 
-func (manager *CordAPIManager) GetUpdateInfo(gameID string, branch string, locale string, platform string) (*models.UpdateInfo, error) {
+func (manager *CordAPIManager) GetUpdateInfo(gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfo, error) {
 
-	res, sc, err := getUpdateInfo(manager.host, manager.authToken.Token, gameID, branch, locale, platform)
+	res, sc, err := getUpdateInfo(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
 	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
@@ -921,7 +921,7 @@ func (manager *CordAPIManager) GetUpdateInfo(gameID string, branch string, local
 			return nil, err
 		}
 
-		res, _, err = getUpdateInfo(manager.host, manager.authToken.Token, gameID, branch, locale, platform)
+		res, _, err = getUpdateInfo(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
 		if err != nil {
 			return nil, err
 		}
@@ -934,9 +934,9 @@ func (manager *CordAPIManager) GetUpdateInfo(gameID string, branch string, local
 	return res, nil
 }
 
-func getUpdateInfo(host string, token string, gameID string, branch string, locale string, platform string) (*models.UpdateInfo, int, error) {
+func getUpdateInfo(host string, token string, gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfo, int, error) {
 
-	res, err := utils.Get(host+"/api/v1/file/update?gid="+gameID+"&name="+branch+"&locale="+locale+"&platform="+platform, token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/file/update-info?gid="+gameID+"&name="+branch+"&locale="+locale+"&platform="+platform+"&ver="+ver, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -953,91 +953,7 @@ func getUpdateInfo(host string, token string, gameID string, branch string, loca
 	return info, res.StatusCode, nil
 }
 
-func (manager *CordAPIManager) Download(buildID string, path string, platform string) (*models.DownloadCmd, error) {
-
-	res, sc, err := download(manager.host, manager.authToken.Token, buildID, path, platform)
-	if sc == http.StatusUnauthorized {
-
-		err = manager.RefreshToken()
-		if err != nil {
-			return nil, err
-		}
-
-		res, _, err = download(manager.host, manager.authToken.Token, buildID, path, platform)
-		if err != nil {
-			return nil, err
-		}
-
-	} else if err != nil {
-
-		return nil, err
-	}
-
-	return res, nil
-}
-
-func download(host string, token string, buildID string, path string, platform string) (*models.DownloadCmd, int, error) {
-
-	res, err := utils.Get(host+"/api/v1/file/download?bid="+buildID+"&path="+path+"&platform="+platform, token, "application/json", nil)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return nil, res.StatusCode, utils.BuldError(res.Body)
-	}
-
-	downloadRes := new(models.DownloadCmd)
-	decoder := json.NewDecoder(res.Body)
-	decoder.Decode(&downloadRes)
-
-	return downloadRes, res.StatusCode, nil
-}
-
-func (manager *CordAPIManager) GetUpdateInfoEx(gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfoEx, error) {
-
-	res, sc, err := getUpdateInfoEx(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
-	if sc == http.StatusUnauthorized {
-
-		err = manager.RefreshToken()
-		if err != nil {
-			return nil, err
-		}
-
-		res, _, err = getUpdateInfoEx(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
-		if err != nil {
-			return nil, err
-		}
-
-	} else if err != nil {
-
-		return nil, err
-	}
-
-	return res, nil
-}
-
-func getUpdateInfoEx(host string, token string, gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfoEx, int, error) {
-
-	res, err := utils.Get(host+"/api/v1/file/update-info?gid="+gameID+"&name="+branch+"&locale="+locale+"&platform="+platform+"&ver="+ver, token, "application/json", nil)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return nil, res.StatusCode, utils.BuldError(res.Body)
-	}
-
-	info := new(models.UpdateInfoEx)
-	decoder := json.NewDecoder(res.Body)
-	decoder.Decode(&info)
-
-	return info, res.StatusCode, nil
-}
-
-func (manager *CordAPIManager) GetUpdatePatch(gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfoEx, error) {
+func (manager *CordAPIManager) GetUpdatePatch(gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfo, error) {
 
 	res, sc, err := getUpdatePatch(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
 	if sc == http.StatusUnauthorized {
@@ -1060,7 +976,7 @@ func (manager *CordAPIManager) GetUpdatePatch(gameID string, branch string, loca
 	return res, nil
 }
 
-func getUpdatePatch(host string, token string, gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfoEx, int, error) {
+func getUpdatePatch(host string, token string, gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfo, int, error) {
 
 	res, err := utils.Get(host+"/api/v1/file/update-patch?gid="+gameID+"&name="+branch+"&locale="+locale+"&platform="+platform+"&ver="+ver, token, "application/json", nil)
 	if err != nil {
@@ -1072,7 +988,7 @@ func getUpdatePatch(host string, token string, gameID string, branch string, loc
 		return nil, res.StatusCode, utils.BuldError(res.Body)
 	}
 
-	info := new(models.UpdateInfoEx)
+	info := new(models.UpdateInfo)
 	decoder := json.NewDecoder(res.Body)
 	decoder.Decode(&info)
 

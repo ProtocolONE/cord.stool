@@ -27,8 +27,8 @@ func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
 		Name:        "branch",
 		ShortName:   "b",
-		Usage:       "Manages branches",
-		Description: "Manages branches",
+		Usage:       "Manage branches",
+		Description: "Manage branches",
 
 		Subcommands: cli.Commands{
 			cli.Command{

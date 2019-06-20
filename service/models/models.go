@@ -247,12 +247,6 @@ type GameInfo struct {
 }
 
 type UpdateInfo struct {
-	BuildID string   `json:"build_id"`
-	Config  string   `json:"config"`
-	Files   []string `json:"files"`
-}
-
-type UpdateInfoEx struct {
 	BuildID     string `json:"build_id"`
 	Version     string `json:"version"`
 	ConfigData  []byte `json:"configdata"`

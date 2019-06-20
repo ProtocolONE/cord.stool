@@ -599,78 +599,6 @@ func filterFiles(manifest *models.ConfigManifest, locale string, fpath string, f
 	return result, nil
 }
 
-func GetUpdateCmd(context echo.Context) error {
-
-	result, ok, err := findBranch(context, "id", "name", "gid")
-	if !ok {
-		return err
-	}
-
-	if result.LiveBuild == "" {
-		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
-	}
-
-	locale := context.QueryParam("locale")
-
-	platform := context.QueryParam("platform")
-	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), result.LiveBuild, platform, context, false)
-	if err != nil {
-		return err
-	}
-
-	info := &models.UpdateInfo{}
-	info.BuildID = result.LiveBuild //curBuildID
-	info.Config = path.Join(fpath, "config.json")
-
-	info.Config, err = filepath.Rel(fpath, info.Config)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-	}
-
-	files, err := utils2.GetAllFiles(path.Join(fpath, "content"))
-	if !ok {
-		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-	}
-
-	manifest, err := utils.GetConfigManifest(path.Join(fpath, info.Config), platform, &context)
-	if err != nil {
-		return err
-	}
-
-	info.Files, err = filterFiles(manifest, locale, fpath, files, context)
-	if err != nil {
-		return err
-	}
-
-	return context.JSON(http.StatusOK, info)
-}
-
-func DownloadCmd(context echo.Context) error {
-
-	buildID := context.QueryParam("bid")
-	srcPath := context.QueryParam("path")
-	if buildID == "" || srcPath == "" {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Build ID and Path are required")
-	}
-
-	platform := context.QueryParam("platform")
-	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), buildID, platform, context, false)
-	if err != nil {
-		return err
-	}
-
-	fpath = path.Join(fpath, srcPath)
-
-	downloadRes := new(models.DownloadCmd)
-	downloadRes.FilePath = srcPath
-	downloadRes.FileData, err = ioutil.ReadFile(fpath)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-	}
-
-	return context.JSON(http.StatusOK, downloadRes)
-}
-
 func getBuildVersion(cfgFile string, platform string, context echo.Context) (string, error) {
 
 	cfg, err := utils.ReadConfigFile(cfgFile, &context)
@@ -720,7 +648,7 @@ func GetUpdateInfoCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
 	}
 
-	info := &models.UpdateInfoEx{}
+	info := &models.UpdateInfo{}
 	info.BuildID = result.LiveBuild
 	info.Version = currVer
 
@@ -765,7 +693,7 @@ func GetUpdatePatchCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorNoUpdateAvailable, version)
 	}
 
-	info := &models.UpdateInfoEx{}
+	info := &models.UpdateInfo{}
 	info.BuildID = result.LiveBuild
 
 	info.ConfigData, err = ioutil.ReadFile(configFile)
