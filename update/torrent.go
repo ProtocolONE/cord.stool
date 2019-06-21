@@ -52,7 +52,7 @@ func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar, stats *DownLoadStatisti
 
 			duration := uint64(time.Since(startTime)) / 1000000000
 			if duration > 0 {
-				stats.Update(uint64(t.BytesCompleted()) / duration, 0, uint64(t.Info().TotalLength()))
+				stats.Update(uint64(t.BytesCompleted())/duration, 0, uint64(t.Info().TotalLength()))
 			}
 			return fmt.Sprintf("downloading (%s/%s)", humanize.Bytes(uint64(t.BytesCompleted())), humanize.Bytes(uint64(t.Info().TotalLength())))
 		}

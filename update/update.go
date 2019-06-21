@@ -20,7 +20,6 @@ import (
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/itchio/wharf/state"
-	humanize "github.com/dustin/go-humanize"
 )
 
 var _bar *uiprogress.Bar
@@ -228,7 +227,6 @@ func Update(args cord.Args) error {
 	uiprogress.Stop()
 
 	fmt.Println("Update completed.")
-	//fmt.Printf("DownLoad statistics, time^ %s, max speed: %s/s", stats.DownloadTime.Format("2006-01-02 15:04:05 -0700"), humanize.IBytes(stats.MaxDownloadSpeed))
 
 	return nil
 }
