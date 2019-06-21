@@ -32,7 +32,9 @@ func exitSignalHandlers(client *torrent.Client) {
 	}
 }
 
-func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar) {
+func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar, stats *DownLoadStatistics) {
+
+	startTime := time.Now()
 
 	bar.Set(0)
 
@@ -47,6 +49,11 @@ func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar) {
 		} else if t.BytesCompleted() == t.Info().TotalLength() {
 			return "completed"
 		} else {
+
+			duration := uint64(time.Since(startTime)) / 1000000000
+			if duration > 0 {
+				stats.Update(uint64(t.BytesCompleted()) / duration, 0, uint64(t.Info().TotalLength()))
+			}
 			return fmt.Sprintf("downloading (%s/%s)", humanize.Bytes(uint64(t.BytesCompleted())), humanize.Bytes(uint64(t.Info().TotalLength())))
 		}
 	})
@@ -69,7 +76,7 @@ func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar) {
 	bar.Set(bar.Total)
 }
 
-func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar) error {
+func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar, stats *DownLoadStatistics) error {
 
 	reader := bytes.NewReader(torrentData)
 	mi, err := metainfo.Load(reader)
@@ -82,7 +89,9 @@ func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar
 		return err
 	}
 
-	torrentBar(t, bar)
+	torrentBar(t, bar, stats)
+
+	stats.Start()
 
 	go func() {
 		<-t.GotInfo()
@@ -92,17 +101,17 @@ func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar
 	return nil
 }
 
-func StartDownLoadFile(torrentFile string, output string, bar *uiprogress.Bar) error {
+func StartDownLoadFile(torrentFile string, output string, bar *uiprogress.Bar, stats *DownLoadStatistics) error {
 
 	torrentData, err := ioutil.ReadFile(torrentFile)
 	if err != nil {
 		return err
 	}
 
-	return StartDownLoad(torrentData, output, bar)
+	return StartDownLoad(torrentData, output, bar, stats)
 }
 
-func StartDownLoad(torrentData []byte, output string, bar *uiprogress.Bar) error {
+func StartDownLoad(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownLoadStatistics) error {
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
@@ -130,10 +139,12 @@ func StartDownLoad(torrentData []byte, output string, bar *uiprogress.Bar) error
 	defer client.Close()
 	go exitSignalHandlers(client)
 
-	err = addTorrents(client, torrentData, bar)
+	err = addTorrents(client, torrentData, bar, stats)
 	if err != nil {
 		return err
 	}
+
+	defer stats.Stop()
 
 	if !client.WaitAll() {
 		return fmt.Errorf("Download failed")

@@ -20,6 +20,7 @@ import (
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/itchio/wharf/state"
+	humanize "github.com/dustin/go-humanize"
 )
 
 var _bar *uiprogress.Bar
@@ -117,6 +118,8 @@ func Update(args cord.Args) error {
 
 	torrentFile := path.Join(args.TargetDir, "torrent.torrent")
 
+	stats := NewDownLoadStatistics("update")
+
 	if gameVer == info.Version {
 
 		_curTitle = "Checking"
@@ -125,7 +128,7 @@ func Update(args cord.Args) error {
 		if err != nil {
 
 			_curTitle = "Downloading"
-			err = StartDownLoadFile(torrentFile, args.TargetDir, _bar)
+			err = StartDownLoadFile(torrentFile, args.TargetDir, _bar, stats)
 			if err != nil {
 				return err
 			}
@@ -134,7 +137,7 @@ func Update(args cord.Args) error {
 	} else {
 
 		_curTitle = "Downloading"
-		err = StartDownLoad(info.TorrentData, args.TargetDir, _bar)
+		err = StartDownLoad(info.TorrentData, args.TargetDir, _bar, stats)
 		if err != nil {
 			return err
 		}
@@ -225,6 +228,7 @@ func Update(args cord.Args) error {
 	uiprogress.Stop()
 
 	fmt.Println("Update completed.")
+	//fmt.Printf("DownLoad statistics, time^ %s, max speed: %s/s", stats.DownloadTime.Format("2006-01-02 15:04:05 -0700"), humanize.IBytes(stats.MaxDownloadSpeed))
 
 	return nil
 }

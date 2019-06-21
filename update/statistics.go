@@ -10,8 +10,8 @@ type DownLoadStatistics struct {
 	DownloadTimeAtStart     time.Time
 	DownloadTime            time.Time
 	ApplicationRestartCount int
-	MaxDownloadSpeed        int
-	MaxUploadSpeed          int
+	MaxDownloadSpeed        uint64
+	MaxUploadSpeed          uint64
 	TotalSize               uint64
 	Started                 bool
 }
@@ -43,7 +43,7 @@ func (stats *DownLoadStatistics) Stop() {
 	stats.DownloadTime = stats.DownloadTimeAtStart.Add(duration)
 }
 
-func (stats *DownLoadStatistics) Update(downloadSpeed int, uploadSpeed int, totalSize uint64) {
+func (stats *DownLoadStatistics) Update(downloadSpeed uint64, uploadSpeed uint64, totalSize uint64) {
 
 	if !stats.Started {
 		return
