@@ -392,3 +392,31 @@ func (manager *BuildDepotManager) FindByBuildAndPlatformID(id string, platform s
 
 	return dbbuilddepot[0], nil
 }
+
+type RedistrManager struct {
+	collection *mgo.Collection
+}
+
+func NewRedistrManager() *RedistrManager {
+	session := dbConf.Dbs.Copy()
+	return &RedistrManager{collection: session.DB(dbConf.Database).C("redistr")}
+}
+
+func (manager *RedistrManager) FindByName(name string) (*models.Redistr, error) {
+
+	var dbredistr []*models.Redistr
+	err := manager.collection.Find(bson.M{"name": name}).All(&dbredistr)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbredistr == nil {
+		return nil, nil
+	}
+
+	if len(dbredistr) > 1 {
+		return nil, fmt.Errorf("Database integrity error")
+	}
+
+	return dbredistr[0], nil
+}

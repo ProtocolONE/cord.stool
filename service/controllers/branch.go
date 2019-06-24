@@ -9,6 +9,7 @@ import (
 	"cord.stool/upload/cord"
 	utils2 "cord.stool/utils"
 
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -616,6 +617,44 @@ func getBuildVersion(cfgFile string, platform string, context echo.Context) (str
 	return "", nil
 }
 
+func prepareConfig(configFile string, platform string, context echo.Context) ([]byte, error) {
+
+	cfg, err := utils.ReadConfigFile(configFile, &context)
+	if err != nil {
+		return nil, err
+	}
+
+	var manifest *models.ConfigManifest
+	manifest = nil
+
+	for _, m := range cfg.Application.Manifests {
+
+		if m.Platform == platform {
+			manifest = &m
+			break
+		}
+	}
+
+	manager := database.NewRedistrManager()
+
+	for i, r := range manifest.Redistributables {
+
+		redistr, err := manager.FindByName(r)
+		if err != nil {
+			return nil, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+		}
+
+		manifest.Redistributables[i] = redistr.Url
+	}
+
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 func GetUpdateInfoCmd(context echo.Context) error {
 
 	result, ok, err := findBranch(context, "id", "name", "gid")
@@ -652,10 +691,15 @@ func GetUpdateInfoCmd(context echo.Context) error {
 	info.BuildID = result.LiveBuild
 	info.Version = currVer
 
-	info.ConfigData, err = ioutil.ReadFile(configFile)
+	info.ConfigData, err = prepareConfig(configFile, platform, context)
+	if err != nil {
+		return err
+	}
+
+	/*info.ConfigData, err = ioutil.ReadFile(configFile)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-	}
+	}*/
 
 	info.TorrentData, err = ioutil.ReadFile(torrentFile)
 	if err != nil {

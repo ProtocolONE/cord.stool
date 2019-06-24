@@ -330,3 +330,8 @@ type ConfigApplication struct {
 type Config struct {
 	Application ConfigApplication `json:"application"`
 }
+
+type Redistr struct {
+	Name string `bson:"name" json:"name"`
+	Url  string `bson:"url" json:"url"`
+}

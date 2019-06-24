@@ -136,10 +136,10 @@ func Update(args cord.Args) error {
 	} else {
 
 		_curTitle = "Downloading"
-		err = StartDownLoad(info.TorrentData, args.TargetDir, _bar, stats)
+		/*err = StartDownLoad(info.TorrentData, args.TargetDir, _bar, stats)
 		if err != nil {
 			return err
-		}
+		}*/
 	}
 
 	_barTotal.Incr()
@@ -339,38 +339,7 @@ func downloadRedist(manifest *models.ConfigManifest) error {
 
 	for _, r := range manifest.Redistributables {
 
-		url := ""
-
-		switch r {
-		case models.Directx_june_2010:
-			url = "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe"
-		case models.Vcredist_2005_x86:
-			url = "https://download.microsoft.com/download/d/3/4/d342efa6-3266-4157-a2ec-5174867be706/vcredist_x86.exe"
-		case models.Vcredist_2008_sp1_x86:
-			url = "https://download.microsoft.com/download/d/d/9/dd9a82d0-52ef-40db-8dab-795376989c03/vcredist_x86.exe"
-		case models.Vcredist_2010_x64:
-			url = "https://download.microsoft.com/download/3/2/2/3224B87F-CFA0-4E70-BDA3-3DE650EFEBA5/vcredist_x64.exe"
-		case models.Vcredist_2010_x86:
-			url = "https://download.microsoft.com/download/5/B/C/5BC5DBB3-652D-4DCE-B14A-475AB85EEF6E/vcredist_x86.exe"
-		case models.Vcredist_2012_update_4_x64:
-			url = ""
-		case models.Vcredist_2012_update_4_x86:
-			url = ""
-		case models.Vcredist_2013_x64:
-			url = "https://aka.ms/highdpimfc2013x64enu"
-		case models.Vcredist_2013_x86:
-			url = "https://aka.ms/highdpimfc2013x86enu"
-		case models.Vcredist_2015_x64:
-			url = "https://aka.ms/vs/16/release/vc_redist.x64.exe"
-		case models.Vcredist_2015_x86:
-			url = "https://aka.ms/vs/16/release/vc_redist.x86.exe"
-		case models.Vcredist_2017_x64:
-			url = "https://aka.ms/vs/16/release/vc_redist.x64.exe"
-		case models.Vcredist_2017_x86:
-			url = "https://aka.ms/vs/16/release/vc_redist.x86.exe"
-		case models.Xnafx_40:
-			url = "https://download.microsoft.com/download/A/C/2/AC2C903B-E6E8-42C2-9FD7-BEBAC362A930/xnafx40_redist.msi"
-		}
+		url := r
 
 		if url != "" {
 
