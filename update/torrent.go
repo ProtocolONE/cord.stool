@@ -111,6 +111,17 @@ func StartDownloadFile(torrentFile string, output string, bar *uiprogress.Bar, s
 	return StartDownload(torrentData, output, bar, stats)
 }
 
+func initSetting(clientConfig *torrent.ClientConfig) {
+
+	clientConfig.Debug = false
+	//clientConfig.NoDHT = true
+	//clientConfig.DisableIPv6 = true
+	clientConfig.NoDefaultPortForwarding = true
+
+	clientConfig.HandshakesTimeout, _ = time.ParseDuration("5s")
+	clientConfig.MinDialTimeout, _ = time.ParseDuration("10s")
+}
+
 func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
 
 	old := os.Stdout
@@ -124,12 +135,8 @@ func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 	defer envpprof.Stop()
 
 	clientConfig := torrent.NewDefaultClientConfig()
-
+	initSetting(clientConfig)
 	clientConfig.DataDir = output
-	clientConfig.Debug = false
-	clientConfig.NoDHT = true
-	clientConfig.DisableIPv6 = true
-	clientConfig.NoDefaultPortForwarding = true
 
 	client, err := torrent.NewClient(clientConfig)
 	if err != nil {
