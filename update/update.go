@@ -75,6 +75,7 @@ func Update(args cord.Args) error {
 		return strutil.Resize(_curTitle, 35)
 	})
 
+	needInstall := false
 	usePatch := false
 	gameVer := getGameVersion(args.TargetDir, args.Platform)
 	if gameVer != "" {
@@ -116,7 +117,7 @@ func Update(args cord.Args) error {
 
 		} else {
 
-			manifest, err = doUpdate(args, usePatch, gameVer)
+			manifest, needInstall, err = doUpdate(args, usePatch, gameVer)
 			if err != nil {
 				return err
 			}
@@ -124,37 +125,20 @@ func Update(args cord.Args) error {
 
 	} else {
 
-		manifest, err = doUpdate(args, usePatch, gameVer)
+		manifest, needInstall, err = doUpdate(args, usePatch, gameVer)
 		if err != nil {
 			return err
 		}
 	}
 
-	_bar.Set(0)
-	_bar.Total = 3
-	_curTitle = "Installing game ..."
-
-	err = downloadRedist(manifest)
-	if err != nil {
-		return err
+	if needInstall {
+		err = doInstall(args, manifest)
+		if err != nil {
+			return err
+		}
+	} else {
+		_barTotal.Incr()
 	}
-
-	_bar.Incr()
-
-	err = install(args.TargetDir, manifest)
-	if err != nil {
-		return err
-	}
-
-	_bar.Incr()
-
-	err = utils2.AddRegKeys(manifest)
-	if err != nil {
-		return err
-	}
-
-	_bar.Incr()
-	_barTotal.Incr()
 
 	_curTitle = "Finished"
 	uiprogress.Stop()
@@ -164,13 +148,13 @@ func Update(args cord.Args) error {
 	return nil
 }
 
-func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigManifest, error) {
+func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigManifest, bool, error) {
 
 	_curTitle = "Getting update info"
 	api := cordapi.NewCordAPI(args.Url)
 	err := api.Login(args.Login, args.Password)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	_barTotal.Incr()
@@ -179,6 +163,7 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 	contentPath := path.Join(args.TargetDir, "content")
 	torrentFile := path.Join(args.TargetDir, "torrent.torrent")
 	var info *models.UpdateInfo
+	needInstall := false
 
 	if usePatch {
 
@@ -203,14 +188,14 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 
 		info, err = api.GetUpdateInfo(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	}
 
 	_barTotal.Incr()
 	_bar.Incr()
 
-	stats := NewDownLoadStatistics("update")
+	stats := NewDownloadStatistics("update")
 
 	if gameVer == info.Version {
 
@@ -220,9 +205,9 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 		if err != nil {
 
 			_curTitle = "Downloading"
-			err = StartDownLoadFile(torrentFile, args.TargetDir, _bar, stats)
+			err = StartDownloadFile(torrentFile, args.TargetDir, _bar, stats)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 
@@ -231,13 +216,14 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 		_curTitle = "Downloading"
 
 		if usePatch {
-			err = StartDownLoad(info.TorrentPatchData, args.TargetDir, _bar, stats)
+			err = StartDownload(info.TorrentPatchData, args.TargetDir, _bar, stats)
 		} else {
-			err = StartDownLoad(info.TorrentData, args.TargetDir, _bar, stats)
+			err = StartDownload(info.TorrentData, args.TargetDir, _bar, stats)
+			needInstall = true
 		}
 
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	}
 
@@ -255,9 +241,9 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 		if err != nil {
 
 			_curTitle = "Downloading"
-			err = StartDownLoad(info.TorrentData, args.TargetDir, _bar, stats)
+			err = StartDownload(info.TorrentData, args.TargetDir, _bar, stats)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 
@@ -266,31 +252,62 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 
 	_bar.Set(0)
 	_bar.Total = 3
-	_curTitle = "Preparing to install ..."
+	_curTitle = "Preparing ..."
 
 	err = ioutil.WriteFile(torrentFile, info.TorrentData, 0777)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	_bar.Incr()
 
 	err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	_bar.Incr()
 
 	manifest, err := getManifest(info.ConfigData, args.Platform)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	_bar.Incr()
 	_barTotal.Incr()
 
-	return manifest, nil
+	return manifest, needInstall, nil
+}
+
+func doInstall(args cord.Args, manifest *models.ConfigManifest) error {
+
+	_bar.Set(0)
+	_bar.Total = 3
+	_curTitle = "Installing game ..."
+
+	err := downloadRedist(manifest)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+
+	err = install(args.TargetDir, manifest)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+
+	err = utils2.AddRegKeys(manifest)
+	if err != nil {
+		return err
+	}
+
+	_bar.Incr()
+	_barTotal.Incr()
+
+	return nil
 }
 
 func getManifest(data []byte, platform string) (*models.ConfigManifest, error) {

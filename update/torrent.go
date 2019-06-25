@@ -32,7 +32,7 @@ func exitSignalHandlers(client *torrent.Client) {
 	}
 }
 
-func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar, stats *DownLoadStatistics) {
+func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar, stats *DownloadStatistics) {
 
 	startTime := time.Now()
 
@@ -76,7 +76,7 @@ func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar, stats *DownLoadStatisti
 	bar.Set(bar.Total)
 }
 
-func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar, stats *DownLoadStatistics) error {
+func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar, stats *DownloadStatistics) error {
 
 	reader := bytes.NewReader(torrentData)
 	mi, err := metainfo.Load(reader)
@@ -101,17 +101,17 @@ func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar
 	return nil
 }
 
-func StartDownLoadFile(torrentFile string, output string, bar *uiprogress.Bar, stats *DownLoadStatistics) error {
+func StartDownloadFile(torrentFile string, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
 
 	torrentData, err := ioutil.ReadFile(torrentFile)
 	if err != nil {
 		return err
 	}
 
-	return StartDownLoad(torrentData, output, bar, stats)
+	return StartDownload(torrentData, output, bar, stats)
 }
 
-func StartDownLoad(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownLoadStatistics) error {
+func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()

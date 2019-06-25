@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type DownLoadStatistics struct {
+type DownloadStatistics struct {
 	ID                      string
 	StartTime               time.Time
 	DownloadTimeAtStart     time.Time
@@ -16,11 +16,11 @@ type DownLoadStatistics struct {
 	Started                 bool
 }
 
-func NewDownLoadStatistics(id string) *DownLoadStatistics {
-	return &DownLoadStatistics{ID: id}
+func NewDownloadStatistics(id string) *DownloadStatistics {
+	return &DownloadStatistics{ID: id}
 }
 
-func (stats *DownLoadStatistics) Start() {
+func (stats *DownloadStatistics) Start() {
 
 	if stats.Started {
 		return
@@ -32,7 +32,7 @@ func (stats *DownLoadStatistics) Start() {
 	stats.Started = true
 }
 
-func (stats *DownLoadStatistics) Stop() {
+func (stats *DownloadStatistics) Stop() {
 
 	if !stats.Started {
 		return
@@ -43,7 +43,7 @@ func (stats *DownLoadStatistics) Stop() {
 	stats.DownloadTime = stats.DownloadTimeAtStart.Add(duration)
 }
 
-func (stats *DownLoadStatistics) Update(downloadSpeed uint64, uploadSpeed uint64, totalSize uint64) {
+func (stats *DownloadStatistics) Update(downloadSpeed uint64, uploadSpeed uint64, totalSize uint64) {
 
 	if !stats.Started {
 		return
