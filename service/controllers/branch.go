@@ -696,11 +696,6 @@ func GetUpdateInfoCmd(context echo.Context) error {
 		return err
 	}
 
-	/*info.ConfigData, err = ioutil.ReadFile(configFile)
-	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
-	}*/
-
 	info.TorrentData, err = ioutil.ReadFile(torrentFile)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
@@ -732,20 +727,31 @@ func GetUpdatePatchCmd(context echo.Context) error {
 	}
 
 	version := context.QueryParam("ver")
-	torrentFile := path.Join(fpath, "patch_for_"+version+"_"+platform+".torrent")
+	torrentPatchFile := path.Join(fpath, "patch_for_"+version+"_"+platform+".torrent")
+	if _, err := os.Stat(torrentPatchFile); os.IsNotExist(err) { // the file is not exist
+		//return utils.BuildBadRequestError(context, models.ErrorNoUpdateAvailable, version)
+		torrentPatchFile = ""
+	}
+
+	torrentFile := path.Join(fpath, "torrent.torrent")
 	if _, err := os.Stat(torrentFile); os.IsNotExist(err) { // the file is not exist
-		return utils.BuildBadRequestError(context, models.ErrorNoUpdateAvailable, version)
+		return utils.BuildBadRequestError(context, models.ErrorBuildIsNotPublished, "")
 	}
 
 	info := &models.UpdateInfo{}
 	info.BuildID = result.LiveBuild
 
-	info.ConfigData, err = ioutil.ReadFile(configFile)
+	info.ConfigData, err = prepareConfig(configFile, platform, context)
+	if err != nil {
+		return err
+	}
+
+	info.TorrentData, err = ioutil.ReadFile(torrentFile)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
-	info.TorrentData, err = ioutil.ReadFile(torrentFile)
+	info.TorrentPatchData, err = ioutil.ReadFile(torrentPatchFile)
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}

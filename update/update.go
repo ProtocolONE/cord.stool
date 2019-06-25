@@ -62,12 +62,6 @@ func Update(args cord.Args) error {
 
 	fmt.Println("Updating game ...")
 
-	usePatch := false
-	gameVer := getGameVersion(args.TargetDir, args.Platform)
-	if gameVer != "" {
-		usePatch = true
-	}
-
 	uiprogress.Start()
 	_barTotal = uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
 	_barTotal.PrependFunc(func(b *uiprogress.Bar) string {
@@ -81,53 +75,48 @@ func Update(args cord.Args) error {
 		return strutil.Resize(_curTitle, 35)
 	})
 
-	_curTitle = "Getting update info"
-	api := cordapi.NewCordAPI(args.Url)
-	err := api.Login(args.Login, args.Password)
-	if err != nil {
-		return err
+	usePatch := false
+	gameVer := getGameVersion(args.TargetDir, args.Platform)
+	if gameVer != "" {
+		usePatch = true
 	}
 
-	_barTotal.Incr()
-	_bar.Incr()
-
-	var info *models.UpdateInfo
 	contentPath := path.Join(args.TargetDir, "content")
+	patchFile := path.Join(args.TargetDir, "patch_for_"+gameVer+"_"+args.Platform+".bin")
+	var manifest *models.ConfigManifest
+	var err error
 
-	if usePatch {
+	if _, err := os.Stat(patchFile); !os.IsNotExist(err) {
 
-		info, err = api.GetUpdatePatch(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
-		if err != nil {
-			usePatch = false // try to download whole build
-		}
-	}
+		defer os.Remove(patchFile)
 
-	if !usePatch {
+		_bar.Total = 100
+		_curTitle = "Applying patch ..."
 
-		_barTotal.Incr()
+		err := utils2.ApplyPatchFile(contentPath, contentPath, patchFile, newStateConsumer())
+		if err == nil {
 
-		info, err = api.GetUpdateInfo(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
-		if err != nil {
-			return err
-		}
-	}
+			_barTotal.Incr()
+			_barTotal.Incr()
 
-	_barTotal.Incr()
-	_bar.Incr()
+			data, err := ioutil.ReadFile(path.Join(args.TargetDir, "config.json"))
+			if err != nil {
+				return err
+			}
 
-	torrentFile := path.Join(args.TargetDir, "torrent.torrent")
+			_barTotal.Incr()
 
-	stats := NewDownLoadStatistics("update")
+			manifest, err = getManifest(data, args.Platform)
+			if err != nil {
+				return err
+			}
 
-	if gameVer == info.Version {
+			_barTotal.Incr()
+			_barTotal.Incr()
 
-		_curTitle = "Checking"
+		} else {
 
-		err = VerifyTorrentFile(torrentFile, args.TargetDir, _bar)
-		if err != nil {
-
-			_curTitle = "Downloading"
-			err = StartDownLoadFile(torrentFile, args.TargetDir, _bar, stats)
+			manifest, err = doUpdate(args, usePatch, gameVer)
 			if err != nil {
 				return err
 			}
@@ -135,65 +124,9 @@ func Update(args cord.Args) error {
 
 	} else {
 
-		_curTitle = "Downloading"
-		/*err = StartDownLoad(info.TorrentData, args.TargetDir, _bar, stats)
+		manifest, err = doUpdate(args, usePatch, gameVer)
 		if err != nil {
 			return err
-		}*/
-	}
-
-	_barTotal.Incr()
-
-	if usePatch {
-
-		patchFile := path.Join(args.TargetDir, "patch_for_"+gameVer+"_"+args.Platform+".bin")
-		defer os.Remove(patchFile)
-
-		_bar.Total = 100
-		_curTitle = "Applying patch ..."
-
-		err = utils2.ApplyPatchFile(contentPath, contentPath, patchFile, newStateConsumer())
-		if err != nil {
-			return err
-		}
-
-		_barTotal.Incr()
-	}
-
-	_bar.Set(0)
-	_bar.Total = 3
-	_curTitle = "Preparing to install ..."
-
-	err = ioutil.WriteFile(torrentFile, info.TorrentData, 0777)
-	if err != nil {
-		return err
-	}
-
-	_bar.Incr()
-
-	err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
-	if err != nil {
-		return err
-	}
-
-	_bar.Incr()
-
-	cfg, err := utils.ReadConfigData(info.ConfigData, nil)
-	if err != nil {
-		return err
-	}
-
-	_bar.Incr()
-	_barTotal.Incr()
-
-	var manifest *models.ConfigManifest
-	manifest = nil
-
-	for _, m := range cfg.Application.Manifests {
-
-		if m.Platform == args.Platform {
-			manifest = &m
-			break
 		}
 	}
 
@@ -201,7 +134,7 @@ func Update(args cord.Args) error {
 	_bar.Total = 3
 	_curTitle = "Installing game ..."
 
-	downloadRedist(manifest)
+	err = downloadRedist(manifest)
 	if err != nil {
 		return err
 	}
@@ -229,6 +162,159 @@ func Update(args cord.Args) error {
 	fmt.Println("Update completed.")
 
 	return nil
+}
+
+func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigManifest, error) {
+
+	_curTitle = "Getting update info"
+	api := cordapi.NewCordAPI(args.Url)
+	err := api.Login(args.Login, args.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	_barTotal.Incr()
+	_bar.Incr()
+
+	contentPath := path.Join(args.TargetDir, "content")
+	torrentFile := path.Join(args.TargetDir, "torrent.torrent")
+	var info *models.UpdateInfo
+
+	if usePatch {
+
+		info, err = api.GetUpdatePatch(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
+		if err != nil {
+
+			usePatch = false // try to download whole build
+
+		} else {
+
+			_curTitle = "Checking"
+			err := VerifyTorrentFile(torrentFile, args.TargetDir, _bar)
+			if err != nil {
+				usePatch = false // try to download whole build
+			}
+		}
+	}
+
+	if !usePatch {
+
+		_barTotal.Incr()
+
+		info, err = api.GetUpdateInfo(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	_barTotal.Incr()
+	_bar.Incr()
+
+	stats := NewDownLoadStatistics("update")
+
+	if gameVer == info.Version {
+
+		_curTitle = "Checking"
+
+		err = VerifyTorrentFile(torrentFile, args.TargetDir, _bar)
+		if err != nil {
+
+			_curTitle = "Downloading"
+			err = StartDownLoadFile(torrentFile, args.TargetDir, _bar, stats)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+	} else {
+
+		_curTitle = "Downloading"
+
+		if usePatch {
+			err = StartDownLoad(info.TorrentPatchData, args.TargetDir, _bar, stats)
+		} else {
+			err = StartDownLoad(info.TorrentData, args.TargetDir, _bar, stats)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	_barTotal.Incr()
+
+	if usePatch {
+
+		patchFile := path.Join(args.TargetDir, "patch_for_"+gameVer+"_"+args.Platform+".bin")
+		defer os.Remove(patchFile)
+
+		_bar.Total = 100
+		_curTitle = "Applying patch ..."
+
+		err = utils2.ApplyPatchFile(contentPath, contentPath, patchFile, newStateConsumer())
+		if err != nil {
+
+			_curTitle = "Downloading"
+			err = StartDownLoad(info.TorrentData, args.TargetDir, _bar, stats)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		_barTotal.Incr()
+	}
+
+	_bar.Set(0)
+	_bar.Total = 3
+	_curTitle = "Preparing to install ..."
+
+	err = ioutil.WriteFile(torrentFile, info.TorrentData, 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	_bar.Incr()
+
+	err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	_bar.Incr()
+
+	manifest, err := getManifest(info.ConfigData, args.Platform)
+	if err != nil {
+		return nil, err
+	}
+
+	_bar.Incr()
+	_barTotal.Incr()
+
+	return manifest, nil
+}
+
+func getManifest(data []byte, platform string) (*models.ConfigManifest, error) {
+
+	cfg, err := utils.ReadConfigData(data, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var manifest *models.ConfigManifest
+	manifest = nil
+	for _, m := range cfg.Application.Manifests {
+
+		if m.Platform == platform {
+			manifest = &m
+			break
+		}
+	}
+
+	if manifest == nil {
+		return nil, fmt.Errorf("Manifests for specified platform (%s) is not found", platform)
+	}
+
+	return manifest, nil
 }
 
 func getGameVersion(target string, platform string) string {

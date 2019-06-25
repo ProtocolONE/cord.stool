@@ -247,19 +247,11 @@ type GameInfo struct {
 }
 
 type UpdateInfo struct {
-	BuildID     string `json:"build_id"`
-	Version     string `json:"version"`
-	ConfigData  []byte `json:"configdata"`
-	TorrentData []byte `json:"torrentdata"`
-}
-
-type DownloadCmd struct {
-	FilePath string `json:"filepath"`
-	FileData []byte `json:"filedata"`
-}
-
-type GetPatchCmd struct {
-	SignData []byte `json:"signdata"`
+	BuildID          string `json:"build_id"`
+	Version          string `json:"version"`
+	ConfigData       []byte `json:"config_data"`
+	TorrentData      []byte `json:"torrent_data"`
+	TorrentPatchData []byte `json:"torrent_patch_data"`
 }
 
 type ConfigLocale struct {
