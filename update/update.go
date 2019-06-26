@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"cord.stool/cordapi"
@@ -38,9 +37,6 @@ func newStateConsumer() *state.Consumer {
 }
 
 func ProgressLabel(label string) {
-
-	//_, fn := filepath.Split(label)
-	//_curTitle = fn
 }
 
 func PauseProgress() {
@@ -52,7 +48,6 @@ func ResumeProgress() {
 func Progress(alpha float64) {
 
 	_bar.Set(int(100 * alpha))
-	//_barTotal.Set(int(5*alpha) + (_barTotal.Total - 7))
 }
 
 func Logl(level string, msg string) {
@@ -162,34 +157,11 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 
 	contentPath := path.Join(args.TargetDir, "content")
 	torrentFile := path.Join(args.TargetDir, "torrent.torrent")
-	var info *models.UpdateInfo
 	needInstall := false
 
-	if usePatch {
-
-		info, err = api.GetUpdatePatch(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
-		if err != nil {
-
-			usePatch = false // try to download whole build
-
-		} else {
-
-			_curTitle = "Checking"
-			err := VerifyTorrentFile(torrentFile, args.TargetDir, _bar)
-			if err != nil {
-				usePatch = false // try to download whole build
-			}
-		}
-	}
-
-	if !usePatch {
-
-		_barTotal.Incr()
-
-		info, err = api.GetUpdateInfo(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
-		if err != nil {
-			return nil, false, err
-		}
+	info, err := getUpdateInfo(api, args, usePatch, gameVer)
+	if err != nil {
+		return nil, false, err
 	}
 
 	_barTotal.Incr()
@@ -279,6 +251,43 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 	return manifest, needInstall, nil
 }
 
+func getUpdateInfo(api *cordapi.CordAPIManager, args cord.Args, usePatch bool, gameVer string) (*models.UpdateInfo, error) {
+
+	var info *models.UpdateInfo
+	var err error
+
+	if usePatch {
+
+		info, err = api.GetUpdatePatch(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
+		if err != nil {
+
+			usePatch = false // try to download whole build
+
+		} else {
+
+			_curTitle = "Checking"
+
+			torrentFile := path.Join(args.TargetDir, "torrent.torrent")
+			err := VerifyTorrentFile(torrentFile, args.TargetDir, _bar)
+			if err != nil {
+				usePatch = false // try to download whole build
+			}
+		}
+	}
+
+	if !usePatch {
+
+		_barTotal.Incr()
+
+		info, err = api.GetUpdateInfo(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return info, nil
+}
+
 func doInstall(args cord.Args, manifest *models.ConfigManifest) error {
 
 	_bar.Set(0)
@@ -354,61 +363,6 @@ func getGameVersion(target string, platform string) string {
 	}
 
 	return ""
-}
-
-func mapPath(fpath string, manifest *models.ConfigManifest) string {
-
-	fpath = filepath.ToSlash(fpath)
-
-	for _, m := range manifest.FileRules.Mappings {
-
-		localPath := strings.TrimLeft(m.LocalPath, ".")
-		localPath = strings.TrimLeft(m.LocalPath, "/")
-		localPath = filepath.Join("content", localPath) + "/"
-		localPath = filepath.ToSlash(localPath)
-
-		installPath := strings.TrimLeft(m.InstallPath, ".")
-		installPath = strings.TrimLeft(m.InstallPath, "/")
-		installPath = filepath.ToSlash(installPath)
-
-		index := strings.Index(strings.ToLower(fpath), strings.ToLower(localPath))
-		if index == 0 {
-
-			fpath = filepath.Join("content", installPath, fpath[len(localPath):])
-			break
-
-		} else {
-
-			localPath = strings.TrimRight(localPath, "/")
-			if len(fpath) == len(localPath) && strings.Index(strings.ToLower(fpath), strings.ToLower(localPath)) == 0 {
-
-				fpath = filepath.Join("content", installPath, fpath[len(localPath):])
-				break
-			}
-		}
-	}
-
-	return fpath
-}
-
-func getAttributes(fpath string, manifest *models.ConfigManifest) []string {
-
-	fpath = filepath.ToSlash(fpath)
-
-	for _, p := range manifest.FileRules.Properties {
-
-		prop := strings.TrimLeft(p.InstallPath, ".")
-		prop = strings.TrimLeft(p.InstallPath, "/")
-		prop = filepath.Join("content", prop)
-		prop = filepath.ToSlash(prop)
-
-		match, err := filepath.Match(prop, fpath)
-		if match && err == nil {
-			return p.Attributes
-		}
-	}
-
-	return nil
 }
 
 func install(targetDir string, manifest *models.ConfigManifest) error {
