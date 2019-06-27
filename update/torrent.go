@@ -103,6 +103,8 @@ func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar
 
 func StartDownloadFile(torrentFile string, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
 
+	return nil
+
 	torrentData, err := ioutil.ReadFile(torrentFile)
 	if err != nil {
 		return err
@@ -123,6 +125,8 @@ func initSetting(clientConfig *torrent.ClientConfig) {
 }
 
 func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
+
+	return nil
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()

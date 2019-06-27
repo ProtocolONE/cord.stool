@@ -110,9 +110,11 @@ func Update(args cord.Args) error {
 			_barTotal.Incr()
 			_barTotal.Incr()
 
-		} else {
+		}
 
-			manifest, needInstall, err = doUpdate(args, usePatch, gameVer)
+		info, err := getUpdateInfo(args, &usePatch, gameVer, true)
+		if info != nil {
+			manifest, needInstall, err = doUpdate(args, usePatch, gameVer, info)
 			if err != nil {
 				return err
 			}
@@ -120,7 +122,7 @@ func Update(args cord.Args) error {
 
 	} else {
 
-		manifest, needInstall, err = doUpdate(args, usePatch, gameVer)
+		manifest, needInstall, err = doUpdate(args, usePatch, gameVer, nil)
 		if err != nil {
 			return err
 		}
@@ -131,9 +133,9 @@ func Update(args cord.Args) error {
 		if err != nil {
 			return err
 		}
-	} else {
-		_barTotal.Incr()
 	}
+
+	_barTotal.Incr()
 
 	_curTitle = "Finished"
 	uiprogress.Stop()
@@ -143,14 +145,7 @@ func Update(args cord.Args) error {
 	return nil
 }
 
-func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigManifest, bool, error) {
-
-	_curTitle = "Getting update info"
-	api := cordapi.NewCordAPI(args.Url)
-	err := api.Login(args.Login, args.Password)
-	if err != nil {
-		return nil, false, err
-	}
+func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.UpdateInfo) (*models.ConfigManifest, bool, error) {
 
 	_barTotal.Incr()
 	_bar.Incr()
@@ -158,10 +153,14 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 	contentPath := path.Join(args.TargetDir, "content")
 	torrentFile := path.Join(args.TargetDir, "torrent.torrent")
 	needInstall := false
+	var err error
 
-	info, err := getUpdateInfo(api, args, usePatch, gameVer)
-	if err != nil {
-		return nil, false, err
+	if info == nil {
+
+		info, err = getUpdateInfo(args, &usePatch, gameVer, false)
+		if err != nil {
+			return nil, false, err
+		}
 	}
 
 	_barTotal.Incr()
@@ -251,17 +250,25 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string) (*models.ConfigMani
 	return manifest, needInstall, nil
 }
 
-func getUpdateInfo(api *cordapi.CordAPIManager, args cord.Args, usePatch bool, gameVer string) (*models.UpdateInfo, error) {
+func getUpdateInfo(args cord.Args, usePatch *bool, gameVer string, updateOnly bool) (*models.UpdateInfo, error) {
+
+	_curTitle = "Getting update info"
 
 	var info *models.UpdateInfo
 	var err error
 
-	if usePatch {
+	api := cordapi.NewCordAPI(args.Url)
+	err = api.Login(args.Login, args.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	if *usePatch {
 
 		info, err = api.GetUpdatePatch(args.GameID, args.BranchName, args.Locale, args.Platform, gameVer)
 		if err != nil {
 
-			usePatch = false // try to download whole build
+			*usePatch = false // try to download whole build
 
 		} else {
 
@@ -270,12 +277,16 @@ func getUpdateInfo(api *cordapi.CordAPIManager, args cord.Args, usePatch bool, g
 			torrentFile := path.Join(args.TargetDir, "torrent.torrent")
 			err := VerifyTorrentFile(torrentFile, args.TargetDir, _bar)
 			if err != nil {
-				usePatch = false // try to download whole build
+
+				*usePatch = false // try to download whole build
+				if updateOnly {
+					return nil, err
+				}
 			}
 		}
 	}
 
-	if !usePatch {
+	if !*usePatch {
 
 		_barTotal.Incr()
 
