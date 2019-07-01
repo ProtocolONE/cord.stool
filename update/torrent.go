@@ -3,6 +3,7 @@ package update
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/gob"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,6 +22,12 @@ import (
 	"github.com/edsrzf/mmap-go"
 	"github.com/gosuri/uiprogress"
 )
+
+type ResumeData struct {
+	Filename string
+	Size     int64
+	ModTime  time.Time
+}
 
 func exitSignalHandlers(client *torrent.Client) {
 
@@ -114,8 +121,8 @@ func StartDownloadFile(torrentFile string, output string, bar *uiprogress.Bar, s
 func initSetting(clientConfig *torrent.ClientConfig) {
 
 	clientConfig.Debug = false
-	//clientConfig.NoDHT = true
-	//clientConfig.DisableIPv6 = true
+	clientConfig.NoDHT = true
+	clientConfig.DisableIPv6 = true
 	clientConfig.NoDefaultPortForwarding = true
 
 	clientConfig.HandshakesTimeout, _ = time.ParseDuration("5s")
@@ -123,6 +130,9 @@ func initSetting(clientConfig *torrent.ClientConfig) {
 }
 
 func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
+
+	os.Remove(filepath.Join(output, ".torrent.bolt.db"))
+	os.Remove(filepath.Join(output, ".torrent.bolt.db.lock"))
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
@@ -133,6 +143,20 @@ func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 	defer f()
 
 	defer envpprof.Stop()
+
+	err := startDownload(torrentData, output, bar, stats)
+	if err != nil {
+		return err
+	}
+
+	os.Remove(filepath.Join(output, ".torrent.bolt.db"))
+	os.Remove(filepath.Join(output, ".torrent.bolt.db.lock"))
+	saveFastResumeData(torrentData, output)
+
+	return nil
+}
+
+func startDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
 
 	clientConfig := torrent.NewDefaultClientConfig()
 	initSetting(clientConfig)
@@ -155,6 +179,48 @@ func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 
 	if !client.WaitAll() {
 		return fmt.Errorf("Download failed")
+	}
+
+	return nil
+}
+
+func saveFastResumeData(torrentData []byte, source string) error {
+
+	reader := bytes.NewReader(torrentData)
+	metaInfo, err := metainfo.Load(reader)
+	if err != nil {
+		return err
+	}
+
+	info, err := metaInfo.UnmarshalInfo()
+	if err != nil {
+		return err
+	}
+
+	var resumeData []ResumeData
+
+	for _, file := range info.UpvertedFiles() {
+
+		filename := filepath.Join(append([]string{source, info.Name}, file.Path...)...)
+		size, modTime, err := getFileSizeAndModifyTime(filename)
+		if err != nil {
+			return err
+		}
+
+		resumeData = append(resumeData, ResumeData{filename, size, modTime})
+	}
+
+	var binData bytes.Buffer
+
+	enc := gob.NewEncoder(&binData)
+	err = enc.Encode(resumeData)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(filepath.Join(source, "resumedata.bin"), binData.Bytes(), 0777)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -211,6 +277,54 @@ func verifyTorrent(info *metainfo.Info, source string, bar *uiprogress.Bar) erro
 	return nil
 }
 
+func getFileSizeAndModifyTime(filename string) (int64, time.Time, error) {
+
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return -1, time.Now(), err
+	}
+
+	return fi.Size(), fi.ModTime(), nil
+}
+
+func verifyTorrentLight(info *metainfo.Info, source string, bar *uiprogress.Bar) (bool, error) {
+
+	bar.Set(0)
+	var resumeData []ResumeData
+
+	binData, err := ioutil.ReadFile(filepath.Join(source, "resumedata.bin"))
+	if err != nil {
+		return false, err
+	}
+
+	reader := bytes.NewReader(binData)
+
+	dec := gob.NewDecoder(reader)
+	err = dec.Decode(&resumeData)
+	if err != nil {
+		return false, err
+	}
+
+	bar.Total = len(resumeData)
+
+	for _, resume := range resumeData {
+
+		//filename := filepath.Join(source, resume.Filename)
+		size, time, err := getFileSizeAndModifyTime(resume.Filename)
+		if err != nil {
+			return false, err
+		}
+
+		if resume.Size != size || resume.ModTime != time {
+			return false, nil
+		}
+
+		bar.Incr()
+	}
+
+	return true, nil
+}
+
 func VerifyTorrentFile(torrentFile string, source string, bar *uiprogress.Bar) error {
 
 	torrentData, err := ioutil.ReadFile(torrentFile)
@@ -218,7 +332,31 @@ func VerifyTorrentFile(torrentFile string, source string, bar *uiprogress.Bar) e
 		return err
 	}
 
-	return VerifyTorrent(torrentData, source, bar)
+	//return VerifyTorrent(torrentData, source, bar)
+
+	reader := bytes.NewReader(torrentData)
+	metaInfo, err := metainfo.Load(reader)
+	if err != nil {
+		return err
+	}
+
+	info, err := metaInfo.UnmarshalInfo()
+	if err != nil {
+		return err
+	}
+
+	test, err := verifyTorrentLight(&info, source, bar)
+	if err != nil {
+
+		return VerifyTorrent(torrentData, source, bar)
+	}
+
+	if !test {
+
+		return fmt.Errorf("Checking failed")
+	}
+
+	return nil
 }
 
 func VerifyTorrent(torrentData []byte, source string, bar *uiprogress.Bar) error {
