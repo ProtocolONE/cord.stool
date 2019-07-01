@@ -207,6 +207,7 @@ func saveFastResumeData(torrentData []byte, source string) error {
 			return err
 		}
 
+		filename = filepath.Join(append([]string{info.Name}, file.Path...)...)
 		resumeData = append(resumeData, ResumeData{filename, size, modTime})
 	}
 
@@ -309,8 +310,8 @@ func verifyTorrentLight(info *metainfo.Info, source string, bar *uiprogress.Bar)
 
 	for _, resume := range resumeData {
 
-		//filename := filepath.Join(source, resume.Filename)
-		size, time, err := getFileSizeAndModifyTime(resume.Filename)
+		filename := filepath.Join(source, resume.Filename)
+		size, time, err := getFileSizeAndModifyTime(filename)
 		if err != nil {
 			return false, err
 		}
@@ -348,7 +349,7 @@ func VerifyTorrentFile(torrentFile string, source string, bar *uiprogress.Bar) e
 	test, err := verifyTorrentLight(&info, source, bar)
 	if err != nil {
 
-		return VerifyTorrent(torrentData, source, bar)
+		return err //VerifyTorrent(torrentData, source, bar)
 	}
 
 	if !test {
