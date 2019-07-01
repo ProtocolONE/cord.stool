@@ -158,6 +158,11 @@ func Register(ctx *context.StoolContext) {
 						Value:       "win64",
 						Destination: &args.cordArgs.Platform,
 					},
+					cli.BoolFlag{
+						Name:        "recheck, r",
+						Usage:       "Recheck all game files and restore them if need it",
+						Destination: &args.cordArgs.Recheck,
+					},
 				},
 				Action: func(c *cli.Context) error {
 					return doUpdate(ctx, c)

@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"cord.stool/cordapi"
@@ -70,17 +71,35 @@ func Update(args cord.Args) error {
 		return strutil.Resize(_curTitle, 35)
 	})
 
-	needInstall := false
+	needInstall := 0
 	usePatch := false
 	gameVer := getGameVersion(args.TargetDir, args.Platform)
 	if gameVer != "" {
 		usePatch = true
 	}
 
+	var manifestOld *models.ConfigManifest
+
+	if args.Recheck {
+
+		needInstall = -1
+
+	} else {
+
+		data, err := ioutil.ReadFile(path.Join(args.TargetDir, "config.json"))
+		if err != nil {
+			needInstall = -1
+		}
+
+		manifestOld, err = getManifest(data, args.Platform)
+		if err != nil {
+			needInstall = -1
+		}
+	}
+
 	contentPath := path.Join(args.TargetDir, "content")
 	patchFile := path.Join(args.TargetDir, "patch_for_"+gameVer+"_"+args.Platform+".bin")
 	var manifest *models.ConfigManifest
-	var err error
 
 	if _, err := os.Stat(patchFile); !os.IsNotExist(err) {
 
@@ -114,7 +133,7 @@ func Update(args cord.Args) error {
 
 		info, err := getUpdateInfo(args, &usePatch, gameVer, true)
 		if info != nil {
-			manifest, needInstall, err = doUpdate(args, usePatch, gameVer, info)
+			manifest, err = doUpdate(args, usePatch, gameVer, info)
 			if err != nil {
 				return err
 			}
@@ -122,14 +141,18 @@ func Update(args cord.Args) error {
 
 	} else {
 
-		manifest, needInstall, err = doUpdate(args, usePatch, gameVer, nil)
+		manifest, err = doUpdate(args, usePatch, gameVer, nil)
 		if err != nil {
 			return err
 		}
 	}
 
-	if needInstall {
-		err = doInstall(args, manifest)
+	if needInstall == 0 {
+		needInstall = isNeedInstall(manifestOld, manifest)
+	}
+
+	if needInstall > 0 {
+		err := doInstall(args, manifest, needInstall)
 		if err != nil {
 			return err
 		}
@@ -145,21 +168,20 @@ func Update(args cord.Args) error {
 	return nil
 }
 
-func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.UpdateInfo) (*models.ConfigManifest, bool, error) {
+func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.UpdateInfo) (*models.ConfigManifest, error) {
 
 	_barTotal.Incr()
 	_bar.Incr()
 
 	contentPath := path.Join(args.TargetDir, "content")
 	torrentFile := path.Join(args.TargetDir, "torrent.torrent")
-	needInstall := false
 	var err error
 
 	if info == nil {
 
 		info, err = getUpdateInfo(args, &usePatch, gameVer, false)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 	}
 
@@ -168,7 +190,15 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.Update
 
 	stats := NewDownloadStatistics("update")
 
-	if gameVer == info.Version {
+	if args.Recheck {
+
+		_curTitle = "Downloading"
+		err = StartDownloadFile(torrentFile, args.TargetDir, _bar, stats)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if gameVer == info.Version {
 
 		_curTitle = "Checking"
 
@@ -178,7 +208,7 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.Update
 			_curTitle = "Downloading"
 			err = StartDownloadFile(torrentFile, args.TargetDir, _bar, stats)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 		}
 
@@ -190,11 +220,10 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.Update
 			err = StartDownload(info.TorrentPatchData, args.TargetDir, _bar, stats)
 		} else {
 			err = StartDownload(info.TorrentData, args.TargetDir, _bar, stats)
-			needInstall = true
 		}
 
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 	}
 
@@ -214,7 +243,7 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.Update
 			_curTitle = "Downloading"
 			err = StartDownload(info.TorrentData, args.TargetDir, _bar, stats)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 		}
 
@@ -227,27 +256,27 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.Update
 
 	err = ioutil.WriteFile(torrentFile, info.TorrentData, 0777)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	_bar.Incr()
 
 	err = ioutil.WriteFile(path.Join(args.TargetDir, "config.json"), info.ConfigData, 0777)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	_bar.Incr()
 
 	manifest, err := getManifest(info.ConfigData, args.Platform)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	_bar.Incr()
 	_barTotal.Incr()
 
-	return manifest, needInstall, nil
+	return manifest, nil
 }
 
 func getUpdateInfo(args cord.Args, usePatch *bool, gameVer string, updateOnly bool) (*models.UpdateInfo, error) {
@@ -299,35 +328,72 @@ func getUpdateInfo(args cord.Args, usePatch *bool, gameVer string, updateOnly bo
 	return info, nil
 }
 
-func doInstall(args cord.Args, manifest *models.ConfigManifest) error {
+func doInstall(args cord.Args, manifest *models.ConfigManifest, steps int) error {
 
 	_bar.Set(0)
 	_bar.Total = 3
 	_curTitle = "Installing game ..."
 
-	err := downloadRedist(manifest)
-	if err != nil {
-		return err
+	if steps&1 == 1 {
+		err := downloadRedist(manifest)
+		if err != nil {
+			return err
+		}
 	}
 
 	_bar.Incr()
 
-	err = install(args.TargetDir, manifest)
-	if err != nil {
-		return err
+	if steps&2 == 2 {
+		err := install(args.TargetDir, manifest)
+		if err != nil {
+			return err
+		}
 	}
 
 	_bar.Incr()
 
-	err = utils2.AddRegKeys(manifest)
-	if err != nil {
-		return err
+	if steps&4 == 4 {
+		err := utils2.AddRegKeys(manifest)
+		if err != nil {
+			return err
+		}
 	}
 
 	_bar.Incr()
 	_barTotal.Incr()
 
 	return nil
+}
+
+func isNeedInstall(manifestOld *models.ConfigManifest, manifestNew *models.ConfigManifest) int {
+
+	steps := 0
+
+	for i, rNew := range manifestNew.Redistributables {
+
+		if rNew != manifestOld.Redistributables[i] {
+			steps |= 1
+			break
+		}
+	}
+
+	for i, scrNew := range manifestNew.InstallScripts {
+
+		if !reflect.DeepEqual(scrNew, manifestOld.InstallScripts[i]) {
+			steps |= 2
+			break
+		}
+	}
+
+	for i, rkNew := range manifestNew.RegistryKeys {
+
+		if !reflect.DeepEqual(rkNew, manifestOld.RegistryKeys[i]) {
+			steps |= 4
+			break
+		}
+	}
+
+	return steps
 }
 
 func getManifest(data []byte, platform string) (*models.ConfigManifest, error) {

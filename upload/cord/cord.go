@@ -38,6 +38,7 @@ type Args = struct {
 	Platform   string
 	Wharf      bool
 	Force      bool
+	Recheck    bool
 }
 
 func initProgressBar(barCount int) {
