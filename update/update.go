@@ -22,6 +22,14 @@ import (
 	"github.com/itchio/wharf/state"
 )
 
+const (
+	noNeed = 0
+	redistNeed = 1
+	instralNeed = 2
+	registyNeed = 4
+	allNeed = -1
+)
+
 var _bar *uiprogress.Bar
 var _barTotal *uiprogress.Bar
 var _curTitle string
@@ -71,7 +79,7 @@ func Update(args cord.Args) error {
 		return strutil.Resize(_curTitle, 35)
 	})
 
-	needInstall := 0
+	needInstall := noNeed
 	usePatch := false
 	gameVer := getGameVersion(args.TargetDir, args.Platform)
 	if gameVer != "" {
@@ -82,18 +90,18 @@ func Update(args cord.Args) error {
 
 	if args.Recheck {
 
-		needInstall = -1
+		needInstall = allNeed
 
 	} else {
 
 		data, err := ioutil.ReadFile(path.Join(args.TargetDir, "config.json"))
 		if err != nil {
-			needInstall = -1
+			needInstall = allNeed
 		}
 
 		manifestOld, err = getManifest(data, args.Platform)
 		if err != nil {
-			needInstall = -1
+			needInstall = allNeed
 		}
 	}
 
@@ -147,11 +155,11 @@ func Update(args cord.Args) error {
 		}
 	}
 
-	if needInstall == 0 {
+	if needInstall == noNeed {
 		needInstall = isNeedInstall(manifestOld, manifest)
 	}
 
-	if needInstall != 0 {
+	if needInstall != noNeed {
 		err := doInstall(args, manifest, needInstall)
 		if err != nil {
 			return err
@@ -334,7 +342,7 @@ func doInstall(args cord.Args, manifest *models.ConfigManifest, steps int) error
 	_bar.Total = 3
 	_curTitle = "Installing game ..."
 
-	if steps&1 == 1 {
+	if steps&redistNeed == redistNeed {
 		err := downloadRedist(manifest)
 		if err != nil {
 			return err
@@ -343,7 +351,7 @@ func doInstall(args cord.Args, manifest *models.ConfigManifest, steps int) error
 
 	_bar.Incr()
 
-	if steps&2 == 2 {
+	if steps&instralNeed == instralNeed {
 		err := install(args.TargetDir, manifest)
 		if err != nil {
 			return err
@@ -352,7 +360,7 @@ func doInstall(args cord.Args, manifest *models.ConfigManifest, steps int) error
 
 	_bar.Incr()
 
-	if steps&4 == 4 {
+	if steps&registyNeed == registyNeed {
 		err := utils2.AddRegKeys(manifest)
 		if err != nil {
 			return err
@@ -367,12 +375,12 @@ func doInstall(args cord.Args, manifest *models.ConfigManifest, steps int) error
 
 func isNeedInstall(manifestOld *models.ConfigManifest, manifestNew *models.ConfigManifest) int {
 
-	steps := 0
+	steps := noNeed
 
 	for i, rNew := range manifestNew.Redistributables {
 
 		if rNew != manifestOld.Redistributables[i] {
-			steps |= 1
+			steps |= redistNeed
 			break
 		}
 	}
@@ -380,7 +388,7 @@ func isNeedInstall(manifestOld *models.ConfigManifest, manifestNew *models.Confi
 	for i, scrNew := range manifestNew.InstallScripts {
 
 		if !reflect.DeepEqual(scrNew, manifestOld.InstallScripts[i]) {
-			steps |= 2
+			steps |= instralNeed
 			break
 		}
 	}
@@ -388,7 +396,7 @@ func isNeedInstall(manifestOld *models.ConfigManifest, manifestNew *models.Confi
 	for i, rkNew := range manifestNew.RegistryKeys {
 
 		if !reflect.DeepEqual(rkNew, manifestOld.RegistryKeys[i]) {
-			steps |= 4
+			steps |= registyNeed
 			break
 		}
 	}
