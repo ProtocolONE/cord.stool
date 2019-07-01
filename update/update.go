@@ -151,7 +151,7 @@ func Update(args cord.Args) error {
 		needInstall = isNeedInstall(manifestOld, manifest)
 	}
 
-	if needInstall > 0 {
+	if needInstall != 0 {
 		err := doInstall(args, manifest, needInstall)
 		if err != nil {
 			return err
