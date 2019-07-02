@@ -3,25 +3,16 @@ package utils
 import (
 	"cord.stool/service/database"
 	"cord.stool/service/models"
+	utils2 "cord.stool/utils"
+	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 )
-
-func GetUserStorage(clientID string) (string, error) {
-
-	manager := database.NewUserManager()
-	users, err := manager.FindByName(clientID)
-	if err != nil {
-		return "", fmt.Errorf("Cannot find user %s, error: %s", clientID, err.Error())
-	}
-
-	if len(users) > 1 {
-		return "", fmt.Errorf("Duplicate users %s", clientID)
-	}
-
-	return users[0].Storage, nil
-}
 
 func BuildError(context echo.Context, status int, code int, message string) error {
 
@@ -50,12 +41,12 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 		errorText = "Logout failed"
 	case models.ErrorLoginTracker:
 		errorText = "Login to tracker failed"
-	case models.ErrorAddTracker:
-		errorText = "Cannot add torrent"
-	case models.ErrorDeleteTracker:
-		errorText = "Cannot remove torrent"
+	case models.ErrorAddTorrent:
+		errorText = "Cannot regist torrent file"
+	case models.ErrorDeleteTorrent:
+		errorText = "Cannot unregist torrent file"
 	case models.ErrorGetUserStorage:
-		errorText = "Cannot get user storage"
+		errorText = "Cannot get user build storage"
 	case models.ErrorFileIOFailure:
 		errorText = "File IO failure"
 	case models.ErrorApplyPatch:
@@ -68,6 +59,18 @@ func BuildError(context echo.Context, status int, code int, message string) erro
 		errorText = "Token is expired"
 	case models.ErrorInvalidToken:
 		errorText = "Invalid token"
+	case models.ErrorCreateTorrent:
+		errorText = "Cannot create torrent file"
+	case models.ErrorBuildIsNotPublished:
+		errorText = "The branch has no published build"
+	case models.ErrorInvalidPlatformName:
+		errorText = "Invalid platform name"
+	case models.ErrorInvalidBuildPlatform:
+		errorText = "The build platform is not matched the specified platform"
+	case models.ErrorConfigFileNotFound:
+		errorText = "Config file is not found"
+	case models.ErrorNoUpdateAvailable:
+		errorText = "There is not update for specified version"
 	default:
 		errorText = "Unknown error"
 	}
@@ -94,4 +97,169 @@ func BuildInternalServerError(context echo.Context, code int, message string) er
 func BuildUnauthorizedError(context echo.Context, code int, message string) error {
 
 	return BuildError(context, http.StatusUnauthorized, code, message)
+}
+
+func ReadConfigData(data []byte, context *echo.Context) (*models.Config, error) {
+
+	config := &models.Config{}
+	err := json.Unmarshal(data, config)
+	if err != nil {
+		if context != nil {
+			return nil, BuildBadRequestError(*context, models.ErrorInvalidJSONFormat, err.Error())
+		}
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func ReadConfigFile(fpath string, context *echo.Context) (*models.Config, error) {
+
+	data, err := ioutil.ReadFile(fpath)
+	if err != nil {
+		if context != nil {
+			return nil, BuildInternalServerError(*context, models.ErrorFileIOFailure, err.Error())
+		}
+		return nil, err
+	}
+
+	return ReadConfigData(data, context)
+}
+
+func GetConfigManifest(fpath string, platform string, context *echo.Context) (*models.ConfigManifest, error) {
+
+	cfg, err := ReadConfigFile(fpath, context)
+	if err != nil {
+		return nil, err
+	}
+
+	var manifest *models.ConfigManifest
+	manifest = nil
+
+	for _, m := range cfg.Application.Manifests {
+
+		if m.Platform == platform {
+			manifest = &m
+			break
+		}
+	}
+
+	if manifest == nil {
+		return nil, BuildBadRequestError(*context, models.ErrorInvalidBuildPlatform, platform)
+	}
+
+	return manifest, nil
+}
+
+func GetUserStorage(clientID string) (string, error) {
+
+	manager := database.NewUserManager()
+	users, err := manager.FindByName(clientID)
+	if err != nil {
+		return "", fmt.Errorf("Cannot find user %s, error: %s", clientID, err.Error())
+	}
+
+	if len(users) > 1 {
+		return "", fmt.Errorf("Duplicate users %s", clientID)
+	}
+
+	return users[0].Storage, nil
+}
+
+func RemoveDepotFiles(clientID string, depotID string, context echo.Context) error {
+
+	storage, err := GetUserStorage(clientID)
+	if err != nil {
+		return BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
+	fpath := filepath.Join(storage, depotID)
+	err = os.RemoveAll(fpath)
+	if err != nil {
+		return BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
+	}
+
+	return nil
+}
+
+func GetUserBuildDepotPath(clientID string, buildID string, platform string, context echo.Context, createDepot bool) (string, error) {
+
+	manager := database.NewBuildManager()
+	build, err := manager.FindByID(buildID)
+	if err != nil {
+		return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	if build == nil {
+		return "", BuildBadRequestError(context, models.ErrorInvalidRequest, fmt.Sprintf("Cannot find the specified build %s", buildID))
+	}
+
+	storage, err := GetUserStorage(clientID)
+	if err != nil {
+		return "", BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+	}
+
+	managerBD := database.NewBuildDepotManager()
+	buildDepot, err := managerBD.FindByBuildAndPlatformID(buildID, platform)
+	if err != nil {
+		return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+	}
+
+	DepotID := ""
+
+	if (buildDepot == nil || buildDepot.LinkID != "") && createDepot {
+
+		depot := &models.Depot{utils2.GenerateID(), time.Now(), platform}
+		managerD := database.NewDepotManager()
+		err = managerD.Insert(depot)
+		if err != nil {
+			return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+		}
+
+		if buildDepot != nil && buildDepot.LinkID != "" {
+
+			linkDuildDepot, err := managerBD.FindByID(buildDepot.LinkID)
+			if err != nil {
+				return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+			}
+
+			if linkDuildDepot.Platform != platform {
+				createDepot = true
+			} else {
+				createDepot = false
+			}
+		}
+
+		if createDepot {
+
+			buildDepot := &models.BuildDepot{utils2.GenerateID(), buildID, depot.ID, "", platform, time.Now()}
+			err = managerBD.Insert(buildDepot)
+			if err != nil {
+				return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+			}
+
+		} else {
+
+			buildDepot.DepotID = depot.ID
+			buildDepot.LinkID = ""
+			err = managerBD.Update(buildDepot)
+			if err != nil {
+				return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
+			}
+		}
+
+		DepotID = depot.ID
+
+	} else if buildDepot != nil {
+
+		DepotID = buildDepot.DepotID
+	}
+
+	if DepotID == "" {
+		return "", BuildBadRequestError(context, models.ErrorInvalidBuildPlatform, platform)
+	}
+
+	fpath := filepath.Join(storage, DepotID)
+	return fpath, nil
+
 }

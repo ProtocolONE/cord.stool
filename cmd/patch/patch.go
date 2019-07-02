@@ -1,26 +1,26 @@
-package diff
+package patch
 
 import (
 	"fmt"
 
 	"cord.stool/context"
-	"cord.stool/updater"
+	"cord.stool/update"
 
 	"github.com/urfave/cli"
 )
 
 var args = struct {
-	SourceOldDir  string
-	SourceNewDir  string
-	OutputDiffDir string
+	SourceOldDir string
+	SourceNewDir string
+	PatchFile    string
 }{}
 
 func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
-		Name:        "diff",
-		ShortName:   "d",
+		Name:        "patch",
+		ShortName:   "p",
 		Usage:       "Make patch",
-		Description: "Generate the difference between files",
+		Description: "Generate the patch file",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -36,10 +36,10 @@ func Register(ctx *context.StoolContext) {
 				Destination: &args.SourceNewDir,
 			},
 			cli.StringFlag{
-				Name:        "patch, p",
-				Usage:       "Path to patch files",
+				Name:        "patch, pf",
+				Usage:       "Path to patch file",
 				Value:       "",
-				Destination: &args.OutputDiffDir,
+				Destination: &args.PatchFile,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -52,12 +52,12 @@ func Register(ctx *context.StoolContext) {
 func do(ctx *context.StoolContext, c *cli.Context) error {
 
 	if args.SourceOldDir == "" {
-		return fmt.Errorf("SourceOldDir value required")
+		return fmt.Errorf("Source old dir value required")
 	} else if args.SourceNewDir == "" {
-		return fmt.Errorf("SourceNewDir value required")
-	} else if args.OutputDiffDir == "" {
-		return fmt.Errorf("OutputDir value required")
+		return fmt.Errorf("Source new dir value required")
+	} else if args.PatchFile == "" {
+		return fmt.Errorf("Output patch file value required")
 	}
 
-	return updater.CreateBinDiff(args.SourceOldDir, args.SourceNewDir, args.OutputDiffDir)
+	return update.CreatePatch(args.SourceOldDir, args.SourceNewDir, args.PatchFile)
 }

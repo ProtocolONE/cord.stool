@@ -1,13 +1,9 @@
 package create
 
 import (
-	//"fmt"
-
 	"cord.stool/context"
 	"cord.stool/updater"
-	//	"github.com/kr/pretty"
 	"github.com/urfave/cli"
-	//"github.com/kr/pretty"
 )
 
 var args = struct {
@@ -54,8 +50,6 @@ func Register(ctx *context.StoolContext) {
 
 func do(ctx *context.StoolContext, c *cli.Context) error {
 	_, e := updater.PrepairDistr(args.SourceDir, args.TargetDir, args.Archive)
-
-	//fmt.Printf("%# v", pretty.Formatter(u))
 
 	return e
 }

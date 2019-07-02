@@ -75,9 +75,9 @@ func (manager *CordAPIManager) CmpHash(cmpReq *models.CompareHashCmd) (*models.C
 	return res, nil
 }
 
-func (manager *CordAPIManager) GetSignature(path string) (*models.SignatureCmdResult, error) {
+func (manager *CordAPIManager) GetSignature(buildid string, platform string) (*models.SignatureCmdResult, error) {
 
-	res, sc, err := getSignature(manager.host, manager.authToken.Token, path)
+	res, sc, err := getSignature(manager.host, manager.authToken.Token, buildid, platform)
 	if sc == http.StatusUnauthorized {
 
 		err = manager.RefreshToken()
@@ -85,7 +85,7 @@ func (manager *CordAPIManager) GetSignature(path string) (*models.SignatureCmdRe
 			return nil, err
 		}
 
-		res, _, err = getSignature(manager.host, manager.authToken.Token, path)
+		res, _, err = getSignature(manager.host, manager.authToken.Token, buildid, platform)
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +272,11 @@ func addTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (int, 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return res.StatusCode, utils.BuldError(res.Body)
+
+		merr := utils.GetModelError(res.Body)
+		if merr == nil || merr.Code != models.ErrorTorrentAlreadyExists {
+			return res.StatusCode, utils.BuldError(res.Body)
+		}
 	}
 
 	return res.StatusCode, nil
@@ -293,9 +297,9 @@ func removeTorrent(host string, token string, cmdTorrent *models.TorrentCmd) (in
 	return res.StatusCode, nil
 }
 
-func getSignature(host string, token string, path string) (*models.SignatureCmdResult, int, error) {
+func getSignature(host string, token string, buildid string, platform string) (*models.SignatureCmdResult, int, error) {
 
-	res, err := utils.Get(host+"/api/v1/file/signature?path="+path, token, "application/json", nil)
+	res, err := utils.Get(host+"/api/v1/file/signature?buildId="+buildid+"&platform="+platform, token, "application/json", nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -657,4 +661,336 @@ func shallowBranch(host string, token string, sid string, sname string, tid stri
 	decoder.Decode(&branchRes)
 
 	return branchRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) CreateBuild(buildReq *models.Build) (*models.Build, error) {
+
+	res, sc, err := createBuild(manager.host, manager.authToken.Token, buildReq)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = createBuild(manager.host, manager.authToken.Token, buildReq)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func createBuild(host string, token string, buildReq *models.Build) (*models.Build, int, error) {
+
+	res, err := utils.Post(host+"/api/v1/branch/build", token, "application/json", buildReq)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	buildRes := new(models.Build)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&buildRes)
+
+	return buildRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) DeleteBuild(id string) error {
+
+	sc, err := deleteBuild(manager.host, manager.authToken.Token, id)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return err
+		}
+
+		_, err = deleteBuild(manager.host, manager.authToken.Token, id)
+		if err != nil {
+			return err
+		}
+
+	} else if err != nil {
+
+		return err
+	}
+
+	return nil
+}
+
+func deleteBuild(host string, token string, id string) (int, error) {
+
+	res, err := utils.Delete(host+"/api/v1/branch/build?id="+id, token, "application/json", nil)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	return res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) GetBuild(id string) (*models.Build, error) {
+
+	res, sc, err := getBuild(manager.host, manager.authToken.Token, id)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = getBuild(manager.host, manager.authToken.Token, id)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func getBuild(host string, token string, id string) (*models.Build, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/branch/build?id="+id, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	buildRes := new(models.Build)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&buildRes)
+
+	return buildRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) ListBuild(gameID string, branch string) (*[]models.Build, error) {
+
+	res, sc, err := listBuild(manager.host, manager.authToken.Token, gameID, branch)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = listBuild(manager.host, manager.authToken.Token, gameID, branch)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func listBuild(host string, token string, gameID string, branch string) (*[]models.Build, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/branch/build/list?gid="+gameID+"&name="+branch, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	listRes := new([]models.Build)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&listRes)
+
+	return listRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) GetLiveBuild(gameID string, branch string) (*models.Build, error) {
+
+	res, sc, err := getLiveBuild(manager.host, manager.authToken.Token, gameID, branch)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = getLiveBuild(manager.host, manager.authToken.Token, gameID, branch)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func getLiveBuild(host string, token string, gameID string, branch string) (*models.Build, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/branch/build/live?gid="+gameID+"&name="+branch, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	buildRes := new(models.Build)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&buildRes)
+
+	return buildRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) PublishBuild(gameID string, branch string, build string, platform string) (*models.Branch, error) {
+
+	res, sc, err := publishBuild(manager.host, manager.authToken.Token, gameID, branch, build, platform)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = publishBuild(manager.host, manager.authToken.Token, gameID, branch, build, platform)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func publishBuild(host string, token string, gameID string, branch string, build string, platform string) (*models.Branch, int, error) {
+
+	res, err := utils.Put(host+"/api/v1/branch/build/publish?gid="+gameID+"&name="+branch+"&build="+build+"&platform="+platform, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	branchdRes := new(models.Branch)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&branchdRes)
+
+	return branchdRes, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) GetUpdateInfo(gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfo, error) {
+
+	res, sc, err := getUpdateInfo(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = getUpdateInfo(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func getUpdateInfo(host string, token string, gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfo, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/file/update-info?gid="+gameID+"&name="+branch+"&locale="+locale+"&platform="+platform+"&ver="+ver, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	info := new(models.UpdateInfo)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&info)
+
+	return info, res.StatusCode, nil
+}
+
+func (manager *CordAPIManager) GetUpdatePatch(gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfo, error) {
+
+	res, sc, err := getUpdatePatch(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
+	if sc == http.StatusUnauthorized {
+
+		err = manager.RefreshToken()
+		if err != nil {
+			return nil, err
+		}
+
+		res, _, err = getUpdatePatch(manager.host, manager.authToken.Token, gameID, branch, locale, platform, ver)
+		if err != nil {
+			return nil, err
+		}
+
+	} else if err != nil {
+
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func getUpdatePatch(host string, token string, gameID string, branch string, locale string, platform string, ver string) (*models.UpdateInfo, int, error) {
+
+	res, err := utils.Get(host+"/api/v1/file/update-patch?gid="+gameID+"&name="+branch+"&locale="+locale+"&platform="+platform+"&ver="+ver, token, "application/json", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, res.StatusCode, utils.BuldError(res.Body)
+	}
+
+	info := new(models.UpdateInfo)
+	decoder := json.NewDecoder(res.Body)
+	decoder.Decode(&info)
+
+	return info, res.StatusCode, nil
 }

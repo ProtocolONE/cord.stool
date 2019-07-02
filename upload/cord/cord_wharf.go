@@ -11,9 +11,6 @@ import (
 	"cord.stool/cordapi"
 	"cord.stool/service/models"
 
-	"github.com/gosuri/uiprogress"
-	"github.com/gosuri/uiprogress/util/strutil"
-
 	"github.com/itchio/savior/seeksource"
 	"github.com/itchio/wharf/eos"
 	"github.com/itchio/wharf/eos/option"
@@ -85,24 +82,20 @@ func Progress(alpha float64) {
 func Logl(level string, msg string) {
 }
 
-func uploadWharf(api *cordapi.CordAPIManager, source string, output string) error {
+func uploadWharf(api *cordapi.CordAPIManager, args Args, source string, manifest models.ConfigManifest) error {
 
-	_bar = uiprogress.AddBar(5).AppendCompleted().PrependElapsed()
-
-	_title = &_curTitle
-	_bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize(*_title, 35)
-	})
-
+	_bar.Total = 5
 	_curTitle = "Getting files' info from server"
 
-	signatureInfo, err := getSignatureInfo(api, output)
+	signatureInfo, err := getSignatureInfo(api, args.SrcBuildID, manifest.Platform)
 	if err != nil {
 		return err
 	}
 
 	_barTotal.Incr()
 	_curTitle = "Checking changed files"
+
+	source = filepath.Join(source, manifest.LocalRoot)
 
 	err = pwr.AssertValid(source, signatureInfo)
 	_bar.Incr()
@@ -174,10 +167,10 @@ func uploadWharf(api *cordapi.CordAPIManager, source string, output string) erro
 
 	_barTotal.Set(_barTotal.Total - 1)
 
-	return applyPatch(api, output, patchFile.Name())
+	return applyPatch(api, args.BuildID, args.SrcBuildID, patchFile.Name(), manifest.Platform)
 }
 
-func applyPatch(api *cordapi.CordAPIManager, output string, patch string) error {
+func applyPatch(api *cordapi.CordAPIManager, buildID string, srcbuildID string, patch string, platform string) error {
 
 	_bar.Set(0)
 	_bar.Total = 3
@@ -190,7 +183,7 @@ func applyPatch(api *cordapi.CordAPIManager, output string, patch string) error 
 
 	_bar.Incr()
 
-	err = api.ApplyPatch(&models.ApplyPatchCmd{Path: output, FileData: filedata})
+	err = api.ApplyPatch(&models.ApplyPatchCmd{BuildID: buildID, SrcBuildID: srcbuildID, FileData: filedata, Platform: platform})
 	if err != nil {
 		return errors.New("Applying patch failed: " + err.Error())
 	}
@@ -201,9 +194,9 @@ func applyPatch(api *cordapi.CordAPIManager, output string, patch string) error 
 	return nil
 }
 
-func getSignatureInfo(api *cordapi.CordAPIManager, output string) (*pwr.SignatureInfo, error) {
+func getSignatureInfo(api *cordapi.CordAPIManager, buildID string, platform string) (*pwr.SignatureInfo, error) {
 
-	singRes, err := api.GetSignature(output)
+	singRes, err := api.GetSignature(buildID, platform)
 	if err != nil {
 		return nil, err
 	}

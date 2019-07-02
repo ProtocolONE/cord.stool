@@ -58,12 +58,3 @@ func Test_UpdateInfoPack(t *testing.T) {
 
 	assert.Equal(t, info.Version1, u.Version1)
 }
-
-// func Test_Prepair2(t *testing.T) {
-// 	sd := `E:\Pone\cord.stool.test\src\QGNA`
-// 	od := `E:\Pone\cord.stool.test\dst`
-
-// 	_, e := PrepairDistr(sd, od, true)
-// 	assert.True(t, e == nil)
-
-// }

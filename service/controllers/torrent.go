@@ -28,7 +28,7 @@ func AddTorrent(context echo.Context) error {
 
 	err = api.AddTorrent(reqTorrent)
 	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorAddTracker, err.Error())
+		return utils.BuildInternalServerError(context, models.ErrorAddTorrent, err.Error())
 	}
 
 	zap.S().Infow("Added torrent", zap.String("info_hash", reqTorrent.InfoHash))
@@ -52,7 +52,7 @@ func DeleteTorrent(context echo.Context) error {
 
 	err = api.RemoveTorrent(reqTorrent)
 	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorDeleteTracker, err.Error())
+		return utils.BuildInternalServerError(context, models.ErrorDeleteTorrent, err.Error())
 	}
 
 	zap.S().Infow("Removed torrent", zap.String("info_hash", reqTorrent.InfoHash))

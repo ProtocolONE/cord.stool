@@ -15,4 +15,7 @@ func InitCmdRoutes(e *echo.Echo) {
 	e.DELETE("/api/v1/tracker/torrent", controllers.DeleteTorrent, authentication.RequireTokenAuthentication)
 	e.GET("/api/v1/file/signature", controllers.SignatureCmd, authentication.RequireTokenAuthentication)
 	e.POST("/api/v1/file/patch", controllers.ApplyPatchCmd, authentication.RequireTokenAuthentication)
+
+	e.GET("/api/v1/file/update-info", controllers.GetUpdateInfoCmd, authentication.RequireTokenAuthentication)
+	e.GET("/api/v1/file/update-patch", controllers.GetUpdatePatchCmd, authentication.RequireTokenAuthentication)
 }

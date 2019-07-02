@@ -9,7 +9,44 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
+
+func CopyFiles(src, dst string) (err error) {
+
+	stopCh := make(chan struct{})
+	defer func() {
+		select {
+		case stopCh <- struct{}{}:
+		default:
+		}
+
+		close(stopCh)
+	}()
+
+	f, e := EnumFilesRecursive(src, stopCh)
+
+	for path := range f {
+
+		relativePath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		dpath := relativePath
+		dpath, _ = filepath.Split(dpath)
+		dpath = strings.TrimRight(dpath, "/\\")
+
+		CopyFile(path, dpath)
+	}
+
+	err = <-e
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // CopyFile copies a file from src to dst.
 func CopyFile(src, dst string) (err error) {
@@ -201,4 +238,18 @@ func IsDirectory(path string) (bool, error) {
 	}
 
 	return fileInfo.IsDir(), err
+}
+
+func IsDirectoryEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1) // Or f.Readdir(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err // Either not empty or error, suits both cases
 }

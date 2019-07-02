@@ -54,17 +54,17 @@ func compressionSettings() *pwr.CompressionSettings {
 
 func SignatureCmd(context echo.Context) error {
 
-	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
+	buildId := context.QueryParam("buildId")
+	if buildId == "" {
+		return utils.BuildBadRequestError(context, models.ErrorInvalidRequest, "Build id is required")
+	}
+
+	platform := context.QueryParam("platform")
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), buildId, platform, context, false)
 	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+		return err
 	}
-
-	pathParam := context.QueryParam("path")
-	if pathParam == "" {
-		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
-	}
-
-	fpath := path.Join(userRoot, pathParam)
+	fpath = path.Join(fpath, "content")
 
 	container, err := tlc.WalkAny(fpath, &tlc.WalkOpts{Filter: filterPaths})
 	if err != nil {
@@ -132,12 +132,17 @@ func ApplyPatchCmd(context echo.Context) error {
 		return utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
-	userRoot, err := utils.GetUserStorage(context.Request().Header.Get("ClientID"))
+	srcPath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), reqCmp.SrcBuildID, reqCmp.Platform, context, false)
 	if err != nil {
-		return utils.BuildInternalServerError(context, models.ErrorGetUserStorage, err.Error())
+		return err
 	}
+	srcPath = path.Join(srcPath, "content")
 
-	fpath := path.Join(userRoot, reqCmp.Path)
+	fpath, err := utils.GetUserBuildDepotPath(context.Request().Header.Get("ClientID"), reqCmp.BuildID, reqCmp.Platform, context, true)
+	if err != nil {
+		return err
+	}
+	fpath = path.Join(fpath, "content")
 
 	patchFile, err := ioutil.TempFile(os.TempDir(), "patch")
 	if err != nil {
@@ -158,10 +163,10 @@ func ApplyPatchCmd(context echo.Context) error {
 	}
 
 	actx := &pwr.ApplyContext{
-		TargetPath: fpath,
+		TargetPath: srcPath,
 		OutputPath: fpath,
 		DryRun:     false,
-		InPlace:    true,
+		InPlace:    false,
 		Signature:  nil,
 		WoundsPath: "",
 		StagePath:  "",

@@ -5,10 +5,8 @@ import (
 	"net/url"
 	"strings"
 
-	"cord.stool/compressor/gzip"
 	"cord.stool/context"
 	"cord.stool/upload/akamai"
-	"cord.stool/upload/cord"
 	"cord.stool/upload/ftp"
 	"cord.stool/upload/s3"
 	"cord.stool/upload/sftp"
@@ -22,7 +20,6 @@ var args = struct {
 	OutputDir string
 	s3Args    s3.Args
 	akmArgs   akamai.Args
-	cordArgs  cord.Args
 }{}
 
 func Register(ctx *context.StoolContext) {
@@ -30,8 +27,8 @@ func Register(ctx *context.StoolContext) {
 	cmd := cli.Command{
 		Name:        "push",
 		ShortName:   "p",
-		Usage:       "Upload update",
-		Description: "Upload update app bundle to one of servers",
+		Usage:       "Upload files",
+		Description: "Upload app files to one of servers",
 
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -153,76 +150,12 @@ func Register(ctx *context.StoolContext) {
 					return doAkm(ctx, c)
 				},
 			},
-
-			cli.Command{
-				Name:        "cord",
-				Usage:       "Upload to Cord server",
-				Description: "Upload to Cord server",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:        "url",
-						Usage:       "Cord server url",
-						Value:       "",
-						Destination: &args.cordArgs.Url,
-					},
-					cli.StringFlag{
-						Name:        "login",
-						Usage:       "Cord user login",
-						Value:       "",
-						Destination: &args.cordArgs.Login,
-					},
-					cli.StringFlag{
-						Name:        "password",
-						Usage:       "Cord user password",
-						Value:       "",
-						Destination: &args.cordArgs.Password,
-					},
-					cli.StringFlag{
-						Name:        "branch-id, bid",
-						Usage:       "Branch ID",
-						Value:       "",
-						Destination: &args.cordArgs.BranchID,
-					},
-					cli.StringFlag{
-						Name:        "branch-name, bn",
-						Usage:       "Branch name. Should be specified with game id",
-						Value:       "",
-						Destination: &args.cordArgs.BranchName,
-					},
-					cli.StringFlag{
-						Name:        "game-id, gid",
-						Usage:       "Game ID. Should be specified with branch names",
-						Value:       "",
-						Destination: &args.cordArgs.GameID,
-					},
-					cli.BoolFlag{
-						Name:        "patch",
-						Usage:       "Upload the difference between files using xdelta algorithm",
-						Destination: &args.cordArgs.Patch,
-					},
-					cli.BoolFlag{
-						Name:        "hash",
-						Usage:       "Upload changed files only",
-						Destination: &args.cordArgs.Hash,
-					},
-					cli.BoolFlag{
-						Name:        "wsync",
-						Usage:       "Upload changed files only using Wharf protocol that enables incremental uploads",
-						Destination: &args.cordArgs.Wharf,
-					},
-				},
-				Action: func(c *cli.Context) error {
-					return doCord(ctx, c)
-				},
-			},
 		},
 		Action: func(c *cli.Context) error {
 			return do(ctx, c)
 		},
 	}
 	ctx.App.Commands = append(ctx.App.Commands, cmd)
-
-	gzip.Init()
 }
 
 func doFtp(ctx *context.StoolContext, c *cli.Context) error {
@@ -300,27 +233,7 @@ func doAkm(ctx *context.StoolContext, c *cli.Context) error {
 	return nil
 }
 
-func doCord(ctx *context.StoolContext, c *cli.Context) error {
-
-	if args.SourceDir == "" {
-		return fmt.Errorf("-source flag is required")
-	}
-
-	if args.cordArgs.Url == "" {
-		return fmt.Errorf("-url flag is required")
-	}
-
-	args.cordArgs.SourceDir = args.SourceDir
-	args.cordArgs.OutputDir = args.OutputDir
-	err := cord.Upload(args.cordArgs)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func do(ctx *context.StoolContext, c *cli.Context) error {
 
-	return fmt.Errorf("Specify one of following sub-commands: ftp, aws, akm or cord")
+	return fmt.Errorf("Specify one of following sub-commands: ftp, aws or akm")
 }

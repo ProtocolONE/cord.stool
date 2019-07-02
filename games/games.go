@@ -72,7 +72,7 @@ func ListGame(qilinUrl string, url string, login string, password string) error 
 		b, _ := api2.GetLiveBranch(g.ID)
 		if b != nil {
 
-			liveID = b.BuildID
+			liveID = b.LiveBuild
 			branchName = b.Name
 		}
 
