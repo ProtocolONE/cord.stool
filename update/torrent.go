@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -34,7 +35,6 @@ func exitSignalHandlers(client *torrent.Client) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	for {
-		fmt.Printf("close signal received: %+v", <-c)
 		client.Close()
 	}
 }
@@ -45,6 +45,8 @@ func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar, stats *DownloadStatisti
 
 	bar.Set(0)
 
+	//completed := false
+
 	bar.AppendFunc(func(*uiprogress.Bar) (ret string) {
 		select {
 		case <-t.GotInfo():
@@ -54,6 +56,7 @@ func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar, stats *DownloadStatisti
 		if t.Seeding() {
 			return "seeding"
 		} else if t.BytesCompleted() == t.Info().TotalLength() {
+			//completed = true
 			return "completed"
 		} else {
 
@@ -77,10 +80,14 @@ func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar, stats *DownloadStatisti
 			bc := t.BytesCompleted()
 			bar.Set(int(bc))
 			time.Sleep(time.Second)
+
+			/*if completed {
+				break
+			}*/
 		}
 	}()
 
-	bar.Set(bar.Total)
+	//bar.Set(bar.Total)
 }
 
 func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar, stats *DownloadStatistics) error {
@@ -133,6 +140,8 @@ func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 
 	os.Remove(filepath.Join(output, ".torrent.bolt.db"))
 	os.Remove(filepath.Join(output, ".torrent.bolt.db.lock"))
+	defer os.Remove(filepath.Join(output, ".torrent.bolt.db"))
+	defer os.Remove(filepath.Join(output, ".torrent.bolt.db.lock"))
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
@@ -142,21 +151,19 @@ func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 	f := func() { os.Stdout = old }
 	defer f()
 
-	defer envpprof.Stop()
-
 	err := startDownload(torrentData, output, bar, stats)
 	if err != nil {
 		return err
 	}
 
-	os.Remove(filepath.Join(output, ".torrent.bolt.db"))
-	os.Remove(filepath.Join(output, ".torrent.bolt.db.lock"))
 	saveFastResumeData(torrentData, output)
 
 	return nil
 }
 
 func startDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
+
+	defer envpprof.Stop()
 
 	clientConfig := torrent.NewDefaultClientConfig()
 	initSetting(clientConfig)
@@ -168,7 +175,10 @@ func startDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 	}
 
 	defer client.Close()
-	go exitSignalHandlers(client)
+	//go exitSignalHandlers(client)
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		client.WriteStatus(w)
+	})
 
 	err = addTorrents(client, torrentData, bar, stats)
 	if err != nil {
@@ -332,8 +342,6 @@ func VerifyTorrentFile(torrentFile string, source string, bar *uiprogress.Bar) e
 	if err != nil {
 		return err
 	}
-
-	//return VerifyTorrent(torrentData, source, bar)
 
 	reader := bytes.NewReader(torrentData)
 	metaInfo, err := metainfo.Load(reader)

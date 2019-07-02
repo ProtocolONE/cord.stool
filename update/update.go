@@ -23,11 +23,11 @@ import (
 )
 
 const (
-	noNeed = 0
-	redistNeed = 1
+	noNeed      = 0
+	redistNeed  = 1
 	instralNeed = 2
 	registyNeed = 4
-	allNeed = -1
+	allNeed     = -1
 )
 
 var _bar *uiprogress.Bar
