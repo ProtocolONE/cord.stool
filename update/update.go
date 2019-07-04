@@ -19,7 +19,7 @@ import (
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
-	"github.com/itchio/wharf/state"
+	"github.com/itchio/headway/state"
 )
 
 const (

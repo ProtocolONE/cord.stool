@@ -11,11 +11,11 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/itchio/httpkit/eos"
+	"github.com/itchio/lake/pools"
+	"github.com/itchio/lake/tlc"
 	"github.com/itchio/savior/seeksource"
-	"github.com/itchio/wharf/eos"
-	"github.com/itchio/wharf/pools"
 	"github.com/itchio/wharf/pwr"
-	"github.com/itchio/wharf/tlc"
 	"github.com/itchio/wharf/wire"
 	"github.com/itchio/wharf/wsync"
 

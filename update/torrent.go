@@ -176,6 +176,7 @@ func startDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 
 	defer client.Close()
 	//go exitSignalHandlers(client)
+
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		client.WriteStatus(w)
 	})

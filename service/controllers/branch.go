@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
+	"go.uber.org/zap"
 )
 
 func getBranchIDOrName(context echo.Context) string {
@@ -649,7 +650,7 @@ func prepareConfig(configFile string, platform string, context echo.Context) ([]
 
 	data, err := json.Marshal(cfg)
 	if err != nil {
-		return nil, err
+		return nil, utils.BuildBadRequestError(context, models.ErrorInvalidJSONFormat, err.Error())
 	}
 
 	return data, nil
@@ -693,11 +694,13 @@ func GetUpdateInfoCmd(context echo.Context) error {
 
 	info.ConfigData, err = prepareConfig(configFile, platform, context)
 	if err != nil {
+		zap.S().Infow("GetUpdateInfoCmd", zap.String("error", err.Error()))
 		return err
 	}
 
 	info.TorrentData, err = ioutil.ReadFile(torrentFile)
 	if err != nil {
+		zap.S().Infow("GetUpdateInfoCmd", zap.String("error", err.Error()))
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 

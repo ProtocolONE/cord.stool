@@ -11,14 +11,14 @@ import (
 	"cord.stool/cordapi"
 	"cord.stool/service/models"
 
+	"github.com/itchio/headway/state"
+	"github.com/itchio/httpkit/eos"
+	"github.com/itchio/httpkit/eos/option"
+	"github.com/itchio/lake"
+	"github.com/itchio/lake/pools"
+	"github.com/itchio/lake/tlc"
 	"github.com/itchio/savior/seeksource"
-	"github.com/itchio/wharf/eos"
-	"github.com/itchio/wharf/eos/option"
-	"github.com/itchio/wharf/pools"
 	"github.com/itchio/wharf/pwr"
-	"github.com/itchio/wharf/state"
-	"github.com/itchio/wharf/tlc"
-	"github.com/itchio/wharf/wsync"
 )
 
 var ignoredPaths = []string{
@@ -114,7 +114,7 @@ func uploadWharf(api *cordapi.CordAPIManager, args Args, source string, manifest
 		return errors.New("Walking source as directory failed: " + err.Error())
 	}
 
-	var sourcePool wsync.Pool
+	var sourcePool lake.Pool
 	sourcePool, err = pools.New(sourceContainer, source)
 	if err != nil {
 		return errors.New("Walking source as directory failed: " + err.Error())
