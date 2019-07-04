@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
-	"go.uber.org/zap"
 )
 
 func getBranchIDOrName(context echo.Context) string {
@@ -645,7 +644,11 @@ func prepareConfig(configFile string, platform string, context echo.Context) ([]
 			return nil, utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
 		}
 
-		manifest.Redistributables[i] = redistr.Url
+		if redistr != nil {
+			manifest.Redistributables[i] = redistr.Url
+		} else {
+			manifest.Redistributables[i] = ""
+		}
 	}
 
 	data, err := json.Marshal(cfg)
@@ -694,13 +697,11 @@ func GetUpdateInfoCmd(context echo.Context) error {
 
 	info.ConfigData, err = prepareConfig(configFile, platform, context)
 	if err != nil {
-		zap.S().Infow("GetUpdateInfoCmd", zap.String("error", err.Error()))
 		return err
 	}
 
 	info.TorrentData, err = ioutil.ReadFile(torrentFile)
 	if err != nil {
-		zap.S().Infow("GetUpdateInfoCmd", zap.String("error", err.Error()))
 		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
