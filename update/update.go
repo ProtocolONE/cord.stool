@@ -96,12 +96,15 @@ func Update(args cord.Args) error {
 
 		data, err := ioutil.ReadFile(path.Join(args.TargetDir, "config.json"))
 		if err != nil {
-			needInstall = allNeed
-		}
 
-		manifestOld, err = getManifest(data, args.Platform)
-		if err != nil {
 			needInstall = allNeed
+
+		} else {
+
+			manifestOld, err = getManifest(data, args.Platform)
+			if err != nil {
+				needInstall = allNeed
+			}
 		}
 	}
 
@@ -183,7 +186,12 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.Update
 
 	contentPath := path.Join(args.TargetDir, "content")
 	torrentFile := path.Join(args.TargetDir, "torrent.torrent")
+	firstInstall := true
 	var err error
+
+	if _, err = os.Stat(torrentFile); !os.IsNotExist(err) {
+		firstInstall = false
+	}
 
 	if info == nil {
 
@@ -206,7 +214,7 @@ func doUpdate(args cord.Args, usePatch bool, gameVer string, info *models.Update
 			return nil, err
 		}
 
-	} else if gameVer == info.Version {
+	} else if !firstInstall && gameVer == info.Version {
 
 		_curTitle = "Checking"
 
