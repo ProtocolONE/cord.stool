@@ -2,25 +2,15 @@ package update
 
 import (
 	"bytes"
-	"crypto/sha1"
 	"encoding/gob"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
 	"time"
 
-	"github.com/anacrolix/envpprof"
-	"github.com/anacrolix/torrent"
+	"github.com/ProtocolONE/rain/torrent"
 	"github.com/anacrolix/torrent/metainfo"
-	"github.com/anacrolix/torrent/mmap_span"
-	"github.com/bradfitz/iter"
-	humanize "github.com/dustin/go-humanize"
-	"github.com/edsrzf/mmap-go"
 	"github.com/gosuri/uiprogress"
 )
 
@@ -28,91 +18,6 @@ type ResumeData struct {
 	Filename string
 	Size     int64
 	ModTime  time.Time
-}
-
-func exitSignalHandlers(client *torrent.Client) {
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	for {
-		client.Close()
-	}
-}
-
-func torrentBar(t *torrent.Torrent, bar *uiprogress.Bar, stats *DownloadStatistics) {
-
-	startTime := time.Now()
-
-	bar.Set(0)
-
-	//completed := false
-
-	bar.AppendFunc(func(*uiprogress.Bar) (ret string) {
-		select {
-		case <-t.GotInfo():
-		default:
-			return "getting info"
-		}
-		if t.Seeding() {
-			return "seeding"
-		} else if t.BytesCompleted() == t.Info().TotalLength() {
-			//completed = true
-			return "completed"
-		} else {
-
-			duration := uint64(time.Since(startTime)) / 1000000000
-			if duration > 0 {
-				stats.Update(uint64(t.BytesCompleted())/duration, 0, uint64(t.Info().TotalLength()))
-			}
-			return fmt.Sprintf("downloading (%s/%s)", humanize.Bytes(uint64(t.BytesCompleted())), humanize.Bytes(uint64(t.Info().TotalLength())))
-		}
-	})
-
-	go func() {
-		<-t.GotInfo()
-		tl := int(t.Info().TotalLength())
-		if tl == 0 {
-			bar.Set(1)
-			return
-		}
-		bar.Total = tl
-		for {
-			bc := t.BytesCompleted()
-			bar.Set(int(bc))
-			time.Sleep(time.Second)
-
-			/*if completed {
-				break
-			}*/
-		}
-	}()
-
-	//bar.Set(bar.Total)
-}
-
-func addTorrents(client *torrent.Client, torrentData []byte, bar *uiprogress.Bar, stats *DownloadStatistics) error {
-
-	reader := bytes.NewReader(torrentData)
-	mi, err := metainfo.Load(reader)
-	if err != nil {
-		return err
-	}
-
-	t, err := client.AddTorrent(mi)
-	if err != nil {
-		return err
-	}
-
-	torrentBar(t, bar, stats)
-
-	stats.Start()
-
-	go func() {
-		<-t.GotInfo()
-		t.DownloadAll()
-	}()
-
-	return nil
 }
 
 func StartDownloadFile(torrentFile string, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
@@ -125,23 +30,14 @@ func StartDownloadFile(torrentFile string, output string, bar *uiprogress.Bar, s
 	return StartDownload(torrentData, output, bar, stats)
 }
 
-func initSetting(clientConfig *torrent.ClientConfig) {
-
-	clientConfig.Debug = false
-	clientConfig.NoDHT = true
-	clientConfig.DisableIPv6 = true
-	clientConfig.NoDefaultPortForwarding = true
-
-	clientConfig.HandshakesTimeout, _ = time.ParseDuration("5s")
-	clientConfig.MinDialTimeout, _ = time.ParseDuration("10s")
-}
-
 func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
 
-	os.Remove(filepath.Join(output, ".torrent.bolt.db"))
-	os.Remove(filepath.Join(output, ".torrent.bolt.db.lock"))
-	defer os.Remove(filepath.Join(output, ".torrent.bolt.db"))
-	defer os.Remove(filepath.Join(output, ".torrent.bolt.db.lock"))
+	bar.Set(0)
+
+	os.Remove(filepath.Join(output, "session.db"))
+	os.Remove(filepath.Join(output, "session.lock"))
+	defer os.Remove(filepath.Join(output, "session.db"))
+	defer os.Remove(filepath.Join(output, "session.lock"))
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
@@ -151,142 +47,76 @@ func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 	f := func() { os.Stdout = old }
 	defer f()
 
-	err := startDownload(torrentData, output, bar, stats)
-	if err != nil {
-		return err
-	}
-
-	saveFastResumeData(torrentData, output)
-
-	return nil
+	return startDownload(torrentData, output, bar, stats)
 }
 
 func startDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
 
-	defer envpprof.Stop()
-
-	clientConfig := torrent.NewDefaultClientConfig()
-	initSetting(clientConfig)
-	clientConfig.DataDir = output
-
-	client, err := torrent.NewClient(clientConfig)
+	s, closeSession, err := newSession(output)
 	if err != nil {
 		return err
 	}
 
-	defer client.Close()
-	//go exitSignalHandlers(client)
+	defer closeSession()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		client.WriteStatus(w)
-	})
+	id := filepath.Base(output)
+	s.RemoveTorrent(id)
 
-	err = addTorrents(client, torrentData, bar, stats)
+	r := bytes.NewReader(torrentData)
+	tor, err := s.AddTorrent(r)
 	if err != nil {
 		return err
 	}
 
+	tor.Start()
+	defer tor.Stop()
+
+	stats.Start()
 	defer stats.Stop()
 
-	if !client.WaitAll() {
-		return fmt.Errorf("Download failed")
+	bar.Total = 100
+
+	for {
+
+		var p float64
+		p = float64(tor.Stats().Bytes.Completed * 100)
+		p = p / float64(tor.Stats().Bytes.Total)
+		bar.Set(int(p))
+
+		time.Sleep(time.Second)
+
+		torStats := tor.Stats()
+		if torStats.Error != nil {
+			return torStats.Error
+		} else if torStats.Status == torrent.Seeding {
+			break
+		}
+
+		stats.Update(uint64(torStats.Speed.Download), uint64(torStats.Speed.Upload), uint64(torStats.Bytes.Total))
 	}
+
+	bar.Set(bar.Total)
 
 	return nil
 }
 
-func saveFastResumeData(torrentData []byte, source string) error {
+func newSession(output string) (*torrent.Session, func(), error) {
 
-	reader := bytes.NewReader(torrentData)
-	metaInfo, err := metainfo.Load(reader)
+	cfg := torrent.DefaultConfig
+	cfg.DataDir = output
+	cfg.Database = filepath.Join(output, "session.db")
+
+	s, err := torrent.NewSession(cfg)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	info, err := metaInfo.UnmarshalInfo()
-	if err != nil {
-		return err
-	}
-
-	var resumeData []ResumeData
-
-	for _, file := range info.UpvertedFiles() {
-
-		filename := filepath.Join(append([]string{source, info.Name}, file.Path...)...)
-		size, modTime, err := getFileSizeAndModifyTime(filename)
+	return s, func() {
+		err := s.Close()
 		if err != nil {
-			return err
+			return
 		}
-
-		filename = filepath.Join(append([]string{info.Name}, file.Path...)...)
-		resumeData = append(resumeData, ResumeData{filename, size, modTime})
-	}
-
-	var binData bytes.Buffer
-
-	enc := gob.NewEncoder(&binData)
-	err = enc.Encode(resumeData)
-	if err != nil {
-		return err
-	}
-
-	err = ioutil.WriteFile(filepath.Join(source, "resumedata.bin"), binData.Bytes(), 0777)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func mmapFile(name string) (mm mmap.MMap, err error) {
-	f, err := os.Open(name)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	fi, err := f.Stat()
-	if err != nil {
-		return
-	}
-	if fi.Size() == 0 {
-		return
-	}
-	return mmap.MapRegion(f, -1, mmap.RDONLY, mmap.COPY, 0)
-}
-
-func verifyTorrent(info *metainfo.Info, source string, bar *uiprogress.Bar) error {
-
-	bar.Set(0)
-
-	span := new(mmap_span.MMapSpan)
-	for _, file := range info.UpvertedFiles() {
-		filename := filepath.Join(append([]string{source, info.Name}, file.Path...)...)
-		mm, err := mmapFile(filename)
-		if err != nil {
-			return err
-		}
-		if int64(len(mm)) != file.Length {
-			return fmt.Errorf("file %q has wrong length", filename)
-		}
-		span.Append(mm)
-	}
-
-	bar.Total = info.NumPieces()
-
-	for i := range iter.N(info.NumPieces()) {
-		p := info.Piece(i)
-		hash := sha1.New()
-		_, err := io.Copy(hash, io.NewSectionReader(span, p.Offset(), p.Length()))
-		if err != nil {
-			return err
-		}
-		good := bytes.Equal(hash.Sum(nil), p.Hash().Bytes())
-		if !good {
-			return fmt.Errorf("hash mismatch at piece %d", i)
-		}
-		bar.Incr()
-	}
-	return nil
+	}, nil
 }
 
 func getFileSizeAndModifyTime(filename string) (int64, time.Time, error) {
@@ -358,33 +188,12 @@ func VerifyTorrentFile(torrentFile string, source string, bar *uiprogress.Bar) e
 	test, err := verifyTorrentLight(&info, source, bar)
 	if err != nil {
 
-		return err //VerifyTorrent(torrentData, source, bar)
+		return err
 	}
 
 	if !test {
 
 		return fmt.Errorf("Checking failed")
-	}
-
-	return nil
-}
-
-func VerifyTorrent(torrentData []byte, source string, bar *uiprogress.Bar) error {
-
-	reader := bytes.NewReader(torrentData)
-	metaInfo, err := metainfo.Load(reader)
-	if err != nil {
-		return err
-	}
-
-	info, err := metaInfo.UnmarshalInfo()
-	if err != nil {
-		return err
-	}
-
-	err = verifyTorrent(&info, source, bar)
-	if err != nil {
-		return err
 	}
 
 	return nil

@@ -22,16 +22,25 @@ type ServiceCfg struct {
 }
 
 type TrackerCfg struct {
-	Url          string `envconfig:"TRACKER_URL"`
-	User         string `envconfig:"TRACKER_USER"`
-	Password     string `envconfig:"TRACKER_PASSWORD"`
-	TrackersList string `envconfig:"TRACKERS_LIST"`
+	Url             string `envconfig:"TRACKER_URL"`
+	User            string `envconfig:"TRACKER_USER"`
+	Password        string `envconfig:"TRACKER_PASSWORD"`
+	TrackersList    string `envconfig:"TRACKERS_LIST"`
+	TrackersUrlList string `envconfig:"TRACKERS_URL_LIST"`
+}
+
+type AwsS3Cfg struct {
+	ID     string `envconfig:"AWS_S3_ID"`
+	Key    string `envconfig:"AWS_S3_KEY"`
+	Region string `envconfig:"AWS_S3_REGION"`
+	Bucket string `envconfig:"AWS_S3_BUCKET"`
 }
 
 type Config struct {
 	Database DatabaseCfg
 	Service  ServiceCfg
 	Tracker  TrackerCfg
+	AwsS3    AwsS3Cfg
 }
 
 var cfg *Config

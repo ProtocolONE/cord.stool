@@ -7,6 +7,7 @@ import (
 	"cord.stool/service/database"
 	"cord.stool/service/models"
 	"cord.stool/upload/cord"
+	"cord.stool/upload/s3"
 	utils2 "cord.stool/utils"
 
 	"encoding/json"
@@ -520,7 +521,12 @@ func PublishBuildCmd(context echo.Context) error {
 		return err
 	}
 
-	builtinAnnounceList := strings.Split(config.Get().Tracker.TrackersList, ";")
+	announceList := strings.Split(config.Get().Tracker.TrackersList, ";")
+	urlList := strings.Split(config.Get().Tracker.TrackersUrlList, ";")
+
+	for i, _ := range urlList {
+		urlList[i] = urlList[i] + "/" + buildID
+	}
 
 	ignoreFiles := map[string]bool{}
 
@@ -530,8 +536,8 @@ func PublishBuildCmd(context echo.Context) error {
 	err = cord.CreateTorrent(
 		fpath,
 		targetFile,
-		builtinAnnounceList,
-		nil,
+		announceList,
+		urlList,
 		ignoreFiles,
 		512,
 		true,
@@ -555,6 +561,18 @@ func PublishBuildCmd(context echo.Context) error {
 	err = api.AddTorrent(&models.TorrentCmd{infoHash})
 	if err != nil {
 		return utils.BuildInternalServerError(context, models.ErrorAddTorrent, err.Error())
+	}
+
+	var s3Args s3.Args
+	s3Args.SourceDir = fpath
+	s3Args.OutputDir = buildID + "/content"
+	s3Args.ID = config.Get().AwsS3.ID
+	s3Args.Key = config.Get().AwsS3.Key
+	s3Args.Region = config.Get().AwsS3.Region
+	s3Args.S3Bucket = config.Get().AwsS3.Bucket
+	err = s3.Upload(s3Args)
+	if err != nil {
+		return utils.BuildInternalServerError(context, models.ErrorFileIOFailure, err.Error())
 	}
 
 	return context.JSON(http.StatusOK, result)
