@@ -42,6 +42,7 @@ func CreateBranchCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBranchManager()
+	defer manager.Close()
 	result, err := manager.FindByName(reqBranch.Name, reqBranch.GameID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -78,6 +79,7 @@ func findBranch(context echo.Context, bidParam string, nameParam string, gidPara
 	var err error
 
 	manager := database.NewBranchManager()
+	defer manager.Close()
 
 	bid := context.QueryParam(bidParam)
 	name := context.QueryParam(nameParam)
@@ -120,6 +122,7 @@ func DeleteBranchCmd(context echo.Context) error {
 	}
 
 	managerB := database.NewBuildManager()
+	defer managerB.Close()
 	builds, err := managerB.FindBuildByBranchID(result.ID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -128,6 +131,7 @@ func DeleteBranchCmd(context echo.Context) error {
 	for _, b := range builds {
 
 		managerBD := database.NewBuildDepotManager()
+		defer managerBD.Close()
 		buildDepots, err := managerBD.FindByBuildID(b.ID)
 		if err != nil {
 			return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -136,6 +140,7 @@ func DeleteBranchCmd(context echo.Context) error {
 		for _, bd := range buildDepots {
 
 			managerD := database.NewDepotManager()
+			defer managerD.Close()
 			depot, err := managerD.FindByID(bd.DepotID)
 			if err != nil {
 				return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -167,6 +172,7 @@ func DeleteBranchCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBranchManager()
+	defer manager.Close()
 	err = manager.RemoveByID(result.ID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -186,6 +192,7 @@ func SetLiveBranchCmd(context echo.Context) error {
 	if result.Live != true {
 
 		manager := database.NewBranchManager()
+		defer manager.Close()
 		branches, err := manager.List(gid)
 		if err != nil {
 			return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -222,6 +229,7 @@ func GetLiveBranchCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBranchManager()
+	defer manager.Close()
 	branches, err := manager.List(gid)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -255,6 +263,7 @@ func UpdateBranchCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBranchManager()
+	defer manager.Close()
 	result, err := manager.FindByID(bid)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -288,6 +297,7 @@ func ListBranchCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBranchManager()
+	defer manager.Close()
 	branches, err := manager.List(gid)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -312,6 +322,7 @@ func ShallowBranchCmd(context echo.Context) error {
 	targetBranch.Updated = time.Now()
 
 	manager := database.NewBranchManager()
+	defer manager.Close()
 	err = manager.Update(targetBranch)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -323,6 +334,7 @@ func ShallowBranchCmd(context echo.Context) error {
 func mergeBuilds(branchID string, newBuildID string, context echo.Context) error {
 
 	manager := database.NewBuildManager()
+	defer manager.Close()
 	builds, err := manager.FindBuildByBranchID(branchID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -343,6 +355,7 @@ func mergeBuilds(branchID string, newBuildID string, context echo.Context) error
 	}
 
 	managerBD := database.NewBuildDepotManager()
+	defer managerBD.Close()
 	buildDepots, err := managerBD.FindByBuildID(buildID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -379,6 +392,7 @@ func CreateBuildCmd(context echo.Context) error {
 	reqBuild.Created = time.Now()
 
 	manager := database.NewBuildManager()
+	defer manager.Close()
 	err = manager.Insert(reqBuild)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -400,6 +414,7 @@ func DeleteBuildCmd(context echo.Context) error {
 	}
 
 	managerBD := database.NewBuildDepotManager()
+	defer managerBD.Close()
 	buildDepots, err := managerBD.FindByBuildID(buildID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -415,6 +430,7 @@ func DeleteBuildCmd(context echo.Context) error {
 			}
 
 			managerD := database.NewDepotManager()
+			defer managerD.Close()
 			err = managerD.RemoveByID(bd.DepotID)
 			if err != nil {
 				return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -428,6 +444,7 @@ func DeleteBuildCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBuildManager()
+	defer manager.Close()
 	err = manager.RemoveByID(buildID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -444,6 +461,7 @@ func GetBuildCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBuildManager()
+	defer manager.Close()
 	build, err := manager.FindByID(bid)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -464,6 +482,7 @@ func ListBuildCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBuildManager()
+	defer manager.Close()
 	builds, err := manager.FindBuildByBranchID(result.ID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -480,6 +499,7 @@ func GetLiveBuildCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBuildManager()
+	defer manager.Close()
 	build, err := manager.FindByID(result.LiveBuild)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -505,6 +525,7 @@ func PublishBuildCmd(context echo.Context) error {
 	}
 
 	manager := database.NewBuildManager()
+	defer manager.Close()
 	build, err := manager.FindByID(buildID)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -654,6 +675,7 @@ func prepareConfig(configFile string, platform string, context echo.Context) ([]
 	}
 
 	manager := database.NewRedistrManager()
+	defer manager.Close()
 
 	for i, r := range manifest.Redistributables {
 

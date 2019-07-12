@@ -74,6 +74,7 @@ func (backend *JWTAuthenticationBackend) GenerateToken(clientID string, userUUID
 func (backend *JWTAuthenticationBackend) Authenticate(user *models.Authorization) bool {
 
 	manager := database.NewUserManager()
+	defer manager.Close()
 	users, err := manager.FindByName(user.Username)
 	if err != nil {
 		return false

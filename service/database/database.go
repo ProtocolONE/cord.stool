@@ -65,6 +65,11 @@ func NewUserManager() *UserManager {
 	return &UserManager{collection: session.DB(dbConf.Database).C("users")}
 }
 
+func (manager *UserManager) Close() {
+
+	manager.collection.Database.Session.Close()
+}
+
 func (manager *UserManager) FindByName(name string) ([]*models.User, error) {
 
 	var dbUsers []*models.User
@@ -103,6 +108,11 @@ type BranchManager struct {
 func NewBranchManager() *BranchManager {
 	session := dbConf.Dbs.Copy()
 	return &BranchManager{collection: session.DB(dbConf.Database).C("branches")}
+}
+
+func (manager *BranchManager) Close() {
+
+	manager.collection.Database.Session.Close()
 }
 
 func (manager *BranchManager) FindByID(id string) (*models.Branch, error) {
@@ -193,6 +203,11 @@ func NewBuildManager() *BuildManager {
 	return &BuildManager{collection: session.DB(dbConf.Database).C("builds")}
 }
 
+func (manager *BuildManager) Close() {
+
+	manager.collection.Database.Session.Close()
+}
+
 func (manager *BuildManager) Insert(build *models.Build) error {
 
 	err := manager.collection.Insert(build)
@@ -266,6 +281,11 @@ func NewDepotManager() *DepotManager {
 	return &DepotManager{collection: session.DB(dbConf.Database).C("depots")}
 }
 
+func (manager *DepotManager) Close() {
+
+	manager.collection.Database.Session.Close()
+}
+
 func (manager *DepotManager) Insert(depot *models.Depot) error {
 
 	err := manager.collection.Insert(depot)
@@ -312,6 +332,11 @@ type BuildDepotManager struct {
 func NewBuildDepotManager() *BuildDepotManager {
 	session := dbConf.Dbs.Copy()
 	return &BuildDepotManager{collection: session.DB(dbConf.Database).C("build_depot")}
+}
+
+func (manager *BuildDepotManager) Close() {
+
+	manager.collection.Database.Session.Close()
 }
 
 func (manager *BuildDepotManager) Insert(buildDepot *models.BuildDepot) error {
@@ -400,6 +425,11 @@ type RedistrManager struct {
 func NewRedistrManager() *RedistrManager {
 	session := dbConf.Dbs.Copy()
 	return &RedistrManager{collection: session.DB(dbConf.Database).C("redistr")}
+}
+
+func (manager *RedistrManager) Close() {
+
+	manager.collection.Database.Session.Close()
 }
 
 func (manager *RedistrManager) FindByName(name string) (*models.Redistr, error) {

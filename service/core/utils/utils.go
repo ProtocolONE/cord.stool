@@ -154,6 +154,7 @@ func GetConfigManifest(fpath string, platform string, context *echo.Context) (*m
 func GetUserStorage(clientID string) (string, error) {
 
 	manager := database.NewUserManager()
+	defer manager.Close()
 	users, err := manager.FindByName(clientID)
 	if err != nil {
 		return "", fmt.Errorf("Cannot find user %s, error: %s", clientID, err.Error())
@@ -185,6 +186,7 @@ func RemoveDepotFiles(clientID string, depotID string, context echo.Context) err
 func GetUserBuildDepotPath(clientID string, buildID string, platform string, context echo.Context, createDepot bool) (string, error) {
 
 	manager := database.NewBuildManager()
+	defer manager.Close()
 	build, err := manager.FindByID(buildID)
 	if err != nil {
 		return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -200,6 +202,7 @@ func GetUserBuildDepotPath(clientID string, buildID string, platform string, con
 	}
 
 	managerBD := database.NewBuildDepotManager()
+	defer managerBD.Close()
 	buildDepot, err := managerBD.FindByBuildAndPlatformID(buildID, platform)
 	if err != nil {
 		return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -211,6 +214,7 @@ func GetUserBuildDepotPath(clientID string, buildID string, platform string, con
 
 		depot := &models.Depot{utils2.GenerateID(), time.Now(), platform}
 		managerD := database.NewDepotManager()
+		defer managerD.Close()
 		err = managerD.Insert(depot)
 		if err != nil {
 			return "", BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())

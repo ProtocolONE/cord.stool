@@ -29,6 +29,7 @@ func CreateUser(context echo.Context) error {
 	}
 
 	manager := database.NewUserManager()
+	defer manager.Close()
 	users, err := manager.FindByName(reqUser.Username)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
@@ -64,6 +65,7 @@ func DeleteUser(context echo.Context) error {
 	}
 
 	manager := database.NewUserManager()
+	defer manager.Close()
 	err = manager.RemoveByName(reqUser.Username)
 	if err != nil {
 		return utils.BuildBadRequestError(context, models.ErrorDatabaseFailure, err.Error())
