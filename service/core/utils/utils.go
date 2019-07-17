@@ -164,6 +164,10 @@ func GetUserStorage(clientID string) (string, error) {
 		return "", fmt.Errorf("Duplicate users %s", clientID)
 	}
 
+	if users[0].Storage == "" {
+		return "", fmt.Errorf("Storage field is empty, for %s", clientID)
+	}
+
 	return users[0].Storage, nil
 }
 

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
+	"go.uber.org/zap"
 )
 
 func getBranchIDOrName(context echo.Context) string {
@@ -542,6 +543,8 @@ func PublishBuildCmd(context echo.Context) error {
 		return err
 	}
 
+	zap.S().Infow("PublishBuildCmd", zap.String("GetUserBuildDepotPath", fpath))
+
 	announceList := strings.Split(config.Get().Tracker.TrackersList, ";")
 	urlList := strings.Split(config.Get().Tracker.TrackersUrlList, ";")
 
@@ -553,6 +556,8 @@ func PublishBuildCmd(context echo.Context) error {
 
 	targetFile := path.Join(fpath, "torrent.torrent")
 	fpath = path.Join(fpath, "content")
+
+	zap.S().Infow("PublishBuildCmd", zap.String("CreateTorrent", fpath))
 
 	err = cord.CreateTorrent(
 		fpath,
