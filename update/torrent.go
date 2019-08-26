@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ProtocolONE/rain/torrent"
+	"cord.stool/libtorrent"
 	"github.com/anacrolix/torrent/metainfo"
 	"github.com/gosuri/uiprogress"
 )
@@ -34,11 +34,6 @@ func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 
 	bar.Set(0)
 
-	os.Remove(filepath.Join(output, "session.db"))
-	os.Remove(filepath.Join(output, "session.lock"))
-	defer os.Remove(filepath.Join(output, "session.db"))
-	defer os.Remove(filepath.Join(output, "session.lock"))
-
 	old := os.Stdout
 	_, w, _ := os.Pipe()
 	os.Stdout = w
@@ -52,71 +47,43 @@ func StartDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 
 func startDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats *DownloadStatistics) error {
 
-	s, closeSession, err := newSession(output)
+	session, err := libtorrent.CreateSession()
 	if err != nil {
 		return err
 	}
 
-	defer closeSession()
+	defer session.CloseSession()
 
-	id := filepath.Base(output)
-	s.RemoveTorrent(id)
-
-	r := bytes.NewReader(torrentData)
-	tor, err := s.AddTorrent(r)
+	torrent, err := session.AddTorrentData(torrentData, output)
 	if err != nil {
 		return err
 	}
-
-	tor.Start()
-	defer tor.Stop()
-
-	stats.Start()
-	defer stats.Stop()
 
 	bar.Total = 100
 
 	for {
 
-		var p float64
-		p = float64(tor.Stats().Bytes.Completed * 100)
-		p = p / float64(tor.Stats().Bytes.Total)
-		bar.Set(int(p))
-
-		time.Sleep(time.Second)
-
-		torStats := tor.Stats()
-		if torStats.Error != nil {
-			return torStats.Error
-		} else if torStats.Status == torrent.Seeding {
+		status := torrent.GetTorrentStatus()
+		if status == nil {
 			break
 		}
 
-		stats.Update(uint64(torStats.Speed.Download), uint64(torStats.Speed.Upload), uint64(torStats.Bytes.Total))
+		bar.Set(int(status.Progress * 100))
+
+		if int(status.Progress * 100) == 100 {
+			break
+		}
+
+		if status.ErrorText != "" {
+			return fmt.Errorf("ERROR: %s", status.ErrorText)
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 
 	bar.Set(bar.Total)
 
 	return nil
-}
-
-func newSession(output string) (*torrent.Session, func(), error) {
-
-	cfg := torrent.DefaultConfig
-	cfg.DataDir = output
-	cfg.Database = filepath.Join(output, "session.db")
-
-	s, err := torrent.NewSession(cfg)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return s, func() {
-		err := s.Close()
-		if err != nil {
-			return
-		}
-	}, nil
 }
 
 func getFileSizeAndModifyTime(filename string) (int64, time.Time, error) {

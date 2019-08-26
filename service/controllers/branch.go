@@ -543,10 +543,13 @@ func PublishBuildCmd(context echo.Context) error {
 	}
 
 	announceList := strings.Split(config.Get().Tracker.TrackersList, ";")
-	urlList := strings.Split(config.Get().Tracker.TrackersUrlList, ";")
+	var urlList []string
 
-	for i, _ := range urlList {
-		urlList[i] = urlList[i] + "/" + buildID
+	if config.Get().Tracker.TrackersUrlList != "" {
+		urlList = strings.Split(config.Get().Tracker.TrackersUrlList, ";")
+		for i, _ := range urlList {
+			urlList[i] = urlList[i] + "/" + buildID
+		}
 	}
 
 	ignoreFiles := map[string]bool{}
