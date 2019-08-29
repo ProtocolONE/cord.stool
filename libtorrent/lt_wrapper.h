@@ -259,6 +259,7 @@ int session_get_status(void* ses, struct session_status* s, int struct_size);
 int session_get_status(void* ses, struct session_status* s, int struct_size);
 
 // use SET_* tags in tag list
+int session_set_high_performance_seed_settings(void* ses);
 int session_set_settings(void* ses, int first_tag, ...);
 int session_set_setting(void* ses, int tag, void* value);
 int session_get_setting(void* ses, int tag, void* value, int* value_size);

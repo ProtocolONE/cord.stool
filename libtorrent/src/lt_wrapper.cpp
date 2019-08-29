@@ -145,6 +145,9 @@ TORRENT_EXPORT void* session_create(int tag, ...)
 		tag = va_arg(lp, int);
 	}
 
+	/*if (listen_range.first == -1 && listen_range.second == -1)
+        return new (std::nothrow) session(fing, flags, alert_mask);*/
+
 	if (listen_range.first != -1 && (listen_range.second == -1
 		|| listen_range.second < listen_range.first))
 		listen_range.second = listen_range.first;
@@ -354,6 +357,16 @@ TORRENT_EXPORT int session_pop_alerts(void* ses, session_alert_t* result, int* c
     }
 
 	return 0; // for now
+}
+
+TORRENT_EXPORT int session_set_high_performance_seed_settings(void* ses)
+{
+	using namespace libtorrent;
+
+	session* s = (session*)ses;
+	s->apply_settings(high_performance_seed());
+
+	return 0;
 }
 
 TORRENT_EXPORT int session_set_setting(void* ses, int tag, void* value)

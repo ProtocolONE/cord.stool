@@ -198,3 +198,9 @@ func (torrent *Torrent) GetTorrentStatus() *TorentStatus {
 	
 	return &result
 }
+
+func (session *Session) SetHighPerformanceSeedSettings() error {
+
+	C.session_set_high_performance_seed_settings(session.session)
+	return nil
+}

@@ -54,6 +54,11 @@ func startDownload(torrentData []byte, output string, bar *uiprogress.Bar, stats
 
 	defer session.CloseSession()
 
+	err = session.SetHighPerformanceSeedSettings()
+	if err != nil {
+		return err
+	}
+
 	torrent, err := session.AddTorrentData(torrentData, output)
 	if err != nil {
 		return err
